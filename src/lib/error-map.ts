@@ -1,5 +1,14 @@
 import { AppError } from '@/api/errors';
 
+export function isAppError(error: unknown): error is AppError {
+  return error instanceof AppError;
+}
+
+export function getErrorCode(error: unknown): string {
+  if (error instanceof AppError) return error.code;
+  return 'unknown_error';
+}
+
 export function toI18nKey(error: unknown): string {
   if (error instanceof AppError) return `errors:${error.code}`;
   return 'errors:unknown_error';

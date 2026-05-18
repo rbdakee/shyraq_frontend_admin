@@ -1,0 +1,23 @@
+{
+  "required": "Обязательное поле",
+  "invalid_phone": "Неверный формат телефона",
+  "invalid_email": "Неверный формат email",
+  "min_length": "Минимум {{min}} символов",
+  "max_length": "Максимум {{max}} символов",
+  "min_value": "Минимальное значение: {{min}}",
+  "max_value": "Максимальное значение: {{max}}",
+  "unsaved_changes": "Есть несохранённые изменения. Вы уверены, что хотите уйти?",
+  "combobox_placeholder": "Выберите...",
+  "combobox_search": "Поиск...",
+  "combobox_empty": "Ничего не найдено",
+  "upload_error": "Ошибка загрузки",
+  "upload_too_large": "Файл превышает {{max}} МБ",
+  "upload_drag": "Перетащите файл сюда",
+  "upload_or_click": "или нажмите для выбора",
+  "upload_limit": "Макс. {{max}} МБ",
+  "period_placeholder": "Выберите период",
+  "period_today": "Сегодня",
+  "period_week": "Неделя",
+  "period_month": "Месяц",
+  "bilingual_placeholder": "Введите текст ({{lang}})"
+}

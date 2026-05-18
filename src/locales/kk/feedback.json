@@ -1,0 +1,16 @@
+{
+  "confirm_title": "Әрекетті растаңыз",
+  "confirm_destructive": "Бұл әрекет қайтарымсыз",
+  "reason_label": "Себеп",
+  "reason_placeholder": "Себебін көрсетіңіз...",
+  "reason_counter": "{{count}}/{{max}}",
+  "confirm_button": "Растау",
+  "empty_title": "Әзірше ештеңе жоқ",
+  "empty_cta": "Жасау",
+  "error_title": "Жүктеу қатесі",
+  "error_cta": "Қайталау",
+  "json_viewer_label": "JSON",
+  "filtered_empty_title": "Ештеңе табылмады",
+  "filtered_empty_text": "Сүзгі параметрлерін өзгертіп көріңіз",
+  "reset_filters": "Сүзгілерді қалпына келтіру"
+}

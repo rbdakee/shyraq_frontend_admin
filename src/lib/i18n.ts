@@ -3,8 +3,18 @@ import { initReactI18next } from 'react-i18next';
 import { useUiStore } from '@/stores/ui-store';
 import ruCommon from '@/locales/ru/common.json';
 import ruErrors from '@/locales/ru/errors.json';
+import ruAuth from '@/locales/ru/auth.json';
+import ruDatatable from '@/locales/ru/datatable.json';
+import ruFeedback from '@/locales/ru/feedback.json';
+import ruForms from '@/locales/ru/forms.json';
+import ruDashboard from '@/locales/ru/dashboard.json';
 import kkCommon from '@/locales/kk/common.json';
 import kkErrors from '@/locales/kk/errors.json';
+import kkAuth from '@/locales/kk/auth.json';
+import kkDatatable from '@/locales/kk/datatable.json';
+import kkFeedback from '@/locales/kk/feedback.json';
+import kkForms from '@/locales/kk/forms.json';
+import kkDashboard from '@/locales/kk/dashboard.json';
 
 const initialLocale = useUiStore.getState().locale;
 
@@ -13,10 +23,20 @@ void i18n.use(initReactI18next).init({
     ru: {
       common: ruCommon,
       errors: ruErrors,
+      auth: ruAuth,
+      datatable: ruDatatable,
+      feedback: ruFeedback,
+      forms: ruForms,
+      dashboard: ruDashboard,
     },
     kk: {
       common: kkCommon,
       errors: kkErrors,
+      auth: kkAuth,
+      datatable: kkDatatable,
+      feedback: kkFeedback,
+      forms: kkForms,
+      dashboard: kkDashboard,
     },
   },
   lng: initialLocale,

@@ -1,0 +1,16 @@
+{
+  "confirm_title": "Подтвердите действие",
+  "confirm_destructive": "Это действие необратимо",
+  "reason_label": "Причина",
+  "reason_placeholder": "Укажите причину...",
+  "reason_counter": "{{count}}/{{max}}",
+  "confirm_button": "Подтвердить",
+  "empty_title": "Пока ничего нет",
+  "empty_cta": "Создать",
+  "error_title": "Ошибка загрузки",
+  "error_cta": "Повторить",
+  "json_viewer_label": "JSON",
+  "filtered_empty_title": "Ничего не найдено",
+  "filtered_empty_text": "Попробуйте изменить параметры фильтра",
+  "reset_filters": "Сбросить фильтры"
+}

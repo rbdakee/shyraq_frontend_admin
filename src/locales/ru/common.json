@@ -1,6 +1,8 @@
 {
   "app": {
-    "title": "Shyraq Admin"
+    "title": "Shyraq Admin",
+    "brand": "Shyraq",
+    "admin_label": "Admin"
   },
   "actions": {
     "save": "Сохранить",
@@ -10,15 +12,80 @@
     "edit": "Редактировать",
     "close": "Закрыть",
     "confirm": "Подтвердить",
-    "back": "Назад"
+    "back": "Назад",
+    "retry": "Повторить",
+    "loading": "Загрузка...",
+    "search": "Поиск",
+    "continue": "Продолжить",
+    "logout": "Выход"
   },
   "loading": "Загрузка...",
   "search": "Поиск",
   "yes": "Да",
   "no": "Нет",
+  "empty": "Нет данных",
   "pagination": {
     "prev": "Назад",
     "next": "Вперёд",
-    "shown_count": "Показано: {{count}}"
+    "shown_count": "Показано: {{count}}",
+    "load_more": "Загрузить ещё"
+  },
+  "nav": {
+    "dashboard": "Дашборд",
+    "enrollments": "Лиды",
+    "children": "Дети",
+    "groups": "Группы",
+    "staff": "Сотрудники",
+    "structure": "Локации и камеры",
+    "schedule": "Расписание",
+    "meals": "Меню",
+    "content": "Контент",
+    "invoices": "Счета",
+    "payments": "Оплаты",
+    "tariffs": "Тарифы",
+    "refunds": "Возвраты",
+    "discounts": "Скидки",
+    "holidays": "Праздники",
+    "fiscal": "Фискальные чеки",
+    "requests": "Заявки родителей",
+    "attendance": "Посещаемость",
+    "diagnostics": "Диагностика",
+    "face": "Face ID",
+    "dlq": "Сбойные задачи",
+    "settings": "Настройки садика",
+    "group_pupils": "Воспитанники",
+    "group_staff": "Сотрудники",
+    "group_daily": "Режим дня",
+    "group_billing": "Биллинг",
+    "group_ops": "Операции",
+    "group_system": "Система",
+    "phase_c": "Phase C"
+  },
+  "shell": {
+    "administrator": "Администратор",
+    "kindergartens_count": "{{count}} садика",
+    "notifications": "Уведомления",
+    "read_all": "Прочитать всё",
+    "profile": "Профиль",
+    "my_qr": "Мой QR",
+    "switch_kg": "Сменить садик",
+    "section_in_development": "Раздел в разработке — скоро"
+  },
+  "breadcrumbs": {
+    "home": "Главная"
+  },
+  "system": {
+    "forbidden_title": "Доступ запрещён",
+    "forbidden_body": "У вас нет прав для просмотра этого раздела.",
+    "not_found_title": "Страница не найдена",
+    "not_found_body": "Запрашиваемая страница не существует или была перемещена.",
+    "server_error_title": "Ошибка сервера",
+    "server_error_body": "Произошла внутренняя ошибка. Попробуйте позже.",
+    "offline_title": "Нет соединения",
+    "offline_body": "Проверьте подключение к интернету и попробуйте снова.",
+    "session_expired_title": "Сессия истекла",
+    "session_expired_body": "Войдите снова для продолжения работы.",
+    "go_home": "На главную",
+    "login_again": "Войти снова"
   }
 }

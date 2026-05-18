@@ -32,7 +32,7 @@ async function tryRefreshOnce(): Promise<void> {
       const res = await ky
         .post('auth/refresh', {
           prefix: env.VITE_API_BASE_URL,
-          json: { refresh_token: rt },
+          json: { refreshToken: rt },
           headers: {
             Authorization: `Bearer ${tokenStorage.getAccess() ?? ''}`,
           },

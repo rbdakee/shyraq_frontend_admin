@@ -1,0 +1,23 @@
+{
+  "required": "Міндетті өріс",
+  "invalid_phone": "Телефон форматы қате",
+  "invalid_email": "Email форматы қате",
+  "min_length": "Кем дегенде {{min}} таңба",
+  "max_length": "Ең көбі {{max}} таңба",
+  "min_value": "Ең аз мән: {{min}}",
+  "max_value": "Ең көп мән: {{max}}",
+  "unsaved_changes": "Сақталмаған өзгерістер бар. Кеткіңіз келетініне сенімдісіз бе?",
+  "combobox_placeholder": "Таңдаңыз...",
+  "combobox_search": "Іздеу...",
+  "combobox_empty": "Ештеңе табылмады",
+  "upload_error": "Жүктеу қатесі",
+  "upload_too_large": "Файл {{max}} МБ-тан асады",
+  "upload_drag": "Файлды осында сүйреңіз",
+  "upload_or_click": "немесе таңдау үшін басыңыз",
+  "upload_limit": "Макс. {{max}} МБ",
+  "period_placeholder": "Кезеңді таңдаңыз",
+  "period_today": "Бүгін",
+  "period_week": "Апта",
+  "period_month": "Ай",
+  "bilingual_placeholder": "Мәтін енгізіңіз ({{lang}})"
+}

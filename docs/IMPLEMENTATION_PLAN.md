@@ -456,8 +456,8 @@ src/
 | ---- | ------------------------------------------- | --------- | ------ |
 | B0   | Scaffold & tooling                          | infra     | [x]    |
 | B1   | Foundation (http/auth/i18n/темы/форматтеры) | infra     | [x]    |
-| B2   | Auth + App Shell                            | infra/P0  | [ ]    |
-| B3   | DataTable + patterns + Дашборд              | infra/P0  | [ ]    |
+| B2   | Auth + App Shell                            | infra/P0  | [x]    |
+| B3   | DataTable + patterns + Дашборд              | infra/P0  | [x]    |
 | B4   | Дети                                        | P0        | [ ]    |
 | B5   | Лиды/Зачисление                             | P0        | [ ]    |
 | B6   | Группы + Сотрудники                         | P0        | [ ]    |

@@ -1,6 +1,8 @@
 {
   "app": {
-    "title": "Shyraq Admin"
+    "title": "Shyraq Admin",
+    "brand": "Shyraq",
+    "admin_label": "Admin"
   },
   "actions": {
     "save": "Сақтау",
@@ -10,15 +12,80 @@
     "edit": "Өңдеу",
     "close": "Жабу",
     "confirm": "Растау",
-    "back": "Артқа"
+    "back": "Артқа",
+    "retry": "Қайталау",
+    "loading": "Жүктелуде...",
+    "search": "Іздеу",
+    "continue": "Жалғастыру",
+    "logout": "Шығу"
   },
   "loading": "Жүктелуде...",
   "search": "Іздеу",
   "yes": "Иә",
   "no": "Жоқ",
+  "empty": "Деректер жоқ",
   "pagination": {
     "prev": "Артқа",
     "next": "Алға",
-    "shown_count": "Көрсетілген: {{count}}"
+    "shown_count": "Көрсетілген: {{count}}",
+    "load_more": "Тағы жүктеу"
+  },
+  "nav": {
+    "dashboard": "Басты бет",
+    "enrollments": "Лидтер",
+    "children": "Балалар",
+    "groups": "Топтар",
+    "staff": "Қызметкерлер",
+    "structure": "Орындар мен камералар",
+    "schedule": "Кесте",
+    "meals": "Мәзір",
+    "content": "Контент",
+    "invoices": "Шоттар",
+    "payments": "Төлемдер",
+    "tariffs": "Тарифтер",
+    "refunds": "Қайтарымдар",
+    "discounts": "Жеңілдіктер",
+    "holidays": "Мерекелер",
+    "fiscal": "Фискалдық чектер",
+    "requests": "Ата-ана өтініштері",
+    "attendance": "Қатысу",
+    "diagnostics": "Диагностика",
+    "face": "Face ID",
+    "dlq": "Сбойлық тапсырмалар",
+    "settings": "Балабақша баптаулары",
+    "group_pupils": "Тәрбиеленушілер",
+    "group_staff": "Қызметкерлер",
+    "group_daily": "Күн тәртібі",
+    "group_billing": "Биллинг",
+    "group_ops": "Операциялар",
+    "group_system": "Жүйе",
+    "phase_c": "Phase C"
+  },
+  "shell": {
+    "administrator": "Әкімші",
+    "kindergartens_count": "{{count}} балабақша",
+    "notifications": "Хабарламалар",
+    "read_all": "Барлығын оқу",
+    "profile": "Профиль",
+    "my_qr": "Менің QR",
+    "switch_kg": "Балабақшаны ауыстыру",
+    "section_in_development": "Бөлім әзірлену үстінде — жуырда"
+  },
+  "breadcrumbs": {
+    "home": "Басты бет"
+  },
+  "system": {
+    "forbidden_title": "Қол жеткізу тыйым салынған",
+    "forbidden_body": "Бұл бөлімді көру үшін құқығыңыз жоқ.",
+    "not_found_title": "Бет табылмады",
+    "not_found_body": "Сұралған бет жоқ немесе жылжытылған.",
+    "server_error_title": "Сервер қатесі",
+    "server_error_body": "Ішкі қате орын алды. Кейінірек қайталаңыз.",
+    "offline_title": "Байланыс жоқ",
+    "offline_body": "Интернет қосылымын тексеріп, қайталап көріңіз.",
+    "session_expired_title": "Сессия аяқталды",
+    "session_expired_body": "Жұмысты жалғастыру үшін қайта кіріңіз.",
+    "go_home": "Басты бетке",
+    "login_again": "Қайта кіру"
   }
 }
