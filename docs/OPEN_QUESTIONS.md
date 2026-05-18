@@ -75,13 +75,53 @@ ChildDto nullable-поля (`iin/gender/photo_url/current_group_id/enrollment_da
 
 ---
 
+### A10 — Dashboard summary/payments-overview/attendance-today — backend имплементирует (owner-escalated) · resolved (2026-05-18)
+
+Бывш. §B3. При ручном QA W3: `src/api/dashboard.ts` зовёт `GET /api/v1/admin/dashboard/{summary,payments-overview}` (по HANDOFF §26), но на live `/docs-json` (2026-05-18) есть только `attendance-today` → 404, 2 виджета дашборда пустые.
+
+Решение владельца: владелец **передал backend** задачу реализовать **3 эндпоинта** — `/api/v1/admin/dashboard/summary`, `/api/v1/admin/dashboard/payments-overview`, `/api/v1/admin/dashboard/attendance-today` (контракт по HANDOFF §26). Имплементация backend **в работе (ждём выполнения)**. FE-код дашборда **уже корректен** (пути/DTO по §26) — **НЕ трогать, НЕ graceful-degradить, НЕ переписывать**: виджеты автоматически заработают, когда backend выкатит (404 уже обрабатывается как ошибка виджета, не краш). Не блокирует никакие батчи — дашборд единственная затронутая поверхность.
+
+Когда backend сообщит о готовности → `pnpm gen:api` + ручной QA дашборда + сверить HANDOFF §26 под факт (first-document, прецедент §A7/§A8); занести запись в [`BACKEND_NEEDINGS_HANDOFF.md`](BACKEND_NEEDINGS_HANDOFF.md) (dashboard endpoints, in-progress) ближайшим doc-коммитом.
+
+### A11 — Enrollments: camelCase DTO, page-based pagination, expanded CreateDto · resolved (2026-05-18)
+
+Контекст: при B5 (data layer enrollments) сверка live `/docs-json` выявила расхождения HANDOFF §6 с фактическим контрактом. Решение: прецедент §A7/§A8 — live = факт. Зафиксированные расхождения:
+
+1. **Casing:** HANDOFF §6 указывал snake_case (`contact_name, contact_phone, child_name, child_dob, assigned_to`). Live — **camelCase** (`contactName, contactPhone, childName, childDob, childIin, assignedTo, toStatus, currentGroupId`). Response тоже camelCase (`kindergartenId, childId, statusChangedAt, enrollmentId, fromStatus, toStatus, changedBy`). Per-module конвенция, не экстраполировать.
+2. **Pagination:** HANDOFF §2.5 подразумевал offset-based (majority). Live enrollments — **page-based** (`?page=1&limit=20` → `{data, total, page, limit}`). НЕ offset/limit.
+3. **CreateEnrollmentDto:** HANDOFF указывал `{contact_name, contact_phone, child_name, child_dob, source}`. Live расширен: `{contactName*, contactPhone*, childName?, childDob?, childIin?, source?, notes?, assignedTo?}`. Required — только `contactName` + `contactPhone` (а не 5 полей).
+4. **Transition response:** возвращает `{enrollment, child}` где `child` is a full `ChildDto` (snake_case, `id` string UUID) present only when `toStatus=card_created`; `null` otherwise. FE schema narrowed to `z.object({ id: z.string() }).passthrough().nullable().optional()` for type-safe child-id access without over-modeling the full ChildDto (children domain owns that).
+
+HANDOFF §6 обновлён под факт в этом коммите. Код B5 conform к live с defensive Zod.
+
+### A12 — Groups: archive/restore (not deactivate), no pagination, mentor via groups not staff · resolved (2026-05-19)
+
+Контекст: при B6 (data layer groups+staff) сверка live `/docs-json` выявила расхождения HANDOFF §7/§8 с фактическим контрактом. Решение: прецедент §A7/§A8/§A11 — live = факт. Зафиксированные расхождения:
+
+1. **Groups deactivate → archive/restore:** HANDOFF §7 описывал `POST /groups/{id}/deactivate`. Live — **`POST /groups/{id}/archive`** и **`POST /groups/{id}/restore`** (семантически то же: устанавливает/снимает `archived_at`). Нет отдельного deactivate/activate.
+2. **Groups list — plain array, no pagination:** HANDOFF §2.5 подразумевал offset (majority). Live `GET /groups` → **`GroupDto[]`** (plain array). Filter param: `archived` (boolean). Достаточно для садика (десятки групп, не тысячи).
+3. **Groups children — no dedicated endpoint:** HANDOFF §7 упоминал `GET /groups/{id}/children`. Live не имеет такого — используем `GET /children?current_group_id=<id>` (уже реализовано B4).
+4. **Groups casing:** snake_case throughout (request + response). CreateGroupDto: `{name*, capacity*, age_range_min?, age_range_max?, current_location_id?}`. UpdateGroupDto: all optional, nullable fields (`age_range_min, age_range_max, current_location_id` can be null).
+5. **Mentor management — on groups, not staff:** HANDOFF §8 описывал `POST /admin/staff/{id}/groups/assign {group_id}` и `POST /admin/staff/{id}/groups/:groupId/primary`. Live — **mentor binding через группу**: `POST /groups/{id}/mentor {staff_member_id}`, `DELETE /groups/{id}/mentor`, `GET /groups/{id}/mentor`, `GET /groups/{id}/mentor-history`. AssignMentorDto: `{staff_member_id}`. Response: `GroupMentorDto {id, kindergarten_id, group_id, staff_member_id, is_primary, assigned_at, unassigned_at(nullable), created_at}`.
+
+### A13 — Staff: snake_case, plain array list, search param, archive/restore endpoints · resolved (2026-05-19)
+
+Контекст: продолжение A12, staff-эндпоинты. Зафиксированные расхождения:
+
+1. **Staff prefix:** `GET/POST /admin/staff`, `GET/PATCH /admin/staff/{id}` — **with `/admin/`** prefix. Confirmed.
+2. **Staff casing:** snake_case throughout (request + response). CreateStaffDto: `{full_name*, phone*, role*, specialist_type?, hired_at?}`. UpdateStaffDto: `{full_name?, role?, specialist_type?(nullable), hired_at?(nullable), fired_at?(nullable)}`.
+3. **Staff list — plain array, no pagination:** `GET /admin/staff` → **`StaffMemberDto[]`** (plain array). Filter params: `role`, `is_active` (boolean), `specialist_type`, `archived` (boolean), `search` (string — NOT `q`).
+4. **Staff additional endpoints:** `POST /admin/staff/{id}/archive` и `POST /admin/staff/{id}/restore` — дополнительно к deactivate/activate. Both return StaffMemberDto.
+5. **StaffMemberDto nullable fields:** `full_name`, `phone`, `specialist_type`, `hired_at`, `fired_at`, `archived_at` — all nullable.
+6. **No staff-side group assign/primary endpoints:** See A12 point 5. Mentor assignment managed through groups endpoints.
+
+HANDOFF §7/§8 будут обновлены под факт в wave-коммите B6. Код B6 conform к live с defensive Zod.
+
+---
+
 ## B. Открытые (open — НЕ кодить до resolve)
 
-### B3 — Dashboard: `dashboard/summary` и `dashboard/payments-overview` отсутствуют на live backend · open (2026-05-18)
-
-Контекст: при ручном QA W3 обнаружено — код B3 (`src/api/dashboard.ts`) зовёт `GET admin/dashboard/summary` и `admin/dashboard/payments-overview` (по HANDOFF §26), но на live `/docs-json` (2026-05-18) существует **только** `GET /api/v1/admin/dashboard/attendance-today`. summary/payments-overview → **404** (нет ни под dashboard, ни под summary/overview/stats/analytics). Blocker: страница Дашборд (`/`) — 2 виджета пустые/ошибка. **НЕ блокирует B4** (дети используют корректные `/children/*`, §A8; путь верен, 401 при протухшей сессии — отдельно, не баг кода).
-
-Нужно решение владельца: (а) backend Phase A не выкатил эти эндпоинты — ждать backend? (б) скрыть/заглушить summary+payments-overview виджеты на дашборде (graceful «нет данных»/«раздел недоступен») до появления backend? (в) иные пути аналитики? Гипотеза: как §A8 — backend = факт; B3-фоллоуап: дашборд деградирует gracefully на отсутствующих эндпоинтах (а не 404-ошибка виджета), HANDOFF §26 правится под факт. **Отдельный B3-фиксап, в коммит B4 не входит.**
+_Пусто. Добавлять сюда при обнаружении расхождения handoff↔backend↔design в ходе батча._ (B1→A7, B2→A8, B3→A10.)
 
 Формат записи:
 
@@ -120,6 +160,50 @@ HANDOFF §24: исторически `/admin/*` мог быть заскопле
 Решение владельца (уточнено у backend, 2026-05-18): фича `child_photo` на backend **ещё не готова** (presigned — Phase B, см. C2; `upload-media` под `child_photo` backend не поддерживает). **Оставляем как есть** — код presigned не трогаем, 404 всплывает как обработанная ошибка (тост, не краш), карточка создаётся без фото (`photo_url?` опционален). НЕ переписывать на `upload-media`, ничего не доинвентить. Сделать фичу, когда backend выкатит storage для child_photo. **Не блокирует B4** (фото — единственная заблокированная подфича; CRUD/группы/опекуны/архив работают).
 
 Пересмотр: когда backend сообщит о готовности child_photo storage → реализовать по фактическому контракту, обновить HANDOFF §2/§5 + DESIGN §183 (presigned vs multipart) под факт (first-document). Связано с C2 (S3/presigned Phase B).
+
+### C6 — Enrollments: модал «Создать карточку» без полей тарифа · parked/watch (2026-05-19, W4/B5)
+
+Контекст: дизайн `screens-core.jsx` EnrollmentDetail (модал создания карточки, стр. 748–762) показывает поля «Назначить тариф» + «Дата начала действия тарифа». Live `TransitionEnrollmentDto` (§A11) = `{toStatus*, comment?, currentGroupId?}` — **не принимает тариф/дату тарифа**. Это были mock-поля прототипа.
+
+Решение (design-fidelity допускает отклонение под backend-контракт, CLAUDE §6): модал card_created строит информативную часть 1:1 (баннер + буллеты «создан ребёнок + опекун + первый счёт + статус»), **поля тарифа опущены** — контракт их не принимает. Тариф назначается отдельно через Назначения тарифов (B9, реактивация-флоу B4 уже так делает). Не блокирует B5. Пересмотр: если backend добавит тариф в transition-DTO → вернуть поля, обновить HANDOFF §6 + DESIGN §6.2 под факт (first-document).
+
+### C7 — Enrollments: нет enrollment-level поля группы · parked/watch (2026-05-19, W4/B5)
+
+Контекст: дизайн EnrollmentDetail рисует «Желаемая группа» в карточке данных ребёнка. Live `EnrollmentResponseDto`/`UpdateEnrollmentDto` (§A11) **не имеют поля группы**; `currentGroupId` есть только в `TransitionEnrollmentDto` (card_created).
+
+Решение: селект группы (`useGroups`) размещён в модале card_created, где контракт принимает `currentGroupId`; в карточке данных ребёнка enrollment-level поля группы нет (нечего показывать/персистить). Backend-forced, не блокирует B5. Пересмотр: если нужно информативное `desiredGroupId` на enrollment-DTO → backend-need + HANDOFF §6.
+
+### C8 — Groups/Staff: имя локации не резолвится (нет locations endpoint в scope) · parked/watch (2026-05-19, W4/B6)
+
+Контекст: `GroupDto` даёт только `current_location_id` (UUID). Дизайн GroupsList/GroupDetail рисует **имя** локации. Locations endpoints — B14 (вне scope волны). Аналог §C4.
+
+Решение: фронт деградирует честно — не выдумывать имя из UUID; контрол локации disabled/«—» (имя появится при B14). Не блокирует B6. Пересмотр: B14 (locations) — резолв имени, обновить под факт.
+
+> Сопутствующее (тот же корень — нет агрегата на `GroupDto`/нет summary-endpoint): подзаголовок списка групп показывает только число групп; суммарное «N детей» прототипа опущено (нельзя посчитать без per-group дозапросов; §C4-прецедент против фабрикации агрегата). Вернуть при появлении groups-summary endpoint.
+
+### C9 — Groups/Staff: live — один активный ментор, нет multi-mentor/assistant/make-primary · parked/watch (2026-05-19, W4/B6)
+
+Контекст: дизайн GroupDetail «Воспитатели» показывает несколько менторов (primary + «Ассистент») и действие «Сделать основным»; StaffDetail — «★ Основной». Live (§A12.5): `GET /groups/:id/mentor` → **ровно один активный** GroupMentorDto; `POST/DELETE /groups/:id/mentor` — назначить/снять; **make-primary endpoint отсутствует**, multi-mentor/assistant поверхность не экспонирована. `is_primary` — read-only из DTO.
+
+Решение (CLAUDE §6 — отклонение под контракт): UI показывает одного активного ментора + информативный баннер-инвариант; multi-mentor таблица и «Сделать основным» **опущены** (нет endpoint), не выдумываются. Не блокирует B6. Пересмотр: backend добавит multi-mentor / make-primary → вернуть по факту, обновить HANDOFF §7.
+
+### C10 — Groups: archive вместо deactivate; enforcement `group_has_active_children` на archive не подтверждён · parked/watch (2026-05-19, W4/B6)
+
+Контекст: HANDOFF §7 описывал `deactivate` с пречеком 409 `group_has_active_children`. Live (§A12.1) — `POST /groups/:id/archive` + `restore`; принудительный пречек 409 на archive по live `/docs-json` не подтверждён.
+
+Решение: «Деактивировать» → `archive`; FE обрабатывает 409 `group_has_active_children` **defensive** (если backend вернёт — показывает блокер-модал «переведите детей» со ссылкой на детей группы; код есть в error-map). Реальное поведение — подтвердить ручным QA/backend. Не блокирует B6 (UI корректно при обоих исходах).
+
+### C11 — Staff: нет reverse staff→groups листинга · parked/watch (2026-05-19, W4/B6)
+
+Контекст: дизайн StaffList колонка «Группы» (для mentor) и StaffDetail блок «Назначения групп». Live (§A12.5/§A13.6): нет `GET /admin/staff/:id/groups` и нет reverse staff→groups; mentor-binding только group-side (`/groups/:id/mentor`). N+1-скан всех групп ради колонки запрещён (стоимость + §C4-прецедент против фабрикации).
+
+Решение: колонка «Группы» в списке деградирует «—»; блок в карточке — info-стейт + только действие «Назначить в группу» (`useGroups` → `POST /groups/:id/mentor {staff_member_id}`); текущие назначения ментора из контракта не отображаются. Backend-forced, не блокирует B6. Пересмотр: backend даст staff→groups листинг → показать назначения, обновить HANDOFF §8.
+
+### C12 — Staff: создание + привязка к группе не атомарны · parked/watch (2026-05-19, W4/B6)
+
+Контекст: HANDOFF §8 (старая редакция) подразумевал атомарный create+assign (`group_id` в CreateStaffDto). Live `CreateStaffDto` (§A13.2) **без `group_id`**.
+
+Решение: форма создания mentor делает 2 шага — `POST /admin/staff` → затем `POST /groups/:id/mentor {staff_member_id}`. Частичный сбой (staff создан, assign упал) — warning-тост, пользователь дозначает из карточки. Backend-forced, не блокирует B6. Пересмотр: backend добавит атомарный create+assign → упростить.
 
 ---
 

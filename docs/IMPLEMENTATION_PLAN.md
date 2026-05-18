@@ -458,9 +458,9 @@ src/
 | B1   | Foundation (http/auth/i18n/темы/форматтеры) | infra     | [x]    |
 | B2   | Auth + App Shell                            | infra/P0  | [x]    |
 | B3   | DataTable + patterns + Дашборд              | infra/P0  | [x]    |
-| B4   | Дети                                        | P0        | [ ]    |
-| B5   | Лиды/Зачисление                             | P0        | [ ]    |
-| B6   | Группы + Сотрудники                         | P0        | [ ]    |
+| B4   | Дети                                        | P0        | [x]    |
+| B5   | Лиды/Зачисление                             | P0        | [x]    |
+| B6   | Группы + Сотрудники                         | P0        | [x]    |
 | B7   | Биллинг: Счета                              | P0        | [ ]    |
 | B8   | Заявки родителей                            | P0        | [ ]    |
 | B9   | Оплаты + Тарифы + Назначения                | P1        | [ ]    |
@@ -479,7 +479,7 @@ src/
 
 | TODO                                                                                                                                     | Файл:строка            | Owner | Статус |
 | ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ----- | ------ |
-| expand groups domain (CRUD, mentors, children, deactivate) — minimal read created in B4 for child list filter/transfer/create select     | `src/api/groups.ts:25` | B6    | open   |
+| ~~expand groups domain (CRUD, mentors, children, deactivate) — minimal read created in B4 for child list filter/transfer/create select~~ | `src/api/groups.ts:25` | B6    | done   |
 | child_photo storage: presigned backend не готов — 404 оставлен как есть (обработанная ошибка), переписать по факту когда backend выкатит | `src/api/storage.ts:1` | C5    | parked |
 
 ---

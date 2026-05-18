@@ -1,0 +1,151 @@
+{
+  "title": "Сотрудники",
+  "subtitle": "{{active}} активных · {{mentors}} воспитателей · {{specialists}} специалистов",
+  "empty_title": "Сотрудников пока нет",
+  "empty_description": "Добавьте первого сотрудника для начала работы.",
+  "filtered_empty_title": "Ничего не найдено",
+  "filtered_empty_description": "Попробуйте изменить параметры поиска или фильтры.",
+  "create_button": "Добавить сотрудника",
+  "export": "Экспорт",
+
+  "search_placeholder": "Поиск по ФИО или телефону",
+
+  "filters": {
+    "all_roles": "Все роли",
+    "all_statuses": "Все статусы",
+    "all_specialties": "Все специальности",
+    "active": "Активные",
+    "inactive": "Неактивные"
+  },
+
+  "columns": {
+    "photo": "",
+    "full_name": "ФИО",
+    "phone": "Телефон",
+    "role": "Роль",
+    "specialist_type": "Специальность",
+    "groups": "Группы",
+    "status": "Статус",
+    "actions": ""
+  },
+
+  "role": {
+    "admin": "Администратор",
+    "mentor": "Воспитатель",
+    "specialist": "Специалист",
+    "reception": "Ресепшн"
+  },
+
+  "specialist_type": {
+    "psychologist": "Психолог",
+    "speech_therapist": "Логопед",
+    "music_teacher": "Музыкальный руководитель",
+    "physical_ed": "Физкультура",
+    "nutritionist": "Диетолог"
+  },
+
+  "status": {
+    "active": "Активен",
+    "inactive": "Неактивен"
+  },
+
+  "pagination": {
+    "showing": "Показано {{from}}–{{to}} из {{total}}"
+  },
+
+  "detail": {
+    "breadcrumb": "Сотрудники",
+    "not_found": "Сотрудник не найден или нет доступа",
+    "edit": "Редактировать",
+    "revoke_all_qr": "Отозвать все QR",
+    "deactivate": "Деактивировать",
+    "activate": "Активировать",
+    "hired_since": "В саду с {{date}}",
+
+    "profile": {
+      "title": "Профиль",
+      "full_name": "ФИО",
+      "phone": "Телефон",
+      "role": "Роль",
+      "specialist_type": "Специальность",
+      "hired_at": "Принят на работу",
+      "fired_at": "Уволен",
+      "save": "Сохранить",
+      "cancel": "Отмена",
+      "success": "Данные обновлены"
+    },
+
+    "groups": {
+      "title_mentor": "Назначения групп",
+      "title_other": "Группы",
+      "assign": "Назначить",
+      "empty_mentor": "Не закреплён за группой",
+      "empty_mentor_hint": "Назначьте сотрудника на группу — первый назначенный становится основным.",
+      "empty_other": "Этой роли группы не нужны.",
+      "columns": {
+        "group": "Группа",
+        "status": "Статус",
+        "assigned_at": "С"
+      },
+      "primary": "Основной",
+      "assistant": "Ассистент",
+      "make_primary": "Сделать основным",
+      "unassign": "Снять",
+      "assign_title": "Назначить в группу",
+      "select_group": "Выберите группу",
+      "assign_success": "Сотрудник назначен в группу",
+      "no_reverse_endpoint": "Текущие назначения недоступны для просмотра. Используйте кнопку «Назначить» для привязки к группе."
+    }
+  },
+
+  "create": {
+    "title": "Добавить сотрудника",
+    "welcome_sms_banner": "Сотрудник сможет войти в приложение Shyraq Staff по своему номеру через SMS-код. Отдельное приглашение или ссылка не нужны — отправим welcome-SMS автоматически.",
+    "full_name": "ФИО",
+    "full_name_placeholder": "Бекова Сауле Маратовна",
+    "phone": "Телефон",
+    "phone_placeholder": "+7 ___ ___ __ __",
+    "role": "Роль",
+    "hired_at": "Дата найма",
+    "group_label": "Группа",
+    "group_hint": "Для воспитателя — закрепляется за группой; первый назначенный — основной",
+    "group_not_assign": "Не назначать",
+    "specialist_type": "Специальность",
+    "specialist_type_placeholder": "Выберите специальность",
+    "submit": "Добавить сотрудника",
+    "cancel": "Отменить",
+    "success": "Сотрудник добавлен",
+    "group_assign_failed": "Сотрудник создан, но назначение на группу не удалось. Назначьте вручную в карточке сотрудника."
+  },
+
+  "modals": {
+    "deactivate": {
+      "title": "Деактивировать сотрудника",
+      "description": "Сотрудник потеряет доступ к системе. Назначения на группы будут сняты.",
+      "confirm": "Деактивировать",
+      "cancel": "Отмена",
+      "success": "Сотрудник деактивирован"
+    },
+    "activate": {
+      "title": "Активировать сотрудника",
+      "description": "Сотрудник получит доступ к системе.",
+      "confirm": "Активировать",
+      "cancel": "Отмена",
+      "success": "Сотрудник активирован"
+    },
+    "revoke_all_qr": {
+      "title": "Отозвать все QR-коды",
+      "description": "Все активные QR-коды данного сотрудника будут аннулированы.",
+      "confirm": "Отозвать все QR",
+      "cancel": "Отмена",
+      "success": "QR-коды отозваны ({{count}})"
+    }
+  },
+
+  "actions": {
+    "edit": "Редактировать",
+    "deactivate": "Деактивировать",
+    "activate": "Активировать",
+    "view": "Просмотр"
+  }
+}

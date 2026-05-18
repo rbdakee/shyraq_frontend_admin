@@ -77,6 +77,13 @@ export function formatIinDisplay(raw: string): string {
  * Invalid or non-E.164 input is returned unchanged (same contract as superadmin).
  * Only KZ numbers (+7, length 12) are reformatted; others pass through.
  */
+export function getInitials(name: string | null | undefined): string {
+  if (!name) return '?';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length >= 2) return (parts[0]![0]! + parts[1]![0]!).toUpperCase();
+  return (parts[0]?.[0] ?? '?').toUpperCase();
+}
+
 export function formatPhone(phone: string | null | undefined): string {
   if (!phone) return '';
   if (!E164_RE.test(phone)) return phone;

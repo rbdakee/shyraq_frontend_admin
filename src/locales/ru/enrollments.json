@@ -1,0 +1,174 @@
+{
+  "title": "Лиды",
+  "subtitle": "Воронка зачисления · {{count}} активных лидов",
+  "empty_title": "Лидов пока нет",
+  "empty_description": "Создайте первый лид для начала работы с воронкой зачисления.",
+  "filtered_empty_title": "Ничего не найдено",
+  "filtered_empty_description": "Попробуйте изменить параметры поиска или фильтры.",
+  "create_button": "Создать лид",
+  "search_placeholder": "Поиск по телефону или ФИО",
+  "no_data": "—",
+
+  "view_toggle": {
+    "kanban": "Канбан",
+    "table": "Таблица"
+  },
+
+  "kanban": {
+    "empty_column": "Пусто"
+  },
+
+  "status": {
+    "new": "Новая заявка",
+    "in_processing": "В обработке",
+    "waitlist": "Лист ожидания",
+    "card_created": "Создана карточка",
+    "cancelled": "Отменён",
+    "archive": "Архив"
+  },
+
+  "columns": {
+    "child_name": "ФИО ребёнка",
+    "contact_name": "Контакт",
+    "contact_phone": "Телефон",
+    "status": "Статус",
+    "source": "Источник",
+    "assigned": "Ответственный",
+    "created_at": "Дата создания",
+    "status_changed_at": "Дата смены статуса",
+    "actions": "Действия"
+  },
+
+  "card": {
+    "months": "мес",
+    "not_assigned": "—"
+  },
+
+  "detail": {
+    "breadcrumb": "Лиды",
+    "source_label": "Источник",
+    "assigned_label": "Ответственный",
+    "not_assigned": "не назначен",
+    "not_found": "Лид не найден или нет доступа",
+
+    "child_data": {
+      "title": "Данные ребёнка",
+      "child_name": "ФИО ребёнка",
+      "date_of_birth": "Дата рождения",
+      "iin": "ИИН",
+      "desired_group": "Желаемая группа",
+      "desired_start_date": "Желаемая дата начала"
+    },
+
+    "guardian": {
+      "title": "Основной законный представитель",
+      "full_name": "ФИО",
+      "relationship": "Связь с ребёнком",
+      "phone": "Телефон",
+      "email": "Email",
+      "relationship_mother": "Мать",
+      "relationship_father": "Отец",
+      "relationship_guardian": "Опекун"
+    },
+
+    "notes": {
+      "title": "Заметки",
+      "placeholder": "Особенности, пожелания, контекст разговора..."
+    },
+
+    "responsible": {
+      "title": "Ответственный",
+      "not_assigned": "Не назначен",
+      "role": "Администратор"
+    },
+
+    "status_log": {
+      "title": "Лог статусов",
+      "created": "Лид создан",
+      "auto_source": "Авто (форма с сайта)"
+    },
+
+    "actions": {
+      "change_status": "Сменить статус",
+      "to_in_processing": "В обработку",
+      "to_waitlist": "Лист ожидания",
+      "to_cancelled": "Отменить",
+      "to_archive": "В архив",
+      "create_card": "Создать карточку",
+      "assign": "Назначить ответственного",
+      "edit": "Редактировать",
+      "save": "Сохранить",
+      "cancel": "Отмена"
+    }
+  },
+
+  "create": {
+    "title": "Новый лид",
+    "contact_name": "ФИО контакта",
+    "contact_name_placeholder": "Айгуль Серикова",
+    "contact_phone": "Телефон контакта",
+    "contact_phone_placeholder": "+7 701 111 22 33",
+    "child_name": "ФИО ребёнка",
+    "child_name_placeholder": "Алия Серикова",
+    "child_dob": "Дата рождения ребёнка",
+    "child_iin": "ИИН ребёнка",
+    "child_iin_placeholder": "000000 000000",
+    "source": "Источник",
+    "source_placeholder": "Instagram, сарафан, сайт...",
+    "notes": "Заметки",
+    "notes_placeholder": "Комментарии, пожелания",
+    "assigned_to": "Ответственный",
+    "assigned_to_placeholder": "Выберите сотрудника",
+    "submit": "Создать лид",
+    "cancel": "Отменить",
+    "success": "Лид создан"
+  },
+
+  "modals": {
+    "create_card": {
+      "title": "Создать карточку ребёнка",
+      "banner": "При создании карточки автоматически будет:",
+      "bullet_child": "Создан профиль ребёнка",
+      "bullet_guardian": "Добавлен основной законный представитель",
+      "bullet_invoice": "Сгенерирован первый счёт по выбранному тарифу",
+      "bullet_status": "Лиду присвоен статус «Создана карточка»",
+      "tariff_label": "Назначить тариф",
+      "tariff_start_label": "Дата начала действия тарифа",
+      "group_label": "Группа",
+      "confirm": "Создать карточку и счёт",
+      "cancel": "Отменить"
+    },
+    "transition": {
+      "title": "Сменить статус лида",
+      "comment_label": "Комментарий",
+      "comment_placeholder": "Причина изменения статуса (необязательно)",
+      "confirm": "Подтвердить",
+      "cancel": "Отмена"
+    },
+    "assign": {
+      "title": "Назначить ответственного",
+      "staff_label": "Сотрудник",
+      "staff_placeholder": "Выберите сотрудника",
+      "confirm": "Назначить",
+      "cancel": "Отмена",
+      "success": "Ответственный назначен"
+    }
+  },
+
+  "success": {
+    "card_created": "Карточка создана",
+    "card_created_body": "Создан ребёнок, основной опекун и первый счёт.",
+    "card_created_link": "Перейти к карточке ребёнка",
+    "transition": "Статус изменён",
+    "update": "Данные лида обновлены",
+    "assign": "Ответственный назначен"
+  },
+
+  "pagination": {
+    "showing": "Показано {{from}}–{{to}} из {{total}}"
+  },
+
+  "tooltip": {
+    "disabled_transition": "Этот переход недоступен из текущего статуса"
+  }
+}

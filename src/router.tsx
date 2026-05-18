@@ -51,8 +51,20 @@ export const router = createBrowserRouter([
               return { Component };
             },
           },
-          { path: 'enrollments', lazy: lazyStub },
-          { path: 'enrollments/:id', lazy: lazyStub },
+          {
+            path: 'enrollments',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/enrollments/index');
+              return { Component };
+            },
+          },
+          {
+            path: 'enrollments/:id',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/enrollments/$id');
+              return { Component };
+            },
+          },
           {
             path: 'children',
             lazy: async () => {
@@ -74,10 +86,34 @@ export const router = createBrowserRouter([
               return { Component };
             },
           },
-          { path: 'groups', lazy: lazyStub },
-          { path: 'groups/:id', lazy: lazyStub },
-          { path: 'staff', lazy: lazyStub },
-          { path: 'staff/:id', lazy: lazyStub },
+          {
+            path: 'groups',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/groups/index');
+              return { Component };
+            },
+          },
+          {
+            path: 'groups/:id',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/groups/$id');
+              return { Component };
+            },
+          },
+          {
+            path: 'staff',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/staff/index');
+              return { Component };
+            },
+          },
+          {
+            path: 'staff/:id',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/staff/$id');
+              return { Component };
+            },
+          },
           { path: 'structure/locations', lazy: lazyStub },
           { path: 'structure/cameras', lazy: lazyStub },
           { path: 'schedule/templates', lazy: lazyStub },

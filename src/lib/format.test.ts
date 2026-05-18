@@ -6,7 +6,42 @@ import {
   formatPhone,
   maskIin,
   formatIinDisplay,
+  getInitials,
 } from './format';
+
+describe('getInitials', () => {
+  it('returns two-letter initials for a full name', () => {
+    expect(getInitials('Иван Петров')).toBe('ИП');
+  });
+
+  it('returns two-letter initials for a three-word name', () => {
+    expect(getInitials('Алия Нурлан Кызы')).toBe('АН');
+  });
+
+  it('returns single-letter initial for a single word', () => {
+    expect(getInitials('Марат')).toBe('М');
+  });
+
+  it('returns "?" for null', () => {
+    expect(getInitials(null)).toBe('?');
+  });
+
+  it('returns "?" for undefined', () => {
+    expect(getInitials(undefined)).toBe('?');
+  });
+
+  it('returns "?" for empty string', () => {
+    expect(getInitials('')).toBe('?');
+  });
+
+  it('returns "?" for whitespace-only string', () => {
+    expect(getInitials('   ')).toBe('?');
+  });
+
+  it('uppercases lowercase names', () => {
+    expect(getInitials('anna smith')).toBe('AS');
+  });
+});
 
 describe('formatMoney', () => {
   it('formats 0 to "0 ₸"', () => {

@@ -9,6 +9,9 @@ import ruFeedback from '@/locales/ru/feedback.json';
 import ruForms from '@/locales/ru/forms.json';
 import ruDashboard from '@/locales/ru/dashboard.json';
 import ruChildren from '@/locales/ru/children.json';
+import ruEnrollments from '@/locales/ru/enrollments.json';
+import ruGroups from '@/locales/ru/groups.json';
+import ruStaff from '@/locales/ru/staff.json';
 import kkCommon from '@/locales/kk/common.json';
 import kkErrors from '@/locales/kk/errors.json';
 import kkAuth from '@/locales/kk/auth.json';
@@ -17,6 +20,9 @@ import kkFeedback from '@/locales/kk/feedback.json';
 import kkForms from '@/locales/kk/forms.json';
 import kkDashboard from '@/locales/kk/dashboard.json';
 import kkChildren from '@/locales/kk/children.json';
+import kkEnrollments from '@/locales/kk/enrollments.json';
+import kkGroups from '@/locales/kk/groups.json';
+import kkStaff from '@/locales/kk/staff.json';
 
 const initialLocale = useUiStore.getState().locale;
 
@@ -31,6 +37,9 @@ void i18n.use(initReactI18next).init({
       forms: ruForms,
       dashboard: ruDashboard,
       children: ruChildren,
+      enrollments: ruEnrollments,
+      groups: ruGroups,
+      staff: ruStaff,
     },
     kk: {
       common: kkCommon,
@@ -41,6 +50,9 @@ void i18n.use(initReactI18next).init({
       forms: kkForms,
       dashboard: kkDashboard,
       children: kkChildren,
+      enrollments: kkEnrollments,
+      groups: kkGroups,
+      staff: kkStaff,
     },
   },
   lng: initialLocale,

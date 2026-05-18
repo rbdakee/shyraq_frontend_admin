@@ -1,0 +1,174 @@
+{
+  "title": "Лидтер",
+  "subtitle": "Қабылдау воронкасы · {{count}} белсенді лид",
+  "empty_title": "Лидтер әзірге жоқ",
+  "empty_description": "Қабылдау воронкасымен жұмысты бастау үшін алғашқы лидті жасаңыз.",
+  "filtered_empty_title": "Ештеңе табылмады",
+  "filtered_empty_description": "Іздеу параметрлерін немесе сүзгілерді өзгертіп көріңіз.",
+  "create_button": "Лид жасау",
+  "search_placeholder": "Телефон немесе аты-жөні бойынша іздеу",
+  "no_data": "—",
+
+  "view_toggle": {
+    "kanban": "Канбан",
+    "table": "Кесте"
+  },
+
+  "kanban": {
+    "empty_column": "Бос"
+  },
+
+  "status": {
+    "new": "Жаңа өтінім",
+    "in_processing": "Өңделуде",
+    "waitlist": "Күту тізімі",
+    "card_created": "Карточка жасалды",
+    "cancelled": "Бас тартылды",
+    "archive": "Мұрағат"
+  },
+
+  "columns": {
+    "child_name": "Баланың аты-жөні",
+    "contact_name": "Байланыс",
+    "contact_phone": "Телефон",
+    "status": "Күйі",
+    "source": "Көзі",
+    "assigned": "Жауапты",
+    "created_at": "Жасалған күні",
+    "status_changed_at": "Күй өзгерген күні",
+    "actions": "Әрекеттер"
+  },
+
+  "card": {
+    "months": "ай",
+    "not_assigned": "—"
+  },
+
+  "detail": {
+    "breadcrumb": "Лидтер",
+    "source_label": "Көзі",
+    "assigned_label": "Жауапты",
+    "not_assigned": "тағайындалмаған",
+    "not_found": "Лид табылмады немесе рұқсат жоқ",
+
+    "child_data": {
+      "title": "Бала деректері",
+      "child_name": "Баланың аты-жөні",
+      "date_of_birth": "Туған күні",
+      "iin": "ЖСН",
+      "desired_group": "Қалаған топ",
+      "desired_start_date": "Қалаған басталу күні"
+    },
+
+    "guardian": {
+      "title": "Негізгі заңды өкіл",
+      "full_name": "Аты-жөні",
+      "relationship": "Баламен байланысы",
+      "phone": "Телефон",
+      "email": "Email",
+      "relationship_mother": "Ана",
+      "relationship_father": "Әке",
+      "relationship_guardian": "Қамқоршы"
+    },
+
+    "notes": {
+      "title": "Жазбалар",
+      "placeholder": "Ерекшеліктер, тілектер, әңгіме мазмұны..."
+    },
+
+    "responsible": {
+      "title": "Жауапты",
+      "not_assigned": "Тағайындалмаған",
+      "role": "Әкімші"
+    },
+
+    "status_log": {
+      "title": "Күй журналы",
+      "created": "Лид жасалды",
+      "auto_source": "Авто (сайттағы форма)"
+    },
+
+    "actions": {
+      "change_status": "Күйді өзгерту",
+      "to_in_processing": "Өңдеуге",
+      "to_waitlist": "Күту тізіміне",
+      "to_cancelled": "Бас тарту",
+      "to_archive": "Мұрағатқа",
+      "create_card": "Карточка жасау",
+      "assign": "Жауапты тағайындау",
+      "edit": "Өңдеу",
+      "save": "Сақтау",
+      "cancel": "Болдырмау"
+    }
+  },
+
+  "create": {
+    "title": "Жаңа лид",
+    "contact_name": "Байланыс тұлғаның аты-жөні",
+    "contact_name_placeholder": "Айгүл Серікова",
+    "contact_phone": "Байланыс телефоны",
+    "contact_phone_placeholder": "+7 701 111 22 33",
+    "child_name": "Баланың аты-жөні",
+    "child_name_placeholder": "Әлия Серікова",
+    "child_dob": "Баланың туған күні",
+    "child_iin": "Баланың ЖСН",
+    "child_iin_placeholder": "000000 000000",
+    "source": "Көзі",
+    "source_placeholder": "Instagram, ауыздан-ауызға, сайт...",
+    "notes": "Жазбалар",
+    "notes_placeholder": "Пікірлер, тілектер",
+    "assigned_to": "Жауапты",
+    "assigned_to_placeholder": "Қызметкерді таңдаңыз",
+    "submit": "Лид жасау",
+    "cancel": "Болдырмау",
+    "success": "Лид жасалды"
+  },
+
+  "modals": {
+    "create_card": {
+      "title": "Бала карточкасын жасау",
+      "banner": "Карточка жасалғанда автоматты түрде:",
+      "bullet_child": "Бала профилі жасалады",
+      "bullet_guardian": "Негізгі заңды өкіл қосылады",
+      "bullet_invoice": "Таңдалған тариф бойынша алғашқы шот жасалады",
+      "bullet_status": "Лидке «Карточка жасалды» күйі беріледі",
+      "tariff_label": "Тариф тағайындау",
+      "tariff_start_label": "Тариф күшіне ену күні",
+      "group_label": "Топ",
+      "confirm": "Карточка мен шотты жасау",
+      "cancel": "Болдырмау"
+    },
+    "transition": {
+      "title": "Лид күйін өзгерту",
+      "comment_label": "Пікір",
+      "comment_placeholder": "Күй өзгерту себебі (міндетті емес)",
+      "confirm": "Растау",
+      "cancel": "Болдырмау"
+    },
+    "assign": {
+      "title": "Жауапты тағайындау",
+      "staff_label": "Қызметкер",
+      "staff_placeholder": "Қызметкерді таңдаңыз",
+      "confirm": "Тағайындау",
+      "cancel": "Болдырмау",
+      "success": "Жауапты тағайындалды"
+    }
+  },
+
+  "success": {
+    "card_created": "Карточка жасалды",
+    "card_created_body": "Бала, негізгі қамқоршы және алғашқы шот жасалды.",
+    "card_created_link": "Бала карточкасына өту",
+    "transition": "Күй өзгертілді",
+    "update": "Лид деректері жаңартылды",
+    "assign": "Жауапты тағайындалды"
+  },
+
+  "pagination": {
+    "showing": "{{from}}–{{to}} / {{total}} көрсетілуде"
+  },
+
+  "tooltip": {
+    "disabled_transition": "Бұл ауысу ағымдағы күйден қолжетімсіз"
+  }
+}

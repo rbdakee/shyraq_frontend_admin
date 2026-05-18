@@ -19,7 +19,7 @@ import { DataTable } from '@/components/data-table/data-table';
 import type { OffsetPagination } from '@/components/data-table/types';
 import { useChildrenList } from '@/hooks/use-children';
 import { useGroups } from '@/hooks/use-groups';
-import { formatDate } from '@/lib/format';
+import { formatDate, getInitials } from '@/lib/format';
 import { DEFAULT_TIMEZONE, SEARCH_DEBOUNCE_MS } from '@/lib/constants';
 
 type ChildrenListData = NonNullable<ReturnType<typeof useChildrenList>['data']>;
@@ -31,12 +31,6 @@ const EMPTY_CHILDREN: Child[] = [];
 const ACTIVE_COUNT_FILTERS = { status: 'active' as const, limit: 1, offset: 0 };
 const ARCHIVED_COUNT_FILTERS = { status: 'archived' as const, limit: 1, offset: 0 };
 const ACTIVE_GROUP_FILTERS = { archived: false };
-
-function getInitials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length >= 2) return (parts[0]![0]! + parts[1]![0]!).toUpperCase();
-  return (parts[0]?.[0] ?? '?').toUpperCase();
-}
 
 function computeAge(dateOfBirth: string): { years: number; months: number } {
   const dob = new Date(dateOfBirth);

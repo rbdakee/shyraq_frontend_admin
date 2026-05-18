@@ -1,0 +1,224 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { PlusIcon, LayersIcon } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { EmptyState } from '@/components/feedback/empty-state';
+import { ErrorState } from '@/components/feedback/error-state';
+import { SkeletonBox } from '@/components/feedback/skeleton';
+import { useGroups, useGroupChildren, useGroupActiveMentor } from '@/hooks/use-groups';
+import { useStaff } from '@/hooks/use-staff';
+import { cn } from '@/lib/cn';
+import { getInitials } from '@/lib/format';
+import { CreateGroupDialog } from './create-group-dialog';
+
+function GroupCard({
+  groupId,
+  groupName,
+  capacity,
+  ageMin,
+  ageMax,
+}: {
+  groupId: string;
+  groupName: string;
+  capacity: number;
+  ageMin: number | null;
+  ageMax: number | null;
+}) {
+  const { t } = useTranslation('groups');
+  const navigate = useNavigate();
+  const childrenQuery = useGroupChildren(groupId);
+  const mentorQuery = useGroupActiveMentor(groupId);
+
+  const kids = childrenQuery.data?.data.length ?? 0;
+  const pct = capacity > 0 ? (kids / capacity) * 100 : 0;
+  const tone = kids > capacity ? 'danger' : pct > 85 ? 'warning' : '';
+
+  const mentorStaffId = mentorQuery.data?.staff_member_id;
+
+  return (
+    <div
+      className="cursor-pointer rounded-[var(--r-lg)] border border-[var(--line)] bg-[var(--bg-elev)] p-4 shadow-[var(--shyraq-shadow-1)] transition-shadow hover:shadow-[var(--shyraq-shadow-2)]"
+      onClick={() => navigate(`/groups/${groupId}`)}
+    >
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="text-[15px] font-semibold text-[color:var(--text-1)]">{groupName}</div>
+          <div className="text-[12px] text-[color:var(--text-3)]">
+            {ageMin !== null && ageMax !== null
+              ? t('card.age_range', { min: ageMin, max: ageMax })
+              : '—'}
+          </div>
+        </div>
+        {kids > capacity && <Badge variant="error">{t('card.overflow')}</Badge>}
+        {kids === capacity && kids > 0 && <Badge variant="warning">{t('card.full')}</Badge>}
+      </div>
+
+      <div className="mt-3">
+        <div className="flex items-center justify-between text-[12px] text-[color:var(--text-3)]">
+          <span>{t('card.capacity', { kids, capacity })}</span>
+          <span>{Math.round(pct)}%</span>
+        </div>
+        <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--bg-sunken)]">
+          <div
+            className={cn(
+              'h-full rounded-full transition-all',
+              tone === 'danger'
+                ? 'bg-[var(--danger)]'
+                : tone === 'warning'
+                  ? 'bg-[var(--warning)]'
+                  : 'bg-[var(--primary)]',
+            )}
+            style={{ width: `${Math.min(pct, 100)}%` }}
+          />
+        </div>
+      </div>
+
+      <MentorBlock staffMemberId={mentorStaffId ?? null} />
+    </div>
+  );
+}
+
+function MentorBlock({ staffMemberId }: { staffMemberId: string | null }) {
+  const { t } = useTranslation('groups');
+
+  if (!staffMemberId) {
+    return (
+      <div className="mt-3 flex items-center gap-2.5">
+        <div className="flex size-8 items-center justify-center rounded-full bg-[var(--bg-sunken)]">
+          <LayersIcon className="size-4 text-[color:var(--text-4)]" />
+        </div>
+        <div>
+          <div className="text-[13px] font-semibold text-[color:var(--text-3)]">
+            {t('card.no_mentor')}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return <MentorBlockResolved staffId={staffMemberId} />;
+}
+
+function MentorBlockResolved({ staffId }: { staffId: string }) {
+  const { t } = useTranslation('groups');
+  const staffQuery = useStaff(staffId);
+  const name = staffQuery.data?.full_name ?? '—';
+
+  return (
+    <div className="mt-3 flex items-center gap-2.5">
+      <Avatar size="sm">
+        <AvatarFallback>{name !== '—' ? getInitials(name) : '?'}</AvatarFallback>
+      </Avatar>
+      <div>
+        <div className="text-[13px] font-semibold text-[color:var(--text-2)]">{name}</div>
+        <div className="text-[11px] text-[color:var(--text-3)]">{t('card.mentor_label')}</div>
+      </div>
+    </div>
+  );
+}
+
+export default function GroupsListPage() {
+  const { t } = useTranslation('groups');
+  const navigate = useNavigate();
+  const [createOpen, setCreateOpen] = useState(false);
+
+  const groupsQuery = useGroups({ archived: false });
+  const groups = groupsQuery.data ?? [];
+
+  if (groupsQuery.isPending) {
+    return (
+      <div className="flex flex-col gap-[14px]">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="h-7 w-32 animate-pulse rounded bg-[var(--bg-sunken)]" />
+            <div className="mt-1 h-4 w-48 animate-pulse rounded bg-[var(--bg-sunken)]" />
+          </div>
+        </div>
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-[14px]">
+          {Array.from({ length: 6 }, (_, i) => (
+            <SkeletonBox key={i} height={170} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (groupsQuery.isError) {
+    return <ErrorState onRetry={() => void groupsQuery.refetch()} />;
+  }
+
+  if (groups.length === 0) {
+    return (
+      <div className="flex flex-col gap-[14px]">
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-[22px] font-bold leading-tight text-[color:var(--text-1)]">
+              {t('title')}
+            </h1>
+          </div>
+          <Button onClick={() => setCreateOpen(true)}>
+            <PlusIcon className="size-4" />
+            {t('create_button')}
+          </Button>
+        </div>
+        <EmptyState
+          title={t('empty_title')}
+          text={t('empty_description')}
+          action={
+            <Button size="sm" onClick={() => setCreateOpen(true)}>
+              <PlusIcon className="size-4" />
+              {t('create_button')}
+            </Button>
+          }
+        />
+        <CreateGroupDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onSuccess={(id) => navigate(`/groups/${id}`)}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-[14px]">
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-[22px] font-bold leading-tight text-[color:var(--text-1)]">
+            {t('title')}
+          </h1>
+          <div className="mt-0.5 text-[13px] text-[color:var(--text-3)]">
+            {t('subtitle', { count: groups.length })}
+          </div>
+        </div>
+        <Button onClick={() => setCreateOpen(true)}>
+          <PlusIcon className="size-4" />
+          {t('create_button')}
+        </Button>
+      </div>
+
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-[14px]">
+        {groups.map((g) => (
+          <GroupCard
+            key={g.id}
+            groupId={g.id}
+            groupName={g.name}
+            capacity={g.capacity}
+            ageMin={g.age_range_min}
+            ageMax={g.age_range_max}
+          />
+        ))}
+      </div>
+
+      <CreateGroupDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onSuccess={(id) => navigate(`/groups/${id}`)}
+      />
+    </div>
+  );
+}

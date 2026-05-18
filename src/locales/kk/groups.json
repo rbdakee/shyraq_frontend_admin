@@ -1,0 +1,153 @@
+{
+  "title": "Топтар",
+  "subtitle": "{{count}} белсенді топ",
+  "empty_title": "Топтар әзірге жоқ",
+  "empty_description": "Жұмысты бастау үшін алғашқы топты жасаңыз.",
+  "filtered_empty_title": "Ештеңе табылмады",
+  "filtered_empty_description": "Іздеу параметрлерін өзгертіп көріңіз.",
+  "create_button": "Топ жасау",
+
+  "card": {
+    "age_range": "Жасы {{min}}–{{max}} ай",
+    "capacity": "{{kids}} / {{capacity}} бала",
+    "overflow": "Толып кетті",
+    "full": "Толық",
+    "mentor_label": "Тәрбиеші",
+    "location_label": "Орналасу",
+    "no_mentor": "Тағайындалмаған",
+    "no_location": "Көрсетілмеген",
+    "free_slots": "{{count}} бос орын",
+    "fully_filled": "Топ толығымен толтырылған"
+  },
+
+  "status": {
+    "active": "Белсенді",
+    "archived": "Мұрағатталған"
+  },
+
+  "detail": {
+    "breadcrumb": "Топтар",
+    "not_found": "Топ табылмады немесе рұқсат жоқ",
+    "edit": "Өңдеу",
+    "archive": "Белсенді емеске ауыстыру",
+    "restore": "Қалпына келтіру",
+    "age_range": "Жасы: {{min}}–{{max}} ай",
+    "capacity_label": "Сыйымдылық: {{kids}}/{{capacity}}",
+    "location": "Орналасу: {{name}}",
+
+    "tabs": {
+      "overview": "Шолу",
+      "mentors": "Тәрбиешілер",
+      "children": "Балалар",
+      "history": "Тәрбиешілер тарихы"
+    },
+
+    "overview": {
+      "params_title": "Топ параметрлері",
+      "name_label": "Атауы",
+      "location_label": "Орналасу",
+      "age_min_label": "Ең аз жас (ай)",
+      "age_max_label": "Ең жоғары жас (ай)",
+      "capacity_label": "Сыйымдылық",
+      "capacity_hint": "Топтағы балалардың ең көп саны",
+      "occupancy_title": "Толтырылу",
+      "save": "Сақтау",
+      "save_success": "Өзгерістер сақталды"
+    },
+
+    "mentors": {
+      "title": "Топ тәрбиешілері",
+      "assign": "Тәрбиеші тағайындау",
+      "empty": "Тәрбиешілер тағайындалмаған",
+      "columns": {
+        "name": "Аты-жөні",
+        "role": "Рөлі",
+        "assigned_at": "Тағайындалған",
+        "actions": ""
+      },
+      "primary": "Негізгі тәрбиеші",
+      "assistant": "Көмекші",
+      "unassign": "Тәрбиешіні алу",
+      "make_primary": "Негізгі ету",
+      "rules_title": "Ережелер",
+      "rules_text": "Топта дәл бір негізгі тәрбиеші болуы керек. Бір тәрбиеші тек бір белсенді топқа бекітілуі мүмкін."
+    },
+
+    "children": {
+      "title": "Топ балалары",
+      "search_placeholder": "Іздеу",
+      "empty": "Топта балалар жоқ",
+      "columns": {
+        "photo": "",
+        "full_name": "Аты-жөні",
+        "age": "Жасы",
+        "enrolled_at": "Қабылданған",
+        "status": "Күйі"
+      }
+    },
+
+    "history": {
+      "title": "Тағайындау тарихы",
+      "empty": "Тарих бос",
+      "assigned_primary": "{{name}} → негізгі тәрбиеші болды",
+      "assigned_assistant": "{{name}} — көмекші тағайындалды",
+      "unassigned": "{{name}} — алынды",
+      "until_now": "қазірге дейін"
+    }
+  },
+
+  "create": {
+    "title": "Жаңа топ",
+    "name_label": "Атауы",
+    "name_placeholder": "Күншуақ",
+    "capacity_label": "Сыйымдылық",
+    "capacity_placeholder": "20",
+    "age_range_min_label": "Ең аз жас (ай)",
+    "age_range_max_label": "Ең жоғары жас (ай)",
+    "location_label": "Орналасу",
+    "location_placeholder": "Бөлмені таңдаңыз",
+    "submit": "Топ жасау",
+    "cancel": "Болдырмау",
+    "success": "Топ жасалды"
+  },
+
+  "modals": {
+    "archive": {
+      "title": "Топты белсенді емеске ауыстыру",
+      "description": "Топ мұрағатқа ауыстырылады.",
+      "has_active_children": "Топта белсенді балалар бар. Деактивациядан бұрын оларды басқа топқа ауыстырыңыз.",
+      "confirm": "Белсенді емеске ауыстыру",
+      "cancel": "Болдырмау",
+      "success": "Топ белсенді емеске ауыстырылды"
+    },
+    "restore": {
+      "title": "Топты қалпына келтіру",
+      "description": "Топ белсенді күйге қайтарылады.",
+      "confirm": "Қалпына келтіру",
+      "cancel": "Болдырмау",
+      "success": "Топ қалпына келтірілді"
+    },
+    "assign_mentor": {
+      "title": "Тәрбиеші тағайындау",
+      "staff_label": "Тәрбиеші",
+      "staff_placeholder": "Қызметкерді таңдаңыз",
+      "confirm": "Тағайындау",
+      "cancel": "Болдырмау",
+      "success": "Тәрбиеші тағайындалды"
+    },
+    "unassign_mentor": {
+      "title": "Тәрбиешіні алу",
+      "description": "Тәрбиеші бұл топтан алынады.",
+      "confirm": "Алу",
+      "cancel": "Болдырмау",
+      "success": "Тәрбиеші алынды"
+    }
+  },
+
+  "actions": {
+    "edit": "Өңдеу",
+    "archive": "Белсенді емеске ауыстыру",
+    "restore": "Қалпына келтіру",
+    "view": "Қарау"
+  }
+}

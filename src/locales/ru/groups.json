@@ -1,0 +1,153 @@
+{
+  "title": "Группы",
+  "subtitle": "{{count}} активных групп",
+  "empty_title": "Групп пока нет",
+  "empty_description": "Создайте первую группу для начала работы.",
+  "filtered_empty_title": "Ничего не найдено",
+  "filtered_empty_description": "Попробуйте изменить параметры поиска.",
+  "create_button": "Создать группу",
+
+  "card": {
+    "age_range": "Возраст {{min}}–{{max}} мес.",
+    "capacity": "{{kids}} / {{capacity}} детей",
+    "overflow": "Переполнение",
+    "full": "Заполнена",
+    "mentor_label": "Воспитатель",
+    "location_label": "Локация",
+    "no_mentor": "Не назначен",
+    "no_location": "Не указана",
+    "free_slots": "{{count}} свободных мест",
+    "fully_filled": "Группа полностью заполнена"
+  },
+
+  "status": {
+    "active": "Активна",
+    "archived": "Архивирована"
+  },
+
+  "detail": {
+    "breadcrumb": "Группы",
+    "not_found": "Группа не найдена или нет доступа",
+    "edit": "Редактировать",
+    "archive": "Деактивировать",
+    "restore": "Восстановить",
+    "age_range": "Возраст: {{min}}–{{max}} мес.",
+    "capacity_label": "Вместимость: {{kids}}/{{capacity}}",
+    "location": "Локация: {{name}}",
+
+    "tabs": {
+      "overview": "Обзор",
+      "mentors": "Воспитатели",
+      "children": "Дети",
+      "history": "История воспитателей"
+    },
+
+    "overview": {
+      "params_title": "Параметры группы",
+      "name_label": "Название",
+      "location_label": "Локация",
+      "age_min_label": "Возраст min (мес.)",
+      "age_max_label": "Возраст max (мес.)",
+      "capacity_label": "Вместимость",
+      "capacity_hint": "Максимальное число детей в группе",
+      "occupancy_title": "Заполненность",
+      "save": "Сохранить",
+      "save_success": "Изменения сохранены"
+    },
+
+    "mentors": {
+      "title": "Воспитатели группы",
+      "assign": "Назначить воспитателя",
+      "empty": "Воспитатели не назначены",
+      "columns": {
+        "name": "ФИО",
+        "role": "Роль",
+        "assigned_at": "Назначен",
+        "actions": ""
+      },
+      "primary": "Основной воспитатель",
+      "assistant": "Ассистент",
+      "unassign": "Снять воспитателя",
+      "make_primary": "Сделать основным",
+      "rules_title": "Правила",
+      "rules_text": "У группы должен быть ровно один основной воспитатель. Один воспитатель может быть закреплён только за одной активной группой."
+    },
+
+    "children": {
+      "title": "Дети группы",
+      "search_placeholder": "Поиск",
+      "empty": "В группе нет детей",
+      "columns": {
+        "photo": "",
+        "full_name": "ФИО",
+        "age": "Возраст",
+        "enrolled_at": "Зачислен",
+        "status": "Статус"
+      }
+    },
+
+    "history": {
+      "title": "История назначений",
+      "empty": "История пуста",
+      "assigned_primary": "{{name}} → стал(а) основным воспитателем",
+      "assigned_assistant": "{{name}} — назначен(а) ассистентом",
+      "unassigned": "{{name}} — снят(а)",
+      "until_now": "до настоящего времени"
+    }
+  },
+
+  "create": {
+    "title": "Новая группа",
+    "name_label": "Название",
+    "name_placeholder": "Солнышко",
+    "capacity_label": "Вместимость",
+    "capacity_placeholder": "20",
+    "age_range_min_label": "Мин. возраст (мес.)",
+    "age_range_max_label": "Макс. возраст (мес.)",
+    "location_label": "Локация",
+    "location_placeholder": "Выберите помещение",
+    "submit": "Создать группу",
+    "cancel": "Отменить",
+    "success": "Группа создана"
+  },
+
+  "modals": {
+    "archive": {
+      "title": "Деактивировать группу",
+      "description": "Группа будет переведена в архив.",
+      "has_active_children": "В группе есть активные дети. Переведите их в другую группу перед деактивацией.",
+      "confirm": "Деактивировать",
+      "cancel": "Отмена",
+      "success": "Группа деактивирована"
+    },
+    "restore": {
+      "title": "Восстановить группу",
+      "description": "Группа будет возвращена в активный статус.",
+      "confirm": "Восстановить",
+      "cancel": "Отмена",
+      "success": "Группа восстановлена"
+    },
+    "assign_mentor": {
+      "title": "Назначить воспитателя",
+      "staff_label": "Воспитатель",
+      "staff_placeholder": "Выберите сотрудника",
+      "confirm": "Назначить",
+      "cancel": "Отмена",
+      "success": "Воспитатель назначен"
+    },
+    "unassign_mentor": {
+      "title": "Снять воспитателя",
+      "description": "Воспитатель будет снят с этой группы.",
+      "confirm": "Снять",
+      "cancel": "Отмена",
+      "success": "Воспитатель снят"
+    }
+  },
+
+  "actions": {
+    "edit": "Редактировать",
+    "archive": "Деактивировать",
+    "restore": "Восстановить",
+    "view": "Просмотр"
+  }
+}

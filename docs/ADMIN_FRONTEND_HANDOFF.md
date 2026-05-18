@@ -218,14 +218,26 @@
 
 **State machine лида:** `new → in_processing → {waitlist | card_created | cancelled} → archive`. Логируется в `enrollment_status_log`. При переходе в `card_created` система создаёт `children` + `child_guardians` (primary) + первый `invoice`.
 
-| Метод | Путь                                | Назначение                                                                                        |
-| ----- | ----------------------------------- | ------------------------------------------------------------------------------------------------- |
-| GET   | `/admin/enrollments`                | Список лидов. Фильтр `status`, поиск по телефону/ФИО.                                             |
-| POST  | `/admin/enrollments`                | Создать лид вручную. `{contact_name, contact_phone, child_name, child_dob, source}`. Старт `new`. |
-| GET   | `/admin/enrollments/:id`            | Детали + `enrollment_status_log`.                                                                 |
-| PATCH | `/admin/enrollments/:id`            | Обновить контактные данные.                                                                       |
-| POST  | `/admin/enrollments/:id/transition` | Сменить статус (по state machine). При `card_created` — создаёт ребёнка/guardian/invoice.         |
-| POST  | `/admin/enrollments/:id/assign`     | Назначить ответственного `{assigned_to: staff_member_id}`.                                        |
+> **Фактический контракт (подтверждено по live `/docs-json` 2026-05-18, §A11):**
+>
+> - **Casing:** request-DTO и response — **camelCase** (`contactName, contactPhone, childName, childDob, childIin, assignedTo, toStatus, currentGroupId, statusChangedAt, kindergartenId`). Это НЕ snake_case (как children) — per-module конвенция (прецедент §A8).
+> - **Пагинация:** `GET /admin/enrollments` — **page-based** (`?page=1&limit=20`), response `{data, total, page, limit}`. НЕ offset-based.
+> - **CreateEnrollmentDto:** `{contactName*(string), contactPhone*(string), childName?(string), childDob?(string ISO), childIin?(string), source?(string), notes?(string), assignedTo?(string UUID)}`. Required: только `contactName` + `contactPhone`.
+> - **UpdateEnrollmentDto:** все поля optional (`contactName, contactPhone, childName, childDob, childIin, source, notes, assignedTo`). 409 при статусе `card_created|cancelled|archive` (locked).
+> - **TransitionEnrollmentDto:** `{toStatus*(enum), comment?(string), currentGroupId?(string, required by service when card_created)}`. Response: `{enrollment: EnrollmentResponseDto, child: ChildDto|null}` — `child` is a full `ChildDto` (snake_case, `id` string UUID + all fields per §5) present only when `toStatus=card_created`; `null` otherwise.
+> - **AssignEnrollmentDto:** `{assignedTo*(string UUID)}`. Response: `EnrollmentResponseDto`. 409 if archived.
+> - **EnrollmentResponseDto:** все поля в required (nullable где помечено): `id, kindergartenId, childId(nullable), contactName, contactPhone, childName(nullable), childDob(nullable), childIin(nullable), status(enum), source(nullable), notes(nullable), assignedTo(nullable), statusChangedAt, createdAt, updatedAt`.
+> - **EnrollmentDetailResponseDto:** `{enrollment: EnrollmentResponseDto, log: EnrollmentStatusLogResponseDto[]}`.
+> - **EnrollmentStatusLogResponseDto:** `{id, enrollmentId, kindergartenId, fromStatus(nullable enum — null for initial creation), toStatus(enum), changedBy(string UUID), comment(nullable), createdAt}`.
+
+| Метод | Путь                                | Назначение                                                                                                                         |
+| ----- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| GET   | `/admin/enrollments`                | Список лидов. Фильтр `status`, поиск `q` по телефону/ФИО. Page-based: `?page&limit` → `{data, total, page, limit}`.                |
+| POST  | `/admin/enrollments`                | Создать лид. `{contactName*, contactPhone*, childName?, childDob?, childIin?, source?, notes?, assignedTo?}`. Старт `new`.         |
+| GET   | `/admin/enrollments/:id`            | Детали + `log` (enrollment_status_log). Response: `{enrollment, log[]}`.                                                           |
+| PATCH | `/admin/enrollments/:id`            | Обновить данные. Все поля optional. 409 если статус locked (card_created/cancelled/archive).                                       |
+| POST  | `/admin/enrollments/:id/transition` | Сменить статус. `{toStatus*, comment?, currentGroupId?}`. При `card_created` — создаёт ребёнка/guardian/invoice, возвращает child. |
+| POST  | `/admin/enrollments/:id/assign`     | Назначить ответственного `{assignedTo: staff_member_uuid}`. 409 если archived.                                                     |
 
 **Страницы:**
 
@@ -240,24 +252,37 @@
 
 **Назначение:** группы садика, менторы, локация, дети. BP §3 (mentor↔group), §12.3.
 
-| Метод | Путь                               | Назначение                                                                                                                                       |
-| ----- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| GET   | `/admin/groups`                    | Список + локация, кол-во активных детей, активные менторы (с `is_primary`).                                                                      |
-| POST  | `/admin/groups`                    | Создать `{name, capacity, age_range_min, age_range_max, current_location_id?}` (возраст в месяцах).                                              |
-| GET   | `/admin/groups/:id`                | Детали: группа + активные менторы `[{staff_member_id, full_name, is_primary}]` + `current_location`.                                             |
-| PATCH | `/admin/groups/:id`                | Обновить name/capacity/age range/location.                                                                                                       |
-| POST  | `/admin/groups/:id/deactivate`     | Деактивировать. Пречек: если есть активные дети → 409 `group_has_active_children` (сначала перевести детей). Освобождает менторов. Идемпотентно. |
-| GET   | `/admin/groups/:id/children`       | Дети группы (реализовано в B4).                                                                                                                  |
-| GET   | `/admin/groups/:id/mentor-history` | История назначений менторов `[{staff_member_id, full_name, assigned_at, unassigned_at, is_primary}]` DESC.                                       |
+> **Фактический контракт (подтверждено по live `/docs-json` 2026-05-19, §A12):**
+>
+> - **Префикс:** `/groups/*` — **БЕЗ сегмента `/admin`** (в отличие от staff). snake_case request + response (per-module, прецедент §A8).
+> - **Пагинация:** `GET /groups` — **plain array** `GroupDto[]` (НЕ offset/page). Filter: `?archived=<bool>`.
+> - **GroupDto:** `{id, kindergarten_id, name, capacity, age_range_min(nullable), age_range_max(nullable), current_location_id(nullable UUID), archived_at(nullable), created_at, updated_at}`. `GET /groups/:id` возвращает **только GroupDto** — НЕ агрегирует менторов/локацию (имя ментора/локации резолвится отдельно: ментор — §A12.5 ниже + Staff §8; локация — нет endpoint, B14, деградирует, §C8).
+> - **CreateGroupDto:** `{name*, capacity*, age_range_min?, age_range_max?, current_location_id?}`. **UpdateGroupDto:** все опц., nullable (`age_range_min/age_range_max/current_location_id`).
+> - **Archive/Restore (НЕ deactivate):** `POST /groups/:id/archive` → GroupDto (`archived_at` set); `POST /groups/:id/restore` → GroupDto. Отдельного deactivate/activate нет. Enforce-на-archive `group_has_active_children`(409) — не подтверждён live, FE обрабатывает defensive (§C10).
+> - **Менторы — на группе, НЕ на staff:** `POST /groups/:id/mentor {staff_member_id}` → GroupMentorDto; `DELETE /groups/:id/mentor` (снимает активного); `GET /groups/:id/mentor` → **один активный** GroupMentorDto; `GET /groups/:id/mentor-history` → GroupMentorDto[]. **GroupMentorDto:** `{id, kindergarten_id, group_id, staff_member_id, is_primary, assigned_at, unassigned_at(nullable), created_at}`. API-поверхность экспонирует **ровно одного активного ментора** на группу; отдельного make-primary endpoint нет (`is_primary` read-only из DTO) — multi-mentor/assistant/«сделать primary» прототипа не поддержаны live (§C9).
+> - **Дети группы:** отдельного `/groups/:id/children` нет — `GET /children?current_group_id=:id` (B4).
 
-**Ошибки:** `group_not_found`(404), `group_has_active_children`(409), `invalid_age_range`(400, min≥max), `location_not_found`(404).
+| Метод  | Путь                         | Назначение                                                                                   |
+| ------ | ---------------------------- | -------------------------------------------------------------------------------------------- |
+| GET    | `/groups?archived=`          | Список `GroupDto[]` (plain array).                                                           |
+| POST   | `/groups`                    | Создать `{name*, capacity*, age_range_min?, age_range_max?, current_location_id?}` (мес.).   |
+| GET    | `/groups/:id`                | GroupDto (без агрегации менторов/локации).                                                   |
+| PATCH  | `/groups/:id`                | Обновить (все опц., nullable).                                                               |
+| POST   | `/groups/:id/archive`        | Архивировать → GroupDto (`archived_at`). `group_has_active_children`(409) — defensive, §C10. |
+| POST   | `/groups/:id/restore`        | Восстановить → GroupDto.                                                                     |
+| POST   | `/groups/:id/mentor`         | Назначить активного ментора `{staff_member_id}` → GroupMentorDto.                            |
+| DELETE | `/groups/:id/mentor`         | Снять активного ментора.                                                                     |
+| GET    | `/groups/:id/mentor`         | Текущий активный ментор → GroupMentorDto.                                                    |
+| GET    | `/groups/:id/mentor-history` | История менторов `GroupMentorDto[]`.                                                         |
 
-**Инварианты mentor↔group (показывать в UI):** один mentor = ровно одна активная группа; у группы несколько менторов, но ровно один `is_primary`; первый назначенный mentor авто-primary.
+**Ошибки:** `group_not_found`(404), `group_has_active_children`(409, enforcement-on-archive не подтверждён — §C10), `invalid_age_range`(400, min≥max), `location_not_found`(404).
+
+**Инварианты mentor↔group (показывать в UI):** один mentor = ровно одна активная группа; у группы — **ровно один активный ментор** (live-поверхность singular); `is_primary` — read-only из GroupMentorDto. Прототипный multi-mentor/assistant и явный «сделать primary» live не поддержаны (§C9) — UI показывает одного активного ментора + информативный баннер-инвариант.
 
 **Страницы:**
 
-- **Список групп** — карточки/таблица: название, возраст (мес.), вместимость vs кол-во активных детей (прогресс/индикатор переполнения), локация, primary-mentor, статус. Кнопка «Создать группу».
-- **Карточка группы** (табы): _Обзор_ (поля + edit), _Менторы_ (список активных + сменить primary + назначить/снять — действия идут через Staff §8), _Дети_ (`/admin/groups/:id/children`), _История менторов_. Кнопка «Деактивировать» (с обработкой 409 — подсказать «переведите детей»).
+- **Список групп** — карточки/таблица: название, возраст (мес.), вместимость vs кол-во активных детей (прогресс/индикатор переполнения), локация (деградирует — §C8), активный ментор (имя резолвится через Staff §8), статус (`archived_at`). Кнопка «Создать группу».
+- **Карточка группы** (табы): _Обзор_ (поля + edit; локация деградирует §C8), _Воспитатели_ (один активный: назначить/снять через `/groups/:id/mentor`; multi/primary §C9), _Дети_ (`/children?current_group_id=`), _История воспитателей_. Кнопка «Деактивировать» → `archive` (с defensive-обработкой 409 — подсказать «переведите детей», §C10); «Восстановить» → `restore`.
 
 ---
 
@@ -267,26 +292,36 @@
 
 **Роли (`staff_role`):** `admin`, `mentor`, `specialist`, `reception`. `specialist_type` whitelist: `psychologist, speech_therapist, music_teacher, physical_ed, nutritionist`.
 
-| Метод | Путь                                       | Назначение                                                                                                                                                                                                           |
-| ----- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET   | `/admin/staff`                             | Список. Фильтр `role`, `is_active`, `specialist_type`.                                                                                                                                                               |
-| POST  | `/admin/staff`                             | Создать `{full_name, phone, role, specialist_type?, group_id?, hired_at?}`. find-or-create user по phone; если `role=mentor`+`group_id` — атомарно назначает в группу (первый → primary). Welcome-SMS (best-effort). |
-| GET   | `/admin/staff/:id`                         | Детали + активные группы (для mentor — `assigned_groups[]` с `is_primary`).                                                                                                                                          |
-| PATCH | `/admin/staff/:id`                         | `full_name?, role?, specialist_type?, hired_at?, fired_at?`. Валидация role×specialist_type. Смена с mentor — авто-снятие group_mentors.                                                                             |
-| POST  | `/admin/staff/:id/deactivate`              | `is_active=false` + снятие с групп + ревок refresh-токенов. Идемпотентно (повторно → 409 `staff_inactive`).                                                                                                          |
-| POST  | `/admin/staff/:id/activate`                | `is_active=true`. НЕ восстанавливает прошлые назначения.                                                                                                                                                             |
-| POST  | `/admin/staff/:id/groups/assign`           | `{group_id}` — назначить mentor на группу (закрывает прошлое назначение).                                                                                                                                            |
-| POST  | `/admin/staff/:id/groups/:groupId/primary` | Сделать этого mentor primary в группе.                                                                                                                                                                               |
+> **Фактический контракт (подтверждено по live `/docs-json` 2026-05-19, §A13):**
+>
+> - **Префикс:** `/admin/staff/*` — **С сегментом `/admin`** (в отличие от groups). snake_case request + response.
+> - **Пагинация:** `GET /admin/staff` — **plain array** `StaffMemberDto[]` (НЕ offset/page). Filters: `role`, `is_active(bool)`, `specialist_type`, `archived(bool)`, **`search`** (строка — НЕ `q`).
+> - **StaffMemberDto:** `{id, kindergarten_id, user_id, full_name(nullable), phone(nullable), role(enum), specialist_type(nullable string), is_active(bool), hired_at(nullable), fired_at(nullable), archived_at(nullable), created_at, updated_at}`. (`full_name`/`phone` nullable — UI деградирует «—», не выдумывает.)
+> - **CreateStaffDto:** `{full_name*, phone*, role*, specialist_type?, hired_at?}` — **БЕЗ `group_id`**. Привязка mentor↔group НЕ атомарна с созданием: создать staff → затем `POST /groups/:id/mentor {staff_member_id}` (§7). UI делает это 2 шага (non-atomic, §C12). find-or-create user по phone; welcome-SMS best-effort.
+> - **UpdateStaffDto:** `{full_name?, role?, specialist_type?(nullable), hired_at?(nullable), fired_at?(nullable)}`. role×specialist_type валидируется backend.
+> - **Lifecycle:** `POST /admin/staff/:id/deactivate|activate` **и дополнительно** `POST /admin/staff/:id/archive|restore` — все → StaffMemberDto.
+> - **Нет staff-side group endpoints:** `/admin/staff/:id/groups/assign` и `.../primary` НЕ существуют; нет reverse `staff→groups` листинга. Mentor-назначения управляются через §7 `/groups/:id/mentor`; список текущих групп ментора из контракта недоступен — UI деградирует (§C11). Make-primary endpoint отсутствует (§C9).
 
-**Ошибки:** `staff_not_found`(404), `staff_phone_conflict`(409, уже активный staff), `staff_inactive`(409), `invalid_specialist_type`(400), `role_not_assignable`(400, напр. reception с group_id или specialist без specialist_type), `mentor_one_active_group_violation`(409), `group_primary_conflict`(409), `group_not_found`(404).
+| Метод | Путь                          | Назначение                                                                                         |
+| ----- | ----------------------------- | -------------------------------------------------------------------------------------------------- |
+| GET   | `/admin/staff`                | Список `StaffMemberDto[]`. Filters `role, is_active, specialist_type, archived, search`.           |
+| POST  | `/admin/staff`                | Создать `{full_name*, phone*, role*, specialist_type?, hired_at?}` (без group_id). find-or-create. |
+| GET   | `/admin/staff/:id`            | StaffMemberDto (без `assigned_groups[]` — reverse staff→groups нет).                               |
+| PATCH | `/admin/staff/:id`            | `{full_name?, role?, specialist_type?(null), hired_at?(null), fired_at?(null)}`.                   |
+| POST  | `/admin/staff/:id/deactivate` | `is_active=false` → StaffMemberDto. Повторно → 409 `staff_inactive`.                               |
+| POST  | `/admin/staff/:id/activate`   | `is_active=true` → StaffMemberDto. НЕ восстанавливает прошлые назначения.                          |
+| POST  | `/admin/staff/:id/archive`    | Архивировать → StaffMemberDto.                                                                     |
+| POST  | `/admin/staff/:id/restore`    | Восстановить → StaffMemberDto.                                                                     |
+
+**Ошибки:** `staff_not_found`(404), `staff_phone_conflict`(409, уже активный staff), `staff_inactive`(409), `invalid_specialist_type`(400), `role_not_assignable`(400, напр. specialist без specialist_type), `mentor_one_active_group_violation`(409), `group_primary_conflict`(409), `group_not_found`(404).
 
 **Активация:** отдельного invite/magic-link нет — сотрудник входит в Staff App обычным OTP по своему телефону; welcome-SMS отправляется автоматически.
 
 **Страницы:**
 
-- **Список сотрудников** — таблица: ФИО, телефон, роль (бейдж), specialist_type, группы (для mentor), статус. Фильтры. Кнопка «Добавить сотрудника».
-- **Форма создания** — ФИО*, телефон* (E.164), роль*; динамически: если `mentor` → выбор группы (опц.); если `specialist` → `specialist_type`* из whitelist; `reception`/`admin` → без группы/типа. Дата найма. Обработка 409 `staff_phone_conflict`.
-- **Карточка сотрудника** — данные + edit; для mentor — управление назначениями (назначить в группу, сделать primary, снять); кнопки активировать/деактивировать; «Отозвать все QR» (§23).
+- **Список сотрудников** — таблица: ФИО (nullable «—»), телефон (nullable «—»), роль (бейдж), specialist_type, группы (для mentor — деградирует «—», reverse-endpoint нет, §C11), статус. Фильтры `role/is_active/specialist_type/search`. Кнопка «Добавить сотрудника».
+- **Форма создания** — ФИО*, телефон* (E.164), роль*; динамически: `mentor` → выбор группы (опц., 2-шаговый non-atomic assign §C12); `specialist` → `specialist_type`* из whitelist; `reception`/`admin` → без группы/типа. Дата найма. 409 `staff_phone_conflict`.
+- **Карточка сотрудника** — данные + edit; для mentor — назначить в группу (через `/groups/:id/mentor`; текущие назначения из контракта недоступны, блок деградирует §C11; make-primary нет §C9); кнопки активировать/деактивировать (+ archive/restore доступны контрактом); «Отозвать все QR» (§23, по `user_id`).
 
 ---
 
