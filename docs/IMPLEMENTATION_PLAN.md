@@ -189,7 +189,7 @@ src/
 **Acceptance:**
 
 - [ ] OTP-флоу: request→verify→(role/select при multi-kg)→кабинет. Whitelist-телефон/код из логов backend.
-- [ ] Reload сохраняет сессию (silent refresh из localStorage).
+- [x] Reload сохраняет сессию (silent refresh из localStorage). _(B3-фиксап 2026-05-18: на boot шелла `user` ← `GET /users/me`, `currentKindergarten` ← `GET /kindergartens/me` — топбар/дашборд имя+садик. `roles[]` после reload forward-looking — backend-need, см. OPEN_QUESTIONS §A9 / BACKEND_NEEDINGS N4.)_
 - [ ] Logout чистит токены → `/login`. Смена RU/KK ставит `x-custom-lang` в запросах.
 - [ ] Нет admin-роли → экран «нет доступа», не в кабинет.
 - [ ] Sidebar/Topbar/breadcrumbs/403/404 — по DESIGN §3,§4.5. Gate exit 0.

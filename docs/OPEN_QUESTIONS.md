@@ -67,6 +67,12 @@ ChildDto nullable-поля (`iin/gender/photo_url/current_group_id/enrollment_da
 
 **Addendum (2026-05-18, подтверждено live при W3 slice-1):** casing неоднороден даже внутри модуля children — **response per-endpoint**: `ChildDto/GuardianDto/ChildStatusHistoryDto/ChildGroupHistoryDto` = snake_case; **`TimelineEntryResponseDto` и `RevokeAllQrResponseDto` = camelCase** (`id, kindergartenId, childId, entryType('check_in'|'check_out'|'activity'|'meal'|'nap'|'note'|'photo'|'mood'|'medication'), title?, body?, mediaUrls?:string[], metadata?, recordedBy?, entryTime, createdAt`; `{revokedCount}`). `PaginationMetaDto = {total, limit, offset}` (numbers). `nextCursor` НЕ в required (nullable). Подтверждает правило §A7: сверять per-endpoint, не экстраполировать. UI B4 обращается к полям через Zod-парсенные TS-типы из `api/children.ts` (имена как в схеме — `entryTime`, `revokedCount`, `meta.total`).
 
+### A9 — `GET /users/me` плоский (без roles/kgs); reload-restore сессии · resolved (2026-05-18)
+
+Контекст: при фиксе бага «после hard-reload в топбаре/дашборде нет имени/садика» сверка live `/docs-json` выявила: `GET /users/me` → плоский `UserResponseDto` (`id, phone, full_name, avatar_url, iin, date_of_birth, locale`), **без `roles[]`/`kindergartens[]`** — расхождение с HANDOFF §141 (там обещано `+ roles[] + kindergartens[]`). `roles[]`/`kindergartens[]` отдаются только в `AuthResponseDto` (`/auth/otp/verify|refresh|role/select`); silent-refresh в `api/client.ts` извлекает лишь токены (и не должен трогать стор — layer rule).
+
+Решение (прецедент §A7/§A8: live = факт, first-document): HANDOFF §141 правлен под факт в этом коммите. **Reload-restore (B3-фиксап):** на boot шелла (`App.tsx`), когда session пуст и есть refresh-токен — гидрируем `user` ← `GET /users/me`, `currentKindergarten` ← существующий `GET /kindergartens/me` (`KindergartenDto`). Это чинит имя/телефон/аватар (топбар, user-menu), приветствие и название садика (дашборд). **`roles[]` после reload не восстанавливаются** — ни один отгруженный экран по ним не гейтит (sidebar статичен, дашборд — только садик, children — без ролей), forward-looking. Полное восстановление ролей без re-login = backend-need: каталогизировано в **[`BACKEND_NEEDINGS_HANDOFF.md`](BACKEND_NEEDINGS_HANDOFF.md) N4** (привести `/users/me` к §141 ИЛИ `GET /auth/session` → `AuthResponseDto`). Не блокирует MVP-поверхность.
+
 ---
 
 ## B. Открытые (open — НЕ кодить до resolve)

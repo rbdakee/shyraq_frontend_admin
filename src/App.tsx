@@ -1,11 +1,13 @@
 import { Outlet } from 'react-router-dom';
 import { useUiStore } from '@/stores/ui-store';
+import { useSessionBootstrap } from '@/hooks/use-session';
 import { cn } from '@/lib/cn';
 import Sidebar from '@/components/layout/sidebar';
 import Topbar from '@/components/layout/topbar';
 
 export default function App() {
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
+  useSessionBootstrap();
 
   return (
     <div

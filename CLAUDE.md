@@ -24,6 +24,7 @@ Onboarding for every Claude Code session in this repo. **Read top to bottom befo
 | UI-спека (страницы, состояния, поведение, дизайн-система) | [`docs/ADMIN_DESIGN_SPEC.md`](docs/ADMIN_DESIGN_SPEC.md)                                                                                                                               |
 | Implementation tracker (батчи, acceptance, TODO backlog)  | [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)                                                                                                                           |
 | Открытые вопросы / blocker'ы (что НЕ делать без решения)  | [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md)                                                                                                                                     |
+| Backend-нехватки для полноты данных (каталог)             | [`docs/BACKEND_NEEDINGS_HANDOFF.md`](docs/BACKEND_NEEDINGS_HANDOFF.md)                                                                                                                 |
 | Визуальный handoff (HTML/JSX прототип всех 28 экранов)    | [`docs/design/handoff/shyraq-admin/project/`](docs/design/handoff/shyraq-admin/project/)                                                                                               |
 | Дизайн-токены / темы / Tweaks-панель                      | [`docs/design/handoff/shyraq-admin/project/styles.css`](docs/design/handoff/shyraq-admin/project/styles.css), [`app.jsx`](docs/design/handoff/shyraq-admin/project/app.jsx) (`THEMES`) |
 | Backend OpenAPI (live)                                    | `http://13.60.189.214:3000/docs-json` · Swagger `…/docs`                                                                                                                               |
@@ -145,6 +146,7 @@ Folder structure — `docs/IMPLEMENTATION_PLAN.md` §«Foundations».
 - [`docs/ADMIN_DESIGN_SPEC.md`](docs/ADMIN_DESIGN_SPEC.md) — UI-спека per-page
 - [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) — батчи + acceptance + TODO backlog
 - [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md) — blocker'ы (что НЕ делать)
+- [`docs/BACKEND_NEEDINGS_HANDOFF.md`](docs/BACKEND_NEEDINGS_HANDOFF.md) — каталог backend-нехваток для полноты данных (N1–N4)
 - [`docs/design/handoff/shyraq-admin/`](docs/design/handoff/shyraq-admin/) — **готовый дизайн 28 экранов (строим 1:1 по нему)**
 - `../frontend_superadmin/` — соседний сервис на похожем стеке; пример при открытых архитектурных вопросах, не эталон
 - `../backend_shyraq_v2/` — backend repo (read-only, только при критике)

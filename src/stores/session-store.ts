@@ -36,6 +36,7 @@ interface SessionState {
 
   setFromAuthResponse: (res: AuthResponsePayload) => void;
   setFromMe: (me: SessionUser) => void;
+  setKindergarten: (kg: SessionKindergarten) => void;
   clear: () => void;
 }
 
@@ -74,6 +75,10 @@ export const useSessionStore = create<SessionState>()((set) => ({
           : {}),
       },
     }));
+  },
+
+  setKindergarten: (kg) => {
+    set({ currentKindergarten: kg });
   },
 
   clear: () => {

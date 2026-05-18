@@ -7,6 +7,9 @@ export const qk = {
   auth: {
     me: ['auth', 'me'] as const,
   },
+  kindergarten: {
+    me: ['kindergarten', 'me'] as const,
+  },
   dashboard: {
     summary: ['dashboard', 'summary'] as const,
     attendanceToday: (groupId?: string) =>

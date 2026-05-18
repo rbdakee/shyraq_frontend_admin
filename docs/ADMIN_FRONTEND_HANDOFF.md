@@ -138,7 +138,7 @@
 - Если у пользователя нет роли `admin` ни в одном садике — он не должен попасть в Admin Web (роль `parent`/`mentor`/`specialist` — это другие приложения). Показать сообщение «нет доступа к админке».
 - Ошибки OTP: `400 otp_expired_or_missing`, `400 invalid_otp`, `400 invalid_phone_format`, `429 otp_rate_limit`, `429 otp_locked`, `403 no_active_roles`, `403 pending_role_select`, `403 role_not_available`, `403 role_select_not_required`. Покажи человекочитаемые сообщения, для 429 — таймер до разблокировки.
 
-**Профиль текущего пользователя:** `GET /users/me` → `user`(snake_case: `id, phone, full_name, avatar_url, iin, date_of_birth, locale`) + `roles[]` + `kindergartens[]`. `PATCH /users/me` тело **camelCase**: `{ fullName, avatarUrl, dateOfBirth, iin, locale(ru|kk) }`. `GET /users/me/qr` → личный Identity QR `{token(32 hex), issued_at, expires_at}` (рендерить QR на клиенте; авто-обновляется сервером).
+**Профиль текущего пользователя:** `GET /users/me` → **плоский** `UserResponseDto` (snake_case: `id, phone, full_name, avatar_url, iin, date_of_birth, locale`) — **без `roles[]`/`kindergartens[]`** (сверено с live `/docs-json` 2026-05-18; ранняя версия §141 обещала `+ roles[] + kindergartens[]` — расхождение, по прецеденту §A7/§A8 live = факт, §141 правлен под факт; см. OPEN_QUESTIONS §A9 + BACKEND_NEEDINGS N4). `roles[]`/`kindergartens[]` отдаются только в `AuthResponseDto` (`/auth/otp/verify|refresh|role/select`). Текущий садик — отдельным `GET /kindergartens/me` → `KindergartenDto {id, name, slug, …}`. `PATCH /users/me` тело **camelCase**: `{ fullName, avatarUrl, dateOfBirth, iin, locale(ru|kk) }`. `GET /users/me/qr` → личный Identity QR `{token(32 hex), issued_at, expires_at}` (рендерить QR на клиенте; авто-обновляется сервером).
 
 ---
 

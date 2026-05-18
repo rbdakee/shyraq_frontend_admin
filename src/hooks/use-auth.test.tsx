@@ -185,5 +185,33 @@ describe('auth hooks (unit)', () => {
       expect(state.roles).toHaveLength(0);
       expect(state.currentKindergarten).toBeNull();
     });
+
+    it('setKindergarten restores current kindergarten after hard reload', () => {
+      expect(useSessionStore.getState().currentKindergarten).toBeNull();
+      useSessionStore
+        .getState()
+        .setKindergarten({ id: 'kg-9', name: 'Солнышко', slug: 'solnyshko' });
+      expect(useSessionStore.getState().currentKindergarten).toEqual({
+        id: 'kg-9',
+        name: 'Солнышко',
+        slug: 'solnyshko',
+      });
+    });
+
+    it('setFromMe restores user but not roles/kindergartens (live /users/me is flat)', () => {
+      useSessionStore.getState().setFromMe({
+        id: 'u-7',
+        phone: '+77000000000',
+        full_name: 'Reloaded User',
+        avatar_url: null,
+        iin: null,
+        date_of_birth: null,
+        locale: 'ru',
+      });
+      const state = useSessionStore.getState();
+      expect(state.user?.full_name).toBe('Reloaded User');
+      expect(state.roles).toHaveLength(0);
+      expect(state.currentKindergarten).toBeNull();
+    });
   });
 });
