@@ -6,8 +6,6 @@ import { env } from '@/env';
 
 const AUTH_FREE_PATHS = ['auth/otp/request', 'auth/otp/verify', 'auth/refresh'];
 
-const REFRESH_TRIGGER_CODES = new Set(['invalid_token', 'token_revoked']);
-
 function isAuthFree(url: string): boolean {
   return AUTH_FREE_PATHS.some((p) => url.includes(p));
 }
@@ -18,7 +16,7 @@ function coerceLang(lang: string): 'ru' | 'kk' {
 }
 
 // WHY bare ky: refresh must bypass apiClient's afterResponse interceptor
-// to avoid infinite 401→refresh recursion.
+// to avoid infinite 401-to-refresh recursion.
 let refreshPromise: Promise<void> | null = null;
 
 async function tryRefreshOnce(): Promise<void> {
@@ -35,6 +33,7 @@ async function tryRefreshOnce(): Promise<void> {
           json: { refreshToken: rt },
           headers: {
             Authorization: `Bearer ${tokenStorage.getAccess() ?? ''}`,
+            'x-custom-lang': coerceLang(i18n.language),
           },
         })
         .json<{ access_token: string; refresh_token: string }>();
@@ -60,15 +59,30 @@ function redirectToLogin(): void {
   }
 }
 
+async function refreshOrRedirect(): Promise<void> {
+  try {
+    await tryRefreshOnce();
+  } catch {
+    tokenStorage.clear();
+    redirectToLogin();
+    throw new AppError('invalid_refresh', 401);
+  }
+}
+
 export const apiClient = ky.create({
   prefix: env.VITE_API_BASE_URL,
   retry: { limit: 1 },
   hooks: {
     beforeRequest: [
-      ({ request }) => {
+      async ({ request }) => {
         request.headers.set('x-custom-lang', coerceLang(i18n.language));
 
-        const token = tokenStorage.getAccess();
+        let token = tokenStorage.getAccess();
+        if (!token && !isAuthFree(request.url) && tokenStorage.getRefresh()) {
+          await refreshOrRedirect();
+          token = tokenStorage.getAccess();
+        }
+
         if (token && !isAuthFree(request.url)) {
           request.headers.set('Authorization', `Bearer ${token}`);
         }
@@ -76,27 +90,16 @@ export const apiClient = ky.create({
     ],
     afterResponse: [
       async ({ request, response, retryCount }) => {
-        if (response.status !== 401 || isAuthFree(request.url) || retryCount > 0) {
+        if (
+          response.status !== 401 ||
+          isAuthFree(request.url) ||
+          retryCount > 0 ||
+          !tokenStorage.getRefresh()
+        ) {
           return;
         }
 
-        // WHY clone: the response body can only be consumed once; we need
-        // to parse it to check the error code, but ky may also read it later.
-        const body: unknown = await response
-          .clone()
-          .json()
-          .catch(() => undefined);
-        const err = parseApiError(body, 401);
-
-        if (!REFRESH_TRIGGER_CODES.has(err.code)) return;
-
-        try {
-          await tryRefreshOnce();
-        } catch {
-          tokenStorage.clear();
-          redirectToLogin();
-          throw new AppError('invalid_refresh', 401);
-        }
+        await refreshOrRedirect();
 
         const headers = new Headers(request.headers);
         headers.set('Authorization', `Bearer ${tokenStorage.getAccess()}`);

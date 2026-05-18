@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { formatMoney, formatDateTime, formatDate, formatPhone } from './format';
+import {
+  formatMoney,
+  formatDateTime,
+  formatDate,
+  formatPhone,
+  maskIin,
+  formatIinDisplay,
+} from './format';
 
 describe('formatMoney', () => {
   it('formats 0 to "0 ₸"', () => {
@@ -86,5 +93,44 @@ describe('formatPhone', () => {
 
   it('returns +7 number shorter than 12 digits unchanged', () => {
     expect(formatPhone('+7700123456')).toBe('+7700123456');
+  });
+});
+
+describe('maskIin', () => {
+  it('keeps a valid 12-digit IIN unchanged', () => {
+    expect(maskIin('123456789012')).toBe('123456789012');
+  });
+
+  it('strips non-digit characters', () => {
+    expect(maskIin('1234 5678-9012')).toBe('123456789012');
+    expect(maskIin('abc12cd34')).toBe('1234');
+  });
+
+  it('caps at 12 digits', () => {
+    expect(maskIin('1234567890123456')).toBe('123456789012');
+  });
+
+  it('returns empty string for input without digits', () => {
+    expect(maskIin('')).toBe('');
+    expect(maskIin('---')).toBe('');
+  });
+});
+
+describe('formatIinDisplay', () => {
+  it('groups 12 digits as "6 + space + 6"', () => {
+    expect(formatIinDisplay('123456789012')).toBe('123456 789012');
+  });
+
+  it('does not add a space until past 6 digits', () => {
+    expect(formatIinDisplay('123456')).toBe('123456');
+    expect(formatIinDisplay('1234567')).toBe('123456 7');
+  });
+
+  it('strips non-digits and caps at 12 before grouping', () => {
+    expect(formatIinDisplay('1234 5678 9012 99')).toBe('123456 789012');
+  });
+
+  it('returns empty string for empty input', () => {
+    expect(formatIinDisplay('')).toBe('');
   });
 });

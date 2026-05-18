@@ -8,6 +8,7 @@ import ruDatatable from '@/locales/ru/datatable.json';
 import ruFeedback from '@/locales/ru/feedback.json';
 import ruForms from '@/locales/ru/forms.json';
 import ruDashboard from '@/locales/ru/dashboard.json';
+import ruChildren from '@/locales/ru/children.json';
 import kkCommon from '@/locales/kk/common.json';
 import kkErrors from '@/locales/kk/errors.json';
 import kkAuth from '@/locales/kk/auth.json';
@@ -15,6 +16,7 @@ import kkDatatable from '@/locales/kk/datatable.json';
 import kkFeedback from '@/locales/kk/feedback.json';
 import kkForms from '@/locales/kk/forms.json';
 import kkDashboard from '@/locales/kk/dashboard.json';
+import kkChildren from '@/locales/kk/children.json';
 
 const initialLocale = useUiStore.getState().locale;
 
@@ -28,6 +30,7 @@ void i18n.use(initReactI18next).init({
       feedback: ruFeedback,
       forms: ruForms,
       dashboard: ruDashboard,
+      children: ruChildren,
     },
     kk: {
       common: kkCommon,
@@ -37,6 +40,7 @@ void i18n.use(initReactI18next).init({
       feedback: kkFeedback,
       forms: kkForms,
       dashboard: kkDashboard,
+      children: kkChildren,
     },
   },
   lng: initialLocale,

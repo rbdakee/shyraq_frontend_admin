@@ -52,6 +52,26 @@ export function formatDate(value: string | Date, timeZone: string): string {
   return `${get('day')}.${get('month')}.${get('year')}`;
 }
 
+// KZ IIN (ИИН) is an immutable spec: exactly 12 decimal digits.
+const IIN_MAX_DIGITS = 12;
+
+/**
+ * Canonical IIN value: digits only, capped at 12. The form/Zod/submit always
+ * work on this (no spaces), so backend contract is unaffected by the display mask.
+ */
+export function maskIin(raw: string): string {
+  return raw.replace(/\D/g, '').slice(0, IIN_MAX_DIGITS);
+}
+
+/**
+ * Display mask for the IIN field: `123456 789012` (6 + space + 6), matching the
+ * `000000 000000` placeholder. Input only — the stored value stays digit-only.
+ */
+export function formatIinDisplay(raw: string): string {
+  const d = maskIin(raw);
+  return d.length > 6 ? `${d.slice(0, 6)} ${d.slice(6)}` : d;
+}
+
 /**
  * Formats an E.164 phone number to Admin display format: `+7 700 123 45 67`.
  * Invalid or non-E.164 input is returned unchanged (same contract as superadmin).

@@ -104,7 +104,7 @@
 
 Эндпоинты `/auth/*` — общие. Полный контракт — `endpoints.md §0.1`.
 
-> **Соглашение об именовании (подтверждено live `/docs-json` 2026-05-18, см. OPEN_QUESTIONS §A7):** тела **request**-DTO — **camelCase** (NestJS class-validator); поля **response** — **snake_case**. Конвенция стабильна на Phase A–C. Ниже тела показаны в фактическом (camelCase) виде.
+> **Соглашение об именовании (подтверждено live `/docs-json` 2026-05-18, см. OPEN_QUESTIONS §A7):** тела **request**-DTO — **camelCase** (NestJS class-validator); поля **response** — **snake_case**. Ниже тела показаны в фактическом (camelCase) виде. **⚠️ Casing — per-module, не глобален** (уточнение §A8, 2026-05-18): camelCase-request верен для auth/users; **модуль children — snake_case request-DTO**. Перед каждым data-слайсом сверять per-endpoint по live `/docs-json`, не экстраполировать конвенцию на новые модули.
 
 | Шаг              | Метод | Путь                | Тело                                                                                                        | Ответ                         |
 | ---------------- | ----- | ------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------- |
@@ -162,9 +162,11 @@
 
 ---
 
-## 5. Дети (Children) — `/admin/children/*`
+## 5. Дети (Children) — `/children/*`
 
 **Назначение:** карточки детей, опекуны, переводы между группами, жизненный цикл (создание → активный → архив → реактивация), история статусов. BP §1 (дополнение manual creation), §12.
+
+> **⚠️ Канонично — OPEN_QUESTIONS §A8 (resolved 2026-05-18, подтверждено live `/docs-json`).** Таблица §5.1 ниже исторична; при расхождении первичен §A8. Ключевые поправки факта: (1) префикс **`/children/*`** без `/admin` (исключение: timeline = `/admin/children/{id}/timeline`); (2) перевод = `POST /children/{id}/transfer` (не `…/transfer-group`); (3) request-DTO детей — **snake_case** (casing per-module, §A7-уточнение — не camelCase); (4) `GET /children` → `{data,meta}` (не `{items,total}`), поиск-параметр `q`; (5) `GET /children/{id}` → только `{child, guardians[]}` — группа/история/timeline/платежи/диагностика тянутся отдельными эндпоинтами/preview-заглушками, не embedded; (6) опекун добавляется через `InviteGuardianDto {user_phone XOR user_id, role, can_pickup}` — приглашение, **без поля ФИО**; (7) guardian.status enum = `pending_approval|approved|rejected|revoked`; (8) timeline — **cursor** (`{items,nextCursor}`). Полный фактический контракт со схемами — §A8.
 
 ### 5.1 Эндпоинты
 

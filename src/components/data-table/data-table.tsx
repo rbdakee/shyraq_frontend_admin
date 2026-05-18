@@ -1,11 +1,12 @@
 /* eslint-disable react-hooks/incompatible-library -- TanStack Table is our chosen headless table library; the React Compiler lint false-positives on useReactTable() are expected and safe */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
   useReactTable,
   type RowSelectionState,
+  type SortingState,
 } from '@tanstack/react-table';
 import { ArrowDown, ArrowUp, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -20,6 +21,15 @@ import { DataTableToolbar } from './data-table-toolbar';
 import type { DataTableProps } from './types';
 
 const DEFAULT_SKELETON_ROWS = 5;
+const CORE_ROW_MODEL = getCoreRowModel();
+const SORTED_ROW_MODEL = getSortedRowModel();
+// WHY a module-level constant: a fresh [] each render changes the table's
+// `state.sorting` identity every render, which churns TanStack Table's options
+// and row-model cache. Under React Router v7 (navigations run inside
+// React.startTransition) that churn perpetually invalidates the navigation
+// transition so it never commits — URL changes but the screen freezes, with
+// no error. The `state` object must be referentially stable.
+const EMPTY_SORTING: SortingState = [];
 
 export function DataTable<T>({
   columns,
@@ -41,70 +51,75 @@ export function DataTable<T>({
   onRowSelectionChange,
   onRowClick,
   rowActions,
+  rowClassName,
   toolbar,
   skeletonRowCount = DEFAULT_SKELETON_ROWS,
 }: DataTableProps<T>) {
   const { t } = useTranslation('datatable');
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
 
-  const allColumns = [
-    ...(enableRowSelection
-      ? [
-          {
-            id: '_select' as const,
-            header: ({ table }: { table: ReturnType<typeof useReactTable<T>> }) => (
-              <Checkbox
-                checked={
-                  table.getIsAllPageRowsSelected() ||
-                  (table.getIsSomePageRowsSelected() && 'indeterminate')
-                }
-                onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-                aria-label="Select all"
-              />
-            ),
-            cell: ({
-              row,
-            }: {
-              row: { getIsSelected: () => boolean; toggleSelected: (value: boolean) => void };
-            }) => (
-              <Checkbox
-                checked={row.getIsSelected()}
-                onCheckedChange={(value) => row.toggleSelected(!!value)}
-                aria-label="Select row"
-                onClick={(e: React.MouseEvent) => e.stopPropagation()}
-              />
-            ),
-            enableSorting: false,
-            size: 40,
-          } as DataTableProps<T>['columns'][number],
-        ]
-      : []),
-    ...columns,
-    ...(rowActions && rowActions.length > 0
-      ? [
-          {
-            id: '_actions' as const,
-            header: () => null,
-            cell: ({ row }: { row: { original: T } }) => (
-              <DataTableRowActions row={row.original} actions={rowActions} />
-            ),
-            enableSorting: false,
-            size: 40,
-          } as DataTableProps<T>['columns'][number],
-        ]
-      : []),
-  ];
+  const tableData = useMemo(() => data, [data]);
+  const allColumns = useMemo(
+    () => [
+      ...(enableRowSelection
+        ? [
+            {
+              id: '_select' as const,
+              header: ({ table }: { table: ReturnType<typeof useReactTable<T>> }) => (
+                <Checkbox
+                  checked={
+                    table.getIsAllPageRowsSelected() ||
+                    (table.getIsSomePageRowsSelected() && 'indeterminate')
+                  }
+                  onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+                  aria-label="Select all"
+                />
+              ),
+              cell: ({
+                row,
+              }: {
+                row: { getIsSelected: () => boolean; toggleSelected: (value: boolean) => void };
+              }) => (
+                <Checkbox
+                  checked={row.getIsSelected()}
+                  onCheckedChange={(value) => row.toggleSelected(!!value)}
+                  aria-label="Select row"
+                  onClick={(e: React.MouseEvent) => e.stopPropagation()}
+                />
+              ),
+              enableSorting: false,
+              size: 40,
+            } as DataTableProps<T>['columns'][number],
+          ]
+        : []),
+      ...columns,
+      ...(rowActions && rowActions.length > 0
+        ? [
+            {
+              id: '_actions' as const,
+              header: () => null,
+              cell: ({ row }: { row: { original: T } }) => (
+                <DataTableRowActions row={row.original} actions={rowActions} />
+              ),
+              enableSorting: false,
+              size: 40,
+            } as DataTableProps<T>['columns'][number],
+          ]
+        : []),
+    ],
+    [columns, enableRowSelection, rowActions],
+  );
+
+  const sorting = externalSorting ?? EMPTY_SORTING;
+  const tableState = useMemo(() => ({ sorting, rowSelection }), [sorting, rowSelection]);
 
   const table = useReactTable({
-    data,
+    data: tableData,
     columns: allColumns,
-    state: {
-      sorting: externalSorting ?? [],
-      rowSelection,
-    },
+    state: tableState,
     onSortingChange: onSortingChange
       ? (updater) => {
-          const next = typeof updater === 'function' ? updater(externalSorting ?? []) : updater;
+          const next = typeof updater === 'function' ? updater(sorting) : updater;
           onSortingChange(next);
         }
       : undefined,
@@ -113,12 +128,12 @@ export function DataTable<T>({
       setRowSelection(next);
       if (onRowSelectionChange) {
         const selectedIndices = Object.keys(next).filter((k) => next[k]);
-        const selectedRows = selectedIndices.map((idx) => data[Number(idx)]!);
+        const selectedRows = selectedIndices.map((idx) => tableData[Number(idx)]!);
         onRowSelectionChange(selectedRows);
       }
     },
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: onSortingChange ? undefined : getSortedRowModel(),
+    getCoreRowModel: CORE_ROW_MODEL,
+    getSortedRowModel: onSortingChange ? undefined : SORTED_ROW_MODEL,
     enableRowSelection,
     manualSorting: !!onSortingChange,
   });
@@ -250,6 +265,7 @@ export function DataTable<T>({
                   className={cn(
                     'cursor-pointer border-b border-[var(--line)] transition-colors duration-75 last:border-b-0 hover:bg-[var(--bg-subtle)]',
                     row.getIsSelected() && 'bg-[var(--primary-soft)]',
+                    rowClassName?.(row.original),
                   )}
                   onClick={() => onRowClick?.(row.original)}
                 >

@@ -222,7 +222,7 @@ src/
 
 **Goal:** карточка ребёнка — ядро домена.
 
-**Inputs:** HANDOFF §5 (endpoints, transfer/archive/reactivate/status-history/guardians, ошибки); DESIGN §6.3 (список/создание/карточка 8 табов, модалы); VIS `screens-core.jsx` (ChildrenList/ChildCreate/ChildDetail).
+**Inputs:** HANDOFF §5 (endpoints, transfer/archive/reactivate/status-history/guardians, ошибки); DESIGN §6.3 (список/создание/карточка 8 табов, модалы); VIS `screens-core.jsx` (ChildrenList/ChildCreate/ChildDetail). **Канонический контракт — OPEN_QUESTIONS §A8** (live-verified): пути `/children/*` (timeline = `/admin/children/{id}/timeline`), request-DTO **snake_case**, list `{data,meta}`, detail `{child,guardians[]}` + отдельные эндпоинты (group-history/status-history offset / timeline cursor), опекун = invite по phone/user_id, guardian.status `pending_approval|…`. error-map += `archive_reason_required`.
 
 **Tasks:**
 
@@ -234,7 +234,7 @@ src/
 **Acceptance:**
 
 - [ ] Список фильтруется/ищется; архивные визуально отделены.
-- [ ] Создание карточки + presigned-загрузка фото работает end-to-end.
+- [ ] Создание карточки работает end-to-end. _(Загрузка фото — presigned backend не готов, parked OPEN_QUESTIONS §C5; карточка создаётся без фото, `photo_url?` опц. — НЕ входит в acceptance B4.)_
 - [ ] transfer/archive(причина)/reactivate отрабатывают, ошибки 404/409/422 → человекочитаемо; reactivate ведёт к назначению тарифа.
 - [ ] Все 8 табов рендерят данные/preview; status-history пагинируется. Gate exit 0.
 
@@ -477,9 +477,10 @@ src/
 
 Каждый `// TODO(B<N>): …` в коде — строка здесь (тот же текст + `file:line` + owner-батч). Пусто на старте.
 
-| TODO | Файл:строка | Owner | Статус |
-| ---- | ----------- | ----- | ------ |
-| —    | —           | —     | —      |
+| TODO                                                                                                                                     | Файл:строка            | Owner | Статус |
+| ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ----- | ------ |
+| expand groups domain (CRUD, mentors, children, deactivate) — minimal read created in B4 for child list filter/transfer/create select     | `src/api/groups.ts:25` | B6    | open   |
+| child_photo storage: presigned backend не готов — 404 оставлен как есть (обработанная ошибка), переписать по факту когда backend выкатит | `src/api/storage.ts:1` | C5    | parked |
 
 ---
 

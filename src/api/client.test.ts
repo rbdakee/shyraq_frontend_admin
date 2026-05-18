@@ -202,25 +202,57 @@ describe('apiClient', () => {
       expect(locationAssignMock).toHaveBeenCalledWith('/login?reason=session_expired');
     });
 
-    it('does NOT trigger refresh for a 401 with a non-refresh code', async () => {
+    it('triggers refresh for any 401 when a refresh token exists', async () => {
       tokenStorage.setBoth({ access: 'tok', refresh: 'ref' });
-      let refreshCalled = false;
+      let refreshCallCount = 0;
 
       setFetch(async (input) => {
         const req = input instanceof Request ? input : new Request(String(input));
         if (req.url.includes('auth/refresh')) {
-          refreshCalled = true;
+          refreshCallCount++;
           return jsonResponse({
-            access_token: 'x',
-            refresh_token: 'y',
+            access_token: 'new-access',
+            refresh_token: 'new-refresh',
           });
         }
-        // 401 with a code that should NOT trigger refresh
-        return jsonResponse({ error: 'no_active_roles', message: 'No roles' }, 401);
+
+        if (req.headers.get('Authorization')?.includes('new-access')) {
+          return jsonResponse({ ok: true });
+        }
+
+        return jsonResponse({ statusCode: 401, message: 'Unauthorized' }, 401);
       });
 
-      await expect(apiClient.get('children').json()).rejects.toThrow();
-      expect(refreshCalled).toBe(false);
+      await expect(apiClient.get('children').json()).resolves.toEqual({ ok: true });
+      expect(refreshCallCount).toBe(1);
+      expect(tokenStorage.getAccess()).toBe('new-access');
+    });
+
+    it('refreshes before the first request after reload when only refresh token is persisted', async () => {
+      tokenStorage.setRefresh('persisted-refresh');
+      let refreshCallCount = 0;
+      let capturedFirstDataAuth = '';
+
+      setFetch(async (input) => {
+        const req = input instanceof Request ? input : new Request(String(input));
+
+        if (req.url.includes('auth/refresh')) {
+          refreshCallCount++;
+          expect(req.headers.get('x-custom-lang')).toBe('ru');
+          return jsonResponse({
+            access_token: 'reloaded-access',
+            refresh_token: 'rotated-refresh',
+          });
+        }
+
+        capturedFirstDataAuth = req.headers.get('Authorization') ?? '';
+        return jsonResponse({ ok: true });
+      });
+
+      await expect(apiClient.get('children').json()).resolves.toEqual({ ok: true });
+      expect(refreshCallCount).toBe(1);
+      expect(capturedFirstDataAuth).toBe('Bearer reloaded-access');
+      expect(tokenStorage.getRefresh()).toBe('rotated-refresh');
     });
   });
 

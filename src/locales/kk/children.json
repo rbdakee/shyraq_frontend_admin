@@ -1,0 +1,326 @@
+{
+  "title": "Балалар",
+  "subtitle": "{{active}} белсенді · {{archived}} мұрағатта",
+  "empty_title": "Балалар әзірге жоқ",
+  "empty_description": "Жұмысты бастау үшін алғашқы бала карточкасын жасаңыз.",
+  "filtered_empty_title": "Ештеңе табылмады",
+  "filtered_empty_description": "Іздеу параметрлерін өзгертіп көріңіз.",
+  "age_format": "{{years}}ж {{months}}а",
+  "age_years": "жас",
+  "no_data": "—",
+  "open_card": "Карточканы ашу",
+  "create_button": "Карточка жасау",
+  "export": "Экспорт",
+
+  "filters": {
+    "all_statuses": "Барлық күйлер",
+    "all_groups": "Барлық топтар",
+    "all": "Барлығы",
+    "active": "Белсенді",
+    "card_created": "Жаңа карточкалар",
+    "archived": "Мұрағатта"
+  },
+
+  "search_placeholder": "Аты-жөні немесе ЖСН бойынша іздеу",
+
+  "columns": {
+    "photo": "Фото",
+    "full_name": "Аты-жөні",
+    "iin": "ЖСН",
+    "group": "Топ",
+    "status": "Күйі",
+    "enrollment_date": "Қабылдау күні",
+    "age": "Жасы",
+    "date_of_birth": "Туған күні",
+    "actions": "Әрекеттер"
+  },
+
+  "status": {
+    "card_created": "Карточка жасалды",
+    "active": "Белсенді",
+    "archived": "Мұрағатта"
+  },
+
+  "gender": {
+    "male": "Ұл бала",
+    "female": "Қыз бала"
+  },
+
+  "pagination": {
+    "showing": "{{from}}–{{to}} / {{total}} көрсетілуде"
+  },
+
+  "create": {
+    "breadcrumb": "Карточка жасау",
+    "title": "Жаңа бала карточкасы",
+    "photo_section": "Фото",
+    "upload_photo": "Фото жүктеу",
+    "photo_hint": "JPG/PNG 5 МБ дейін. Кейін қосуға болады.",
+    "no_iin_banner": "Карточканы ЖСН-сіз жасауға болады — басқа балабақшадан ауыстыру немесе офлайн-шарт үшін. ЖСН-ді кейін қосуға болады.",
+    "section_basic": "Негізгі деректер",
+    "last_name": "Тегі",
+    "last_name_placeholder": "Жұмабаев",
+    "first_name": "Аты",
+    "first_name_placeholder": "Алихан",
+    "middle_name": "Әкесінің аты",
+    "middle_name_placeholder": "Жәнібекұлы",
+    "date_of_birth": "Туған күні",
+    "gender": "Жынысы",
+    "gender_male": "Ұл бала",
+    "gender_female": "Қыз бала",
+    "iin": "ЖСН",
+    "iin_hint": "12 сан. Бос қалдыруға болады.",
+    "iin_placeholder": "000000 000000",
+    "section_group": "Топ",
+    "group_not_selected": "Таңдалмаған",
+    "group_hint": "Тағайындауды кейін өзгертуге болады",
+    "group_capacity": "{{capacity}} орын",
+    "section_health": "Денсаулық",
+    "allergy_notes": "Аллергиялар",
+    "allergy_notes_placeholder": "Цитрустар, жаңғақтар...",
+    "medical_notes": "Медициналық жазбалар",
+    "medical_notes_hint": "Созылмалы аурулар, ерекшеліктер",
+    "submit": "Карточка жасау",
+    "cancel": "Болдырмау",
+    "success": "Бала карточкасы жасалды"
+  },
+
+  "detail": {
+    "header": "Бала карточкасы",
+    "archived_banner": "Бала мұрағатта",
+    "not_found": "Карточка табылмады немесе рұқсат жоқ",
+
+    "tabs": {
+      "profile": "Профиль",
+      "guardians": "Қамқоршылар",
+      "group_history": "Топ және тарих",
+      "timeline": "Timeline",
+      "payments": "Төлемдер",
+      "diagnostics": "Диагностика",
+      "status_history": "Күй тарихы",
+      "face_id": "Face ID"
+    },
+
+    "profile": {
+      "edit": "Өңдеу",
+      "save": "Сақтау",
+      "cancel": "Болдырмау",
+      "full_name": "Аты-жөні",
+      "iin": "ЖСН",
+      "date_of_birth": "Туған күні",
+      "gender": "Жынысы",
+      "group": "Топ",
+      "enrollment_date": "Қабылдау күні",
+      "medical_notes": "Медициналық жазбалар",
+      "allergy_notes": "Аллергиялар",
+      "photo": "Фото",
+      "change_photo": "Суретті өзгерту",
+      "remove_photo": "Суретті жою",
+      "success": "Деректер жаңартылды",
+      "quick_stats": "Жылдам статистика",
+      "stat_visits": "Ай ішіндегі келулер",
+      "stat_late": "Кешігулер",
+      "stat_invoices": "Ашық шоттар",
+      "stat_guardians": "Белсенді қамқоршылар"
+    },
+
+    "guardians": {
+      "title": "Қамқоршылар",
+      "add": "Қамқоршы қосу",
+      "empty": "Қамқоршылар тағайындалмаған",
+      "error": "Қамқоршыларды жүктеу мүмкін болмады",
+      "user_id_label": "ID",
+      "columns": {
+        "name": "Аты-жөні",
+        "phone": "Телефон",
+        "role": "Рөлі",
+        "status": "Күйі",
+        "can_pickup": "Алып кетеді",
+        "approval_rights": "Бекіту құқығы",
+        "actions": "Әрекеттер"
+      },
+      "role": {
+        "primary": "Негізгі",
+        "secondary": "Қосымша",
+        "nanny": "Күтуші"
+      },
+      "status": {
+        "pending_approval": "Күтуде",
+        "approved": "Бекітілді",
+        "rejected": "Қабылданбады",
+        "revoked": "Кері қайтарылды"
+      },
+      "yes": "Иә",
+      "no": "Жоқ",
+      "edit_role": "Рөлін өзгерту",
+      "revoke_access": "Рұқсатты кері қайтару",
+      "revoke_all_qr": "Барлық QR кері қайтару",
+      "revoke_all_qr_description": "Пайдаланушының барлық белсенді QR-кодтары жойылады. Пайдаланушыға жаңа QR-кодтар алу қажет болады."
+    },
+
+    "group": {
+      "current": "Ағымдағы топ",
+      "no_group": "Топ тағайындалмаған",
+      "transfer": "Топқа ауыстыру",
+      "assign": "Топ тағайындау",
+      "unassign": "Топтан шығару",
+      "history_title": "Ауыстыру тарихы",
+      "history_empty": "Ауыстырулар болмады",
+      "from": "Қайдан",
+      "to": "Қайда",
+      "by": "Кім",
+      "reason": "Себебі",
+      "date": "Күні",
+      "initial_enrollment": "Алғашқы тіркеу тобы",
+      "transferred": "Ауыстырылды:"
+    },
+
+    "timeline": {
+      "title": "Баланың оқиғалары",
+      "empty": "Оқиғалар әзірге жоқ",
+      "load_more": "Тағы жүктеу",
+      "today": "Бүгін,",
+      "yesterday": "Кеше,",
+      "filter_all": "Барлық оқиғалар",
+      "filter_attendance": "Қатысу",
+      "filter_activity": "Белсенділіктер",
+      "filter_notes": "Жазбалар",
+      "entry_types": {
+        "check_in": "Келу",
+        "check_out": "Кету",
+        "activity": "Белсенділік",
+        "meal": "Тамақтану",
+        "nap": "Ұйқы",
+        "note": "Жазба",
+        "photo": "Фото",
+        "mood": "Көңіл-күй",
+        "medication": "Дәрі"
+      }
+    },
+
+    "payments": {
+      "title": "Төлемдер",
+      "header": "Төлемдер және шоттар",
+      "caption": "Алдын ала қарау · толық ақпарат «Биллинг» бөлімінде",
+      "empty": "Төлемдер жоқ",
+      "view_all": "Барлық төлемдер",
+      "empty_title": "Шоттар әзірге жоқ",
+      "empty_text": "Тариф тағайындалғаннан кейін пайда болады",
+      "col_invoice": "Шот",
+      "col_period": "Кезең",
+      "col_amount": "Сома",
+      "col_status": "Күйі",
+      "col_due": "Мерзім"
+    },
+
+    "diagnostics": {
+      "title": "Диагностика",
+      "empty": "Жазбалар жоқ",
+      "empty_title": "Диагностикалық жазбалар әзірге жоқ",
+      "empty_text": "Диагностика жүргізілгеннен кейін пайда болады"
+    },
+
+    "status_history": {
+      "title": "Күй тарихы",
+      "header": "Күй өзгерістерінің аудиті",
+      "empty": "Күй өзгерістері болмады",
+      "columns": {
+        "date": "Күні",
+        "previous_status": "Алдыңғы",
+        "new_status": "Жаңа",
+        "archive_reason": "Мұрағаттау себебі",
+        "changed_by": "Кім"
+      },
+      "col_from": "Қайдан",
+      "col_to": "Қайда",
+      "col_by": "Кім",
+      "col_reason": "Себебі"
+    },
+
+    "face_id": {
+      "title": "Face ID",
+      "phase_c_banner": "Бет тану кейін қолжетімді болады (Phase C)",
+      "phase_c_title": "Phase C",
+      "phase_c_body": "Face ID — бөлім әзірленуде. Тану edge-сервис орнатылғаннан кейін жұмыс істейді.",
+      "biometric_title": "Биометриялық профиль",
+      "registered": "Профиль тіркелген",
+      "not_registered": "Профиль тіркелмеген",
+      "no_data": "Тіркелу деректері жоқ",
+      "go_to_section": "Бөлімге өту",
+      "consents_title": "Келісімдер",
+      "consents_body": "Биометриялық деректерді өңдеуге келісім — балабақшада.",
+      "open_scan": "Сканды ашу"
+    }
+  },
+
+  "modals": {
+    "archive": {
+      "title": "Баланы мұрағаттау",
+      "warning": "Тарифтер жабылады, қайта есептеу/қайтару басталады.",
+      "reason_label": "Мұрағаттау себебі",
+      "reason_placeholder": "Мұрағаттау себебін көрсетіңіз",
+      "reason_counter": "{{count}}/500",
+      "confirm": "Мұрағаттау",
+      "cancel": "Болдырмау",
+      "success": "Бала мұрағатталды"
+    },
+    "reactivate": {
+      "title": "Баланы қайта белсендіру",
+      "description": "Бала белсенді күйге қайтарылады.",
+      "confirm": "Қайта белсендіру",
+      "cancel": "Болдырмау",
+      "success": "Бала қайта белсендірілді",
+      "tariff_banner": "Жаңа тариф тағайындаңыз",
+      "tariff_link": "Тариф тағайындауға өту"
+    },
+    "transfer": {
+      "title": "Басқа топқа ауыстыру",
+      "group_label": "Мақсатты топ",
+      "group_placeholder": "Топты таңдаңыз",
+      "reason_label": "Ауыстыру себебі",
+      "reason_placeholder": "Себебін көрсетіңіз (міндетті емес)",
+      "confirm": "Ауыстыру",
+      "cancel": "Болдырмау",
+      "success": "Бала ауыстырылды",
+      "archived_error": "Алдымен баланы қайта белсендіріңіз",
+      "capacity_unit": "орын"
+    },
+    "invite_guardian": {
+      "title": "Қамқоршы қосу",
+      "phone_label": "Телефон",
+      "phone_placeholder": "+7 ___ ___ __ __",
+      "user_id_label": "Пайдаланушы ID",
+      "user_id_placeholder": "Бар пайдаланушының UUID",
+      "phone_or_user_id_hint": "Телефон немесе пайдаланушы ID көрсетіңіз (тек біреуін)",
+      "xor_error": "Телефон немесе пайдаланушы ID көрсетіңіз — екеуін бірге емес",
+      "role_label": "Рөлі",
+      "role_placeholder": "Рөлін таңдаңыз",
+      "can_pickup_label": "Баланы алып кете алады",
+      "confirm": "Қосу",
+      "cancel": "Болдырмау",
+      "success": "Қамқоршы қосылды"
+    },
+    "revoke_guardian": {
+      "title": "Қамқоршы рұқсатын кері қайтару",
+      "description": "Қамқоршы бала туралы ақпаратқа қол жеткізе алмайды. Бұл әрекетті кері қайтару мүмкін емес.",
+      "confirm": "Кері қайтару",
+      "cancel": "Болдырмау",
+      "success": "Рұқсат кері қайтарылды"
+    },
+    "revoke_all_qr": {
+      "title": "Барлық QR-кодтарды кері қайтару",
+      "description": "Бұл пайдаланушының барлық белсенді QR-кодтары жойылады.",
+      "confirm": "Барлық QR кері қайтару",
+      "cancel": "Болдырмау",
+      "success": "QR-кодтар кері қайтарылды ({{count}})"
+    }
+  },
+
+  "actions": {
+    "transfer": "Топқа ауыстыру",
+    "archive": "Мұрағаттау",
+    "reactivate": "Қайта белсендіру",
+    "edit": "Өңдеу",
+    "view": "Қарау"
+  }
+}

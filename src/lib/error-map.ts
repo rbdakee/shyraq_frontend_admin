@@ -38,6 +38,7 @@ export const KNOWN_ERROR_CODES = [
   'child_already_archived',
   'child_not_archived',
   'child_already_in_group',
+  'archive_reason_required',
   // enrollments §6 (no domain error codes documented beyond transitions)
   // groups §7
   'group_not_found',

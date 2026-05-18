@@ -56,6 +56,8 @@ export interface DataTableProps<T> {
 
   rowActions?: RowAction<T>[];
 
+  rowClassName?: (row: T) => string | undefined;
+
   toolbar?: ReactNode;
 
   skeletonRowCount?: number;

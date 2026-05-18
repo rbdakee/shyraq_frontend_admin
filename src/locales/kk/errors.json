@@ -16,6 +16,7 @@
   "child_already_archived": "Бала бұрын мұрағатталған",
   "child_not_archived": "Бала мұрағатта емес",
   "child_already_in_group": "Бала топта бар",
+  "archive_reason_required": "Мұрағаттау себебін көрсетіңіз",
   "group_not_found": "Топ табылмады",
   "group_has_active_children": "Топта белсенді балалар бар",
   "invalid_age_range": "Жас диапазоны қате",

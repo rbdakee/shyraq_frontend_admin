@@ -1,0 +1,326 @@
+{
+  "title": "Дети",
+  "subtitle": "{{active}} активных · {{archived}} в архиве",
+  "empty_title": "Пока нет детей",
+  "empty_description": "Создайте первую карточку ребёнка для начала работы.",
+  "filtered_empty_title": "Ничего не найдено",
+  "filtered_empty_description": "Попробуйте изменить параметры поиска.",
+  "age_format": "{{years}}л {{months}}м",
+  "age_years": "лет",
+  "no_data": "—",
+  "open_card": "Открыть карточку",
+  "create_button": "Создать карточку",
+  "export": "Экспорт",
+
+  "filters": {
+    "all_statuses": "Все статусы",
+    "all_groups": "Все группы",
+    "all": "Все",
+    "active": "Активны",
+    "card_created": "Новые карточки",
+    "archived": "В архиве"
+  },
+
+  "search_placeholder": "Поиск по ФИО или ИИН",
+
+  "columns": {
+    "photo": "Фото",
+    "full_name": "ФИО",
+    "iin": "ИИН",
+    "group": "Группа",
+    "status": "Статус",
+    "enrollment_date": "Дата зачисления",
+    "age": "Возраст",
+    "date_of_birth": "Дата рождения",
+    "actions": "Действия"
+  },
+
+  "status": {
+    "card_created": "Карточка создана",
+    "active": "Активен",
+    "archived": "В архиве"
+  },
+
+  "gender": {
+    "male": "Мальчик",
+    "female": "Девочка"
+  },
+
+  "pagination": {
+    "showing": "Показано {{from}}–{{to}} из {{total}}"
+  },
+
+  "create": {
+    "breadcrumb": "Создать карточку",
+    "title": "Новая карточка ребёнка",
+    "photo_section": "Фото",
+    "upload_photo": "Загрузить фото",
+    "photo_hint": "JPG/PNG до 5 МБ. Можно добавить позже.",
+    "no_iin_banner": "Карточку можно создать без ИИН — для перевода из другого садика или офлайн-договора. ИИН можно добавить позже.",
+    "section_basic": "Основные данные",
+    "last_name": "Фамилия",
+    "last_name_placeholder": "Жумабаев",
+    "first_name": "Имя",
+    "first_name_placeholder": "Алихан",
+    "middle_name": "Отчество",
+    "middle_name_placeholder": "Жанибекович",
+    "date_of_birth": "Дата рождения",
+    "gender": "Пол",
+    "gender_male": "Мальчик",
+    "gender_female": "Девочка",
+    "iin": "ИИН",
+    "iin_hint": "12 цифр. Можно оставить пустым.",
+    "iin_placeholder": "000000 000000",
+    "section_group": "Группа",
+    "group_not_selected": "Не выбрана",
+    "group_hint": "Назначение может быть изменено позже",
+    "group_capacity": "{{capacity}} мест",
+    "section_health": "Здоровье",
+    "allergy_notes": "Аллергии",
+    "allergy_notes_placeholder": "Цитрусовые, орехи...",
+    "medical_notes": "Медицинские заметки",
+    "medical_notes_hint": "Хронические заболевания, особенности",
+    "submit": "Создать карточку",
+    "cancel": "Отменить",
+    "success": "Карточка ребёнка создана"
+  },
+
+  "detail": {
+    "header": "Карточка ребёнка",
+    "archived_banner": "Ребёнок находится в архиве",
+    "not_found": "Карточка не найдена или нет доступа",
+
+    "tabs": {
+      "profile": "Профиль",
+      "guardians": "Опекуны",
+      "group_history": "Группа и история",
+      "timeline": "Timeline",
+      "payments": "Платежи",
+      "diagnostics": "Диагностика",
+      "status_history": "Статус-история",
+      "face_id": "Face ID"
+    },
+
+    "profile": {
+      "edit": "Редактировать",
+      "save": "Сохранить",
+      "cancel": "Отмена",
+      "full_name": "ФИО",
+      "iin": "ИИН",
+      "date_of_birth": "Дата рождения",
+      "gender": "Пол",
+      "group": "Группа",
+      "enrollment_date": "Дата зачисления",
+      "medical_notes": "Медицинские заметки",
+      "allergy_notes": "Аллергии",
+      "photo": "Фото",
+      "change_photo": "Изменить фото",
+      "remove_photo": "Удалить фото",
+      "success": "Данные обновлены",
+      "quick_stats": "Быстрая статистика",
+      "stat_visits": "Посещений за месяц",
+      "stat_late": "Опозданий",
+      "stat_invoices": "Открытых счетов",
+      "stat_guardians": "Активных опекунов"
+    },
+
+    "guardians": {
+      "title": "Опекуны",
+      "add": "Добавить опекуна",
+      "empty": "Опекуны не назначены",
+      "error": "Не удалось загрузить опекунов",
+      "user_id_label": "ID",
+      "columns": {
+        "name": "ФИО",
+        "phone": "Телефон",
+        "role": "Роль",
+        "status": "Статус",
+        "can_pickup": "Забирает",
+        "approval_rights": "Право одобрения",
+        "actions": "Действия"
+      },
+      "role": {
+        "primary": "Основной",
+        "secondary": "Дополнительный",
+        "nanny": "Няня"
+      },
+      "status": {
+        "pending_approval": "Ожидает",
+        "approved": "Одобрен",
+        "rejected": "Отклонён",
+        "revoked": "Отозван"
+      },
+      "yes": "Да",
+      "no": "Нет",
+      "edit_role": "Изменить роль",
+      "revoke_access": "Отозвать доступ",
+      "revoke_all_qr": "Отозвать все QR",
+      "revoke_all_qr_description": "Все активные QR-коды пользователя будут аннулированы. Пользователю потребуется получить новые QR-коды."
+    },
+
+    "group": {
+      "current": "Текущая группа",
+      "no_group": "Группа не назначена",
+      "transfer": "Перевести в группу",
+      "assign": "Назначить группу",
+      "unassign": "Снять с группы",
+      "history_title": "История переводов",
+      "history_empty": "Переводов не было",
+      "from": "Из",
+      "to": "В",
+      "by": "Кем",
+      "reason": "Причина",
+      "date": "Дата",
+      "initial_enrollment": "Первичное зачисление в группу",
+      "transferred": "Переведён:"
+    },
+
+    "timeline": {
+      "title": "События ребёнка",
+      "empty": "Событий пока нет",
+      "load_more": "Загрузить ещё",
+      "today": "Сегодня,",
+      "yesterday": "Вчера,",
+      "filter_all": "Все события",
+      "filter_attendance": "Посещаемость",
+      "filter_activity": "Активности",
+      "filter_notes": "Заметки",
+      "entry_types": {
+        "check_in": "Приход",
+        "check_out": "Уход",
+        "activity": "Активность",
+        "meal": "Питание",
+        "nap": "Сон",
+        "note": "Заметка",
+        "photo": "Фото",
+        "mood": "Настроение",
+        "medication": "Медикамент"
+      }
+    },
+
+    "payments": {
+      "title": "Платежи",
+      "header": "Платежи и счета",
+      "caption": "Превью · полная информация в разделе «Биллинг»",
+      "empty": "Платежей нет",
+      "view_all": "Все платежи",
+      "empty_title": "Счетов пока нет",
+      "empty_text": "Они появятся после назначения тарифа",
+      "col_invoice": "Счёт",
+      "col_period": "Период",
+      "col_amount": "Сумма",
+      "col_status": "Статус",
+      "col_due": "Срок"
+    },
+
+    "diagnostics": {
+      "title": "Диагностика",
+      "empty": "Записей нет",
+      "empty_title": "Диагностических записей пока нет",
+      "empty_text": "Записи появятся после проведения диагностики"
+    },
+
+    "status_history": {
+      "title": "Статус-история",
+      "header": "Аудит изменений статуса",
+      "empty": "Изменений статуса не было",
+      "columns": {
+        "date": "Дата",
+        "previous_status": "Предыдущий",
+        "new_status": "Новый",
+        "archive_reason": "Причина архива",
+        "changed_by": "Кем"
+      },
+      "col_from": "Из",
+      "col_to": "В",
+      "col_by": "Кем",
+      "col_reason": "Причина"
+    },
+
+    "face_id": {
+      "title": "Face ID",
+      "phase_c_banner": "Распознавание лиц будет доступно позже (Phase C)",
+      "phase_c_title": "Phase C",
+      "phase_c_body": "Face ID — раздел в разработке. Распознавание заработает после развёртывания edge-сервиса.",
+      "biometric_title": "Биометрический профиль",
+      "registered": "Профиль зарегистрирован",
+      "not_registered": "Профиль не зарегистрирован",
+      "no_data": "Нет данных о регистрации",
+      "go_to_section": "Перейти в раздел",
+      "consents_title": "Согласия",
+      "consents_body": "Согласие на обработку биометрических данных — на руках у садика.",
+      "open_scan": "Открыть скан"
+    }
+  },
+
+  "modals": {
+    "archive": {
+      "title": "Архивировать ребёнка",
+      "warning": "Тарифы будут закрыты, будет инициирован перерасчёт/возврат.",
+      "reason_label": "Причина архива",
+      "reason_placeholder": "Укажите причину архивирования",
+      "reason_counter": "{{count}}/500",
+      "confirm": "Архивировать",
+      "cancel": "Отмена",
+      "success": "Ребёнок архивирован"
+    },
+    "reactivate": {
+      "title": "Реактивировать ребёнка",
+      "description": "Ребёнок будет возвращён в активный статус.",
+      "confirm": "Реактивировать",
+      "cancel": "Отмена",
+      "success": "Ребёнок реактивирован",
+      "tariff_banner": "Назначьте новый тариф",
+      "tariff_link": "Перейти к назначению тарифов"
+    },
+    "transfer": {
+      "title": "Перевести в другую группу",
+      "group_label": "Группа назначения",
+      "group_placeholder": "Выберите группу",
+      "reason_label": "Причина перевода",
+      "reason_placeholder": "Укажите причину (необязательно)",
+      "confirm": "Перевести",
+      "cancel": "Отмена",
+      "success": "Ребёнок переведён",
+      "archived_error": "Сначала реактивируйте ребёнка",
+      "capacity_unit": "мест"
+    },
+    "invite_guardian": {
+      "title": "Добавить опекуна",
+      "phone_label": "Телефон",
+      "phone_placeholder": "+7 ___ ___ __ __",
+      "user_id_label": "ID пользователя",
+      "user_id_placeholder": "UUID существующего пользователя",
+      "phone_or_user_id_hint": "Укажите телефон или ID пользователя (только одно из двух)",
+      "xor_error": "Укажите либо телефон, либо ID пользователя — не оба сразу",
+      "role_label": "Роль",
+      "role_placeholder": "Выберите роль",
+      "can_pickup_label": "Может забирать ребёнка",
+      "confirm": "Добавить",
+      "cancel": "Отмена",
+      "success": "Опекун добавлен"
+    },
+    "revoke_guardian": {
+      "title": "Отозвать доступ опекуна",
+      "description": "Опекун потеряет доступ к информации о ребёнке. Это действие нельзя отменить.",
+      "confirm": "Отозвать",
+      "cancel": "Отмена",
+      "success": "Доступ отозван"
+    },
+    "revoke_all_qr": {
+      "title": "Отозвать все QR-коды",
+      "description": "Все активные QR-коды данного пользователя будут аннулированы.",
+      "confirm": "Отозвать все QR",
+      "cancel": "Отмена",
+      "success": "QR-коды отозваны ({{count}})"
+    }
+  },
+
+  "actions": {
+    "transfer": "Перевести в группу",
+    "archive": "Архивировать",
+    "reactivate": "Реактивировать",
+    "edit": "Редактировать",
+    "view": "Просмотр"
+  }
+}

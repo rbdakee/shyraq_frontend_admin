@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom';
 import AuthGuard from '@/components/layout/auth-guard';
 import App from '@/App';
+import ServerError from '@/routes/_500';
 
 const lazyStub = async () => {
   const { default: Component } = await import('@/routes/_stub');
@@ -41,6 +42,7 @@ export const router = createBrowserRouter([
     children: [
       {
         Component: App,
+        errorElement: <ServerError />,
         children: [
           {
             index: true,
@@ -51,9 +53,27 @@ export const router = createBrowserRouter([
           },
           { path: 'enrollments', lazy: lazyStub },
           { path: 'enrollments/:id', lazy: lazyStub },
-          { path: 'children', lazy: lazyStub },
-          { path: 'children/new', lazy: lazyStub },
-          { path: 'children/:id', lazy: lazyStub },
+          {
+            path: 'children',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/children/index');
+              return { Component };
+            },
+          },
+          {
+            path: 'children/new',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/children/new');
+              return { Component };
+            },
+          },
+          {
+            path: 'children/:id',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/children/$id');
+              return { Component };
+            },
+          },
           { path: 'groups', lazy: lazyStub },
           { path: 'groups/:id', lazy: lazyStub },
           { path: 'staff', lazy: lazyStub },

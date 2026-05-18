@@ -18,7 +18,7 @@ export function DataTableRowActions<T>({ row, actions }: DataTableRowActionsProp
   if (actions.length === 0) return null;
 
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
