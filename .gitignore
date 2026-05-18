@@ -41,6 +41,9 @@ coverage/
 # Vite
 .vite/
 
+# Vercel (CLI local link/build artifacts)
+.vercel/
+
 # Husky local
 .husky/_/
 
