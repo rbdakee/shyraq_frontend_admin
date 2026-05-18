@@ -1,6 +1,6 @@
 # Shyraq Admin Web — Implementation Plan
 
-Безопасный поэтапный план разработки фронтенда админки. **16 батчей (B0–B15)**, каждый ≈ одна Claude Code сессия, заканчивается рабочим коммитом с зелёным acceptance. Стек и конвенции зеркалят `../frontend_superadmin/` (sibling-эталон).
+Безопасный поэтапный план разработки фронтенда админки. **16 батчей (B0–B15)**, каждый ≈ одна Claude Code сессия, заканчивается рабочим коммитом с зелёным acceptance. Стек и конвенции — наше решение (§Foundations). Готовый дизайн `docs/design/handoff/shyraq-admin/*` — строим 1:1 по нему. `../frontend_superadmin/` — соседний сервис на похожем стеке: только пример при открытом архитектурном вопросе, не эталон.
 
 **Source of truth контрактов** — [`ADMIN_FRONTEND_HANDOFF.md`](ADMIN_FRONTEND_HANDOFF.md) (далее **HANDOFF §X**). UI-спека — [`ADMIN_DESIGN_SPEC.md`](ADMIN_DESIGN_SPEC.md) (далее **DESIGN §X**). Визуал — `docs/design/handoff/shyraq-admin/project/` (далее **VIS**). Этот план **не дублирует** контракты — ссылается на § handoff/design. Backend live: `http://13.60.189.214:3000`.
 
@@ -53,7 +53,7 @@ Refs: docs/IMPLEMENTATION_PLAN.md §B<N>
 
 ## Foundations (архитектурные решения)
 
-### Стек (зеркало superadmin, проверен в sibling)
+### Стек (наше решение; в `../frontend_superadmin/` похожий — заглянуть как пример при открытом вопросе)
 
 Vite + React 19 + TypeScript strict · React Router 7 (data router) · TanStack Query 5 (server-state) · `ky` + `openapi-fetch` + `openapi-typescript` · React Hook Form + Zod · shadcn/ui (Radix + Tailwind v4) · Lucide · TanStack Table v8 · Zustand (UI-state) · i18next + react-i18next (RU/KK) · `date-fns` + tz · `sonner` · Vitest + Testing Library (e2e/Playwright — НЕ заводим) · ESLint flat + Prettier + Husky + lint-staged · pnpm · Node 20.
 
@@ -98,6 +98,14 @@ src/
 ### Routing
 
 Маршруты — канонично по **HANDOFF §28 sitemap** (`/`, `/login`, `/enrollments`, `/children`, `/groups`, `/staff`, `/structure/{locations,cameras}`, `/schedule/{templates,weeks}`, `/meal-plans`, `/content`, `/content/qundylyq`, `/billing/{invoices,payments,tariff-plans,tariff-assignments,holidays,refunds,discounts,fiscal-receipts}`, `/parent-requests`, `/attendance`, `/attendance/daily-status`, `/diagnostics/templates`, `/face`, `/operations/lifecycle-dlq`, `/settings`, `/profile`). VIS-роутер — только визуальный референс; при расхождении путей — §28 первичен.
+
+### Design fidelity (закон, решение владельца)
+
+Каждый экран строится **1:1** по готовому дизайну `docs/design/handoff/shyraq-admin/project/` (`screens-{core,billing,ops}.jsx`, `shell.jsx`, `ds.jsx`, `styles.css`, `tweaks-panel.jsx`). Перед UI-слайсом субагент **обязан** открыть соответствующий `Screen*`/`shell`/`ds` и воспроизвести layout/spacing/типографику/цвета(токены)/компоненты/состояния/поведение точно. Не упрощать, не «по мотивам». Технология своя (shadcn/Radix), результат визуально идентичен. Расхождение допускается только под backend-контракт → запись в `OPEN_QUESTIONS.md`. См. CLAUDE.md §6.
+
+### Субагентная политика (решение владельца)
+
+Дефолт исполнителя — **`coder-opus`** (качество > экономии). `coder-sonnet` — только бесспорная механика. Батч из преимущественно мелких слайсов **не дробить на sonnet-сессии — объединять с соседним батчем в одну Opus-оркестрацию** (волна = одна толковая Opus-сессия). Reviewer: `reviewer-opus` + обязательный `reviewer-codex` на нетривиале. См. CLAUDE.md §9.
 
 ### Theming (решение владельца)
 

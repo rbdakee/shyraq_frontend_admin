@@ -10,7 +10,7 @@ Onboarding for every Claude Code session in this repo. **Read top to bottom befo
 
 **1 из 4 клиентов одного backend:** SuperAdmin (`../frontend_superadmin/`), **Admin (этот репо)**, Staff App, Parent App. Backend один: `http://13.60.189.214:3000`.
 
-**`../frontend_superadmin/` — эталон стека и конвенций.** Тот же стек, та же folder structure, те же layer/coding rules, тот же batch-формат. При сомнении «как делать инфраструктуру» — смотри как сделано там, не изобретай.
+**Первичны наши docs + готовый дизайн** (HANDOFF / DESIGN / `docs/design/handoff/`) и этот `CLAUDE.md` + `docs/IMPLEMENTATION_PLAN.md`. Стек и конвенции — наше решение, зафиксировано в плане (§Foundations). `../frontend_superadmin/` — соседний сервис на похожем стеке: заглядывать туда как в **пример**, только если возник открытый вопрос по архитектуре/тулингу и ответа нет в наших docs. Не «эталон», не копировать вслепую.
 
 ---
 
@@ -18,15 +18,15 @@ Onboarding for every Claude Code session in this repo. **Read top to bottom befo
 
 Никогда не выдумывать endpoint, поле DTO, бизнес-логику или экран.
 
-| Аспект | Файл |
-| --- | --- |
-| Контракты API + бизнес-процессы + статус backend | [`docs/ADMIN_FRONTEND_HANDOFF.md`](docs/ADMIN_FRONTEND_HANDOFF.md) |
-| UI-спека (страницы, состояния, поведение, дизайн-система) | [`docs/ADMIN_DESIGN_SPEC.md`](docs/ADMIN_DESIGN_SPEC.md) |
-| Implementation tracker (батчи, acceptance, TODO backlog) | [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) |
-| Открытые вопросы / blocker'ы (что НЕ делать без решения) | [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md) |
-| Визуальный handoff (HTML/JSX прототип всех 28 экранов) | [`docs/design/handoff/shyraq-admin/project/`](docs/design/handoff/shyraq-admin/project/) |
-| Дизайн-токены / темы / Tweaks-панель | [`docs/design/handoff/shyraq-admin/project/styles.css`](docs/design/handoff/shyraq-admin/project/styles.css), [`app.jsx`](docs/design/handoff/shyraq-admin/project/app.jsx) (`THEMES`) |
-| Backend OpenAPI (live) | `http://13.60.189.214:3000/docs-json` · Swagger `…/docs` |
+| Аспект                                                    | Файл                                                                                                                                                                                   |
+| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Контракты API + бизнес-процессы + статус backend          | [`docs/ADMIN_FRONTEND_HANDOFF.md`](docs/ADMIN_FRONTEND_HANDOFF.md)                                                                                                                     |
+| UI-спека (страницы, состояния, поведение, дизайн-система) | [`docs/ADMIN_DESIGN_SPEC.md`](docs/ADMIN_DESIGN_SPEC.md)                                                                                                                               |
+| Implementation tracker (батчи, acceptance, TODO backlog)  | [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)                                                                                                                           |
+| Открытые вопросы / blocker'ы (что НЕ делать без решения)  | [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md)                                                                                                                                     |
+| Визуальный handoff (HTML/JSX прототип всех 28 экранов)    | [`docs/design/handoff/shyraq-admin/project/`](docs/design/handoff/shyraq-admin/project/)                                                                                               |
+| Дизайн-токены / темы / Tweaks-панель                      | [`docs/design/handoff/shyraq-admin/project/styles.css`](docs/design/handoff/shyraq-admin/project/styles.css), [`app.jsx`](docs/design/handoff/shyraq-admin/project/app.jsx) (`THEMES`) |
+| Backend OpenAPI (live)                                    | `http://13.60.189.214:3000/docs-json` · Swagger `…/docs`                                                                                                                               |
 
 **Backend code** (`../backend_shyraq_v2/`) — читать **только** при критической неопределённости или подозрении на расхождение с handoff. После расхождения — обновить наши docs.
 
@@ -58,15 +58,15 @@ API base — `/api/v1`. Полный путь endpoint'а — `/api/v1/<route>`.
 
 Folder structure — `docs/IMPLEMENTATION_PLAN.md` §«Foundations».
 
-| Слой | Разрешено | Запрещено |
-| --- | --- | --- |
-| `api/` | `ky`, openapi-types, чистые async-функции | TanStack Query, React, JSX, i18n |
-| `hooks/` | TanStack Query, вызовы `api/*`, query keys | прямой `fetch`, JSX |
-| `routes/` | React, JSX, `hooks/*`, `components/*`, router | прямой `fetch`, прямой импорт `api/*` (только через hooks) |
-| `components/ui/` | shadcn primitives | бизнес-логика, backend-доступ |
-| `components/{layout,data-table,forms,feedback,...}/` | UI + переиспользуемые wrappers | доменная бизнес-логика (она в routes) |
-| `lib/` | чистые функции, без React | TanStack Query, JSX |
-| `stores/` | Zustand UI-state | server-state (он в TanStack Query) |
+| Слой                                                 | Разрешено                                     | Запрещено                                                  |
+| ---------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------- |
+| `api/`                                               | `ky`, openapi-types, чистые async-функции     | TanStack Query, React, JSX, i18n                           |
+| `hooks/`                                             | TanStack Query, вызовы `api/*`, query keys    | прямой `fetch`, JSX                                        |
+| `routes/`                                            | React, JSX, `hooks/*`, `components/*`, router | прямой `fetch`, прямой импорт `api/*` (только через hooks) |
+| `components/ui/`                                     | shadcn primitives                             | бизнес-логика, backend-доступ                              |
+| `components/{layout,data-table,forms,feedback,...}/` | UI + переиспользуемые wrappers                | доменная бизнес-логика (она в routes)                      |
+| `lib/`                                               | чистые функции, без React                     | TanStack Query, JSX                                        |
+| `stores/`                                            | Zustand UI-state                              | server-state (он в TanStack Query)                         |
 
 ---
 
@@ -85,6 +85,7 @@ Folder structure — `docs/IMPLEMENTATION_PLAN.md` §«Foundations».
 
 ## 6. Style, tokens, theming
 
+- **ЗАКОН: фронт строится ТОЧНО по готовому дизайну** `docs/design/handoff/shyraq-admin/project/*`. Перед каждым UI-слайсом — открыть соответствующий экран в `screens-{core,billing,ops}.jsx` / `shell.jsx` / `ds.jsx` / `styles.css` и воспроизвести **1:1**: layout, spacing, типографика, цвета (через токены), компоненты, состояния, поведение. Не «по мотивам», не упрощать, не додумывать. Технология своя (React+shadcn/Radix вместо прототип-JSX), **визуальный и поведенческий результат — идентичный**. Отклонение допустимо ТОЛЬКО если backend-контракт физически требует иного — тогда запись в `OPEN_QUESTIONS.md` и согласование, не молчаливый дрейф.
 - Палитра/типографика/радиусы/тени — из [`docs/design/handoff/shyraq-admin/project/styles.css`](docs/design/handoff/shyraq-admin/project/styles.css) (`:root` токены) → переносим в `src/styles/globals.css` как CSS-переменные; Tailwind theme читает их (`var(--…)`). Никаких `style={{}}` кроме случаев где Tailwind не покрывает (dynamic transforms/animations).
 - **Темы — оставляем ВСЕ как в дизайне** (`THEMES` в `app.jsx`: green/orange/blue/mono/warmCream/forestMint/oceanBlue/dark + радиусы sharp/soft/round). Это user-facing фича: отдельная вкладка **«Дизайн»** в Настройках садика (`/settings`). Выбор персистится (localStorage через Zustand `ui-store`) и применяется при загрузке (set CSS-vars на `:root`). Каждая тема — бандл CSS-var override, цвета не хардкодим.
 - **Шрифты:** Manrope + JetBrains Mono (как в `index.html` handoff). **Иконки:** Lucide React; mapping handoff-иконок (`ds.jsx#Icon`) → Lucide в `components/ui/icon.ts`. Прототип-компоненты handoff не копируем — переписываем на shadcn/Radix, матчим визуал.
@@ -112,6 +113,7 @@ Folder structure — `docs/IMPLEMENTATION_PLAN.md` §«Foundations».
 - Не амендить опубликованные коммиты / force-push без явной просьбы. Не пропускать husky (`--no-verify`) без просьбы. Коммит — только когда пользователь явно попросил.
 - Не реализовывать то, что в `OPEN_QUESTIONS.md` не `resolved`. Не оставлять `// TODO` без backlog-записи.
 - Phase B/C модули (Фискальные чеки full, Face ID, тест камер) — строить как видимые заглушки «доступно позже», не подключать к данным.
+- Не отходить от готового дизайна `docs/design/handoff/shyraq-admin/*` (визуал/лейаут/поведение — 1:1; нужно отклонение → `OPEN_QUESTIONS.md`, не самовольно).
 
 ---
 
@@ -121,13 +123,15 @@ Folder structure — `docs/IMPLEMENTATION_PLAN.md` §«Foundations».
 
 Агенты — в [`.claude/agents/`](.claude/agents/), вызываются через `Agent` tool параметром `subagent_type`:
 
-| `subagent_type` | Для чего |
-| --- | --- |
-| `coder-opus` | Сложные/multi-file/архитектурные слайсы, «реши как лучше» |
-| `coder-sonnet` | Точечные/strict-execution слайсы по детальному брифу |
-| `reviewer-opus` | Глубокий review нетривиального изменения (READ-ONLY) |
-| `reviewer-sonnet` | Лёгкий review мелкого слайса (READ-ONLY) |
-| `reviewer-codex` | **Обязательный second-opinion** при любом code-review нетривиального батча (отдельная модельная семья, независимый взгляд) |
+| `subagent_type`   | Для чего                                                                                                                     |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `coder-opus`      | **Дефолт для любого слайса с кодом.** Все UI/api/hooks/архитектурные слайсы — сюда                                           |
+| `coder-sonnet`    | Только тривиальная изолированная механика без решений (install зависимости, один i18n-файл, .gitignore). При сомнении — opus |
+| `reviewer-opus`   | Глубокий review нетривиального изменения (READ-ONLY)                                                                         |
+| `reviewer-sonnet` | Лёгкий review совсем мелкого слайса (READ-ONLY)                                                                              |
+| `reviewer-codex`  | **Обязательный second-opinion** при любом code-review нетривиального батча (отдельная модельная семья, независимый взгляд)   |
+
+**Политика моделей (решение владельца):** качество кодовой базы важнее экономии — **по умолчанию `coder-opus`**. `coder-sonnet` — исключение для бесспорно механических задач. Если батч состоит в основном из «sonnet-слайсов» — **не дроби его на отдельные мелкие sonnet-сессии, а объедини с соседним батчем в одну `coder-opus`-оркестрацию** (одна волна = одна толковая Opus-сессия вместо россыпи слабых). Reviewer'ы — `reviewer-opus` + обязательный `reviewer-codex` на нетривиале.
 
 **Главный агент — оркестратор, не исполнитель.** В этом режиме он держит контекст (план + acceptance + handoff), декомпозирует батч на слайсы, запускает субагентов, собирает репорты, делает финальную верификацию. **Не пишет/не читает `src/` руками** кроме финального gate (`typecheck && lint && test`) и крошечных fixup'ов (1–2 строки). Исключение «может сам»: задача настолько мала, что делегировать дороже, ИЛИ контекст результата обязан жить в памяти оркестратора.
 
@@ -141,6 +145,6 @@ Folder structure — `docs/IMPLEMENTATION_PLAN.md` §«Foundations».
 - [`docs/ADMIN_DESIGN_SPEC.md`](docs/ADMIN_DESIGN_SPEC.md) — UI-спека per-page
 - [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) — батчи + acceptance + TODO backlog
 - [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md) — blocker'ы (что НЕ делать)
-- [`docs/design/handoff/shyraq-admin/`](docs/design/handoff/shyraq-admin/) — визуальный референс 28 экранов
-- `../frontend_superadmin/` — sibling, эталон стека/конвенций (read-only reference)
+- [`docs/design/handoff/shyraq-admin/`](docs/design/handoff/shyraq-admin/) — **готовый дизайн 28 экранов (строим 1:1 по нему)**
+- `../frontend_superadmin/` — соседний сервис на похожем стеке; пример при открытых архитектурных вопросах, не эталон
 - `../backend_shyraq_v2/` — backend repo (read-only, только при критике)
