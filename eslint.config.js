@@ -139,5 +139,16 @@ export default tseslint.config(
     },
   },
 
+  // Layer-boundary zones constrain production dependency direction. Test files
+  // legitimately assemble across layers to verify integration wiring (e.g.
+  // i18n.test.ts exercises the ui-store → i18next locale subscription), so the
+  // path restriction does not apply to them.
+  {
+    files: ['**/*.{test,spec}.{ts,tsx}'],
+    rules: {
+      'import-x/no-restricted-paths': 'off',
+    },
+  },
+
   prettier,
 );
