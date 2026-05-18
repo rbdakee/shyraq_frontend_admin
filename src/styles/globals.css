@@ -1,6 +1,282 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
 
 @custom-variant dark (&:is(.dark *));
 
-/* B0 stub — full tokens/themes land in B1 (themes slice). */
+/* === shadcn semantic vars -> Tailwind v4 utilities (mirrors superadmin structure, Admin palette) === */
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* === shadcn semantic var contract — Admin teal default palette === */
+:root {
+  --background: #f7f6f2;
+  --foreground: #1a1916;
+  --card: #ffffff;
+  --card-foreground: #1a1916;
+  --popover: #ffffff;
+  --popover-foreground: #1a1916;
+  --primary: #0e7c66;
+  --primary-foreground: #ffffff;
+  --secondary: #efeeea;
+  --secondary-foreground: #1a1916;
+  --muted: #efeeea;
+  --muted-foreground: #7a776e;
+  --accent: #dcefe9;
+  --accent-foreground: #064b3d;
+  --destructive: #b42318;
+  --border: #e5e2db;
+  --input: #e5e2db;
+  --ring: #0e7c66;
+  --chart-1: #0e7c66;
+  --chart-2: #1f7a3f;
+  --chart-3: #a85d08;
+  --chart-4: #1d4ed8;
+  --chart-5: #b42318;
+  --radius: 0.5rem;
+  --sidebar: #fbfaf6;
+  --sidebar-foreground: #1a1916;
+  --sidebar-primary: #0e7c66;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #dcefe9;
+  --sidebar-accent-foreground: #064b3d;
+  --sidebar-border: #ebe8e1;
+  --sidebar-ring: #0e7c66;
+}
+
+.dark {
+  --background: #0f0b07;
+  --foreground: #f5f2ec;
+  --card: #1a1611;
+  --card-foreground: #f5f2ec;
+  --popover: #1a1611;
+  --popover-foreground: #f5f2ec;
+  --primary: #ffaf36;
+  --primary-foreground: #191410;
+  --secondary: #0a0805;
+  --secondary-foreground: #f5f2ec;
+  --muted: #0a0805;
+  --muted-foreground: #8a867d;
+  --accent: rgba(255, 175, 54, 0.16);
+  --accent-foreground: #ffc76a;
+  --destructive: #f87171;
+  --border: #2a241c;
+  --input: #3d352a;
+  --ring: #ffaf36;
+  --chart-1: #ffaf36;
+  --chart-2: #47d848;
+  --chart-3: #60a5fa;
+  --chart-4: #ffc76a;
+  --chart-5: #f87171;
+  --sidebar: #0c0905;
+  --sidebar-foreground: #f5f2ec;
+  --sidebar-primary: #ffaf36;
+  --sidebar-primary-foreground: #191410;
+  --sidebar-accent: rgba(255, 175, 54, 0.16);
+  --sidebar-accent-foreground: #ffc76a;
+  --sidebar-border: #241e16;
+  --sidebar-ring: #ffaf36;
+}
+
+/* === Shyraq Admin design tokens (source: docs/design/handoff styles.css :root) === */
+:root {
+  /* Surface scale */
+  --bg: #f7f6f2;
+  --bg-elev: #ffffff;
+  --bg-sunken: #efeeea;
+  --bg-subtle: #fcfbf8;
+  --bg-sidebar: #fbfaf6;
+  --border-strong: #d4d0c7;
+  --line: #ebe8e1;
+  --focus-ring: 0 0 0 3px color-mix(in oklab, var(--primary) 22%, transparent);
+
+  /* Text scale */
+  --text-1: #1a1916;
+  --text-2: #4a4842;
+  --text-3: #7a776e;
+  --text-4: #a7a39a;
+  --on-primary: #ffffff;
+
+  /* Primary accent (teal default) */
+  --primary-bright: #0aa084;
+  --primary-hover: #0a5f4f;
+  --primary-active: #074939;
+  --primary-soft: #dcefe9;
+  --primary-soft-hover: #c7e5dc;
+  --primary-fg: #064b3d;
+
+  /* Semantic */
+  --success: #1f7a3f;
+  --success-soft: #dcefe0;
+  --success-fg: #14592d;
+  --warning: #a85d08;
+  --warning-soft: #faeacb;
+  --warning-fg: #7a4307;
+  --danger: #b42318;
+  --danger-soft: #fee4e2;
+  --danger-fg: #912018;
+  --info: #1d4ed8;
+  --info-soft: #dde6fb;
+  --info-fg: #1e3a8a;
+  --neutral-soft: #e7e5de;
+  --neutral-fg: #4a4842;
+
+  /* Radii */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+  --r-pill: 999px;
+
+  /* Shadows (prefixed to avoid Tailwind --shadow-* collision) */
+  --shyraq-shadow-1: 0 1px 2px rgba(20, 20, 18, 0.04), 0 1px 1px rgba(20, 20, 18, 0.03);
+  --shyraq-shadow-2: 0 2px 6px rgba(20, 20, 18, 0.06), 0 1px 2px rgba(20, 20, 18, 0.04);
+  --shyraq-shadow-3: 0 12px 32px rgba(20, 20, 18, 0.1), 0 4px 8px rgba(20, 20, 18, 0.06);
+  --shyraq-shadow-pop: 0 8px 24px rgba(20, 20, 18, 0.1), 0 2px 4px rgba(20, 20, 18, 0.04);
+
+  /* Layout */
+  --sidebar-w: 244px;
+  --sidebar-w-collapsed: 64px;
+  --topbar-h: 56px;
+  --content-max: 1440px;
+
+  /* Font families */
+  --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+}
+
+/* === Shyraq tokens -> Tailwind v4 utilities === */
+@theme {
+  /* Surface backgrounds */
+  --color-bg: var(--bg);
+  --color-bg-elev: var(--bg-elev);
+  --color-bg-sunken: var(--bg-sunken);
+  --color-bg-subtle: var(--bg-subtle);
+  --color-bg-sidebar: var(--bg-sidebar);
+
+  /* Borders */
+  --color-border-strong: var(--border-strong);
+  --color-line: var(--line);
+
+  /* Text */
+  --color-text-1: var(--text-1);
+  --color-text-2: var(--text-2);
+  --color-text-3: var(--text-3);
+  --color-text-4: var(--text-4);
+  --color-on-primary: var(--on-primary);
+
+  /* Primary accent scale */
+  --color-primary-bright: var(--primary-bright);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-active: var(--primary-active);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-hover: var(--primary-soft-hover);
+  --color-primary-fg: var(--primary-fg);
+
+  /* Semantic */
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-fg: var(--success-fg);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-fg: var(--warning-fg);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-fg: var(--danger-fg);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-fg: var(--info-fg);
+  --color-neutral-soft: var(--neutral-soft);
+  --color-neutral-fg: var(--neutral-fg);
+
+  /* Radii (Shyraq tokens) */
+  --radius-xs: var(--r-xs);
+  --radius-shyraq-sm: var(--r-sm);
+  --radius-shyraq-md: var(--r-md);
+  --radius-shyraq-lg: var(--r-lg);
+  --radius-shyraq-xl: var(--r-xl);
+  --radius-pill: var(--r-pill);
+
+  /* Shadows (Shyraq tokens) */
+  --shadow-shyraq-1: var(--shyraq-shadow-1);
+  --shadow-shyraq-2: var(--shyraq-shadow-2);
+  --shadow-shyraq-3: var(--shyraq-shadow-3);
+  --shadow-shyraq-pop: var(--shyraq-shadow-pop);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    box-sizing: border-box;
+  }
+  body {
+    @apply bg-background text-foreground;
+    margin: 0;
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  html {
+    @apply font-sans;
+  }
+  button {
+    font-family: inherit;
+    font-feature-settings: inherit;
+  }
+  input,
+  textarea,
+  select {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+  }
+  #root {
+    min-height: 100vh;
+  }
+}

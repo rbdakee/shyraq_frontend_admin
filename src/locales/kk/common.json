@@ -1,0 +1,24 @@
+{
+  "app": {
+    "title": "Shyraq Admin"
+  },
+  "actions": {
+    "save": "Сақтау",
+    "cancel": "Болдырмау",
+    "create": "Жасау",
+    "delete": "Жою",
+    "edit": "Өңдеу",
+    "close": "Жабу",
+    "confirm": "Растау",
+    "back": "Артқа"
+  },
+  "loading": "Жүктелуде...",
+  "search": "Іздеу",
+  "yes": "Иә",
+  "no": "Жоқ",
+  "pagination": {
+    "prev": "Артқа",
+    "next": "Алға",
+    "shown_count": "Көрсетілген: {{count}}"
+  }
+}

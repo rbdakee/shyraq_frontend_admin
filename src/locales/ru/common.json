@@ -1,0 +1,24 @@
+{
+  "app": {
+    "title": "Shyraq Admin"
+  },
+  "actions": {
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "create": "Создать",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "close": "Закрыть",
+    "confirm": "Подтвердить",
+    "back": "Назад"
+  },
+  "loading": "Загрузка...",
+  "search": "Поиск",
+  "yes": "Да",
+  "no": "Нет",
+  "pagination": {
+    "prev": "Назад",
+    "next": "Вперёд",
+    "shown_count": "Показано: {{count}}"
+  }
+}

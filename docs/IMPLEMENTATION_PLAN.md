@@ -447,7 +447,7 @@ src/
 | Батч | Тема                                        | Приоритет | Статус |
 | ---- | ------------------------------------------- | --------- | ------ |
 | B0   | Scaffold & tooling                          | infra     | [x]    |
-| B1   | Foundation (http/auth/i18n/темы/форматтеры) | infra     | [ ]    |
+| B1   | Foundation (http/auth/i18n/темы/форматтеры) | infra     | [x]    |
 | B2   | Auth + App Shell                            | infra/P0  | [ ]    |
 | B3   | DataTable + patterns + Дашборд              | infra/P0  | [ ]    |
 | B4   | Дети                                        | P0        | [ ]    |
