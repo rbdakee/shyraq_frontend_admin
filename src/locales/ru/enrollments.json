@@ -135,6 +135,7 @@
       "tariff_label": "Назначить тариф",
       "tariff_start_label": "Дата начала действия тарифа",
       "group_label": "Группа",
+      "group_placeholder": "Выберите группу",
       "confirm": "Создать карточку и счёт",
       "cancel": "Отменить"
     },

@@ -32,6 +32,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ErrorState } from '@/components/feedback/error-state';
 import { SkeletonLine, SkeletonBox } from '@/components/feedback/skeleton';
 import { PhoneInput } from '@/components/forms/phone-input';
+import { IinInput } from '@/components/forms/iin-input';
 import { EntityCombobox } from '@/components/forms/entity-combobox';
 import type { ComboboxOption } from '@/components/forms/entity-combobox';
 import { mapValidationErrors } from '@/components/forms/map-validation-errors';
@@ -46,9 +47,14 @@ import { useGroups } from '@/hooks/use-groups';
 import { formatDate, formatDateTime, formatPhone, getInitials } from '@/lib/format';
 import { toI18nKey } from '@/lib/error-map';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
+import {
+  ALLOWED_TRANSITIONS,
+  ALL_TRANSITION_TARGETS,
+  TRANSITION_ACTION_KEYS,
+} from './enrollment-transitions';
+import type { EnrollmentStatus } from './enrollment-transitions';
 
 type EnrollmentDetailData = NonNullable<ReturnType<typeof useEnrollment>['data']>;
-type EnrollmentStatus = EnrollmentDetailData['enrollment']['status'];
 type EnrollmentStatusLogDto = EnrollmentDetailData['log'][number];
 
 const STATUS_BADGE_VARIANT: Record<EnrollmentStatus, 'info' | 'warning' | 'success' | 'neutral'> = {
@@ -60,34 +66,15 @@ const STATUS_BADGE_VARIANT: Record<EnrollmentStatus, 'info' | 'warning' | 'succe
   archive: 'neutral',
 };
 
-const ALLOWED_TRANSITIONS: Record<EnrollmentStatus, EnrollmentStatus[]> = {
-  new: ['in_processing', 'cancelled'],
-  in_processing: ['waitlist', 'card_created', 'cancelled'],
-  waitlist: ['in_processing', 'card_created', 'cancelled'],
-  card_created: ['archive'],
-  cancelled: ['archive'],
-  archive: [],
-};
-
-const ALL_TRANSITION_TARGETS: EnrollmentStatus[] = [
-  'in_processing',
-  'waitlist',
-  'card_created',
-  'cancelled',
-  'archive',
-];
-
-const TRANSITION_ACTION_KEYS: Record<string, string> = {
-  in_processing: 'detail.actions.to_in_processing',
-  waitlist: 'detail.actions.to_waitlist',
-  cancelled: 'detail.actions.to_cancelled',
-  archive: 'detail.actions.to_archive',
-};
-
 const UpdateEnrollmentSchema = z.object({
   childName: z.string().optional(),
   childDob: z.string().optional(),
-  childIin: z.string().optional(),
+  childIin: z
+    .string()
+    .optional()
+    .refine((v) => !v || /^\d{12}$/.test(v.replace(/\s/g, '')), {
+      message: 'IIN must be exactly 12 digits',
+    }),
   contactName: z.string().min(1),
   contactPhone: z.string().regex(/^\+7\d{10}$/),
   notes: z.string().optional(),
@@ -430,7 +417,17 @@ export default function EnrollmentDetailPage() {
                   <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
                     {t('detail.child_data.iin')}
                   </Label>
-                  <Input {...editForm.register('childIin')} />
+                  <Controller
+                    control={editForm.control}
+                    name="childIin"
+                    render={({ field }) => (
+                      <IinInput
+                        value={field.value ?? ''}
+                        onChange={field.onChange}
+                        aria-invalid={!!editForm.formState.errors.childIin}
+                      />
+                    )}
+                  />
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <Button type="button" variant="outline" onClick={() => setEditing(false)}>
@@ -722,7 +719,7 @@ export default function EnrollmentDetailPage() {
               </Label>
               <Select value={createCardGroupId} onValueChange={setCreateCardGroupId}>
                 <SelectTrigger>
-                  <SelectValue placeholder={t('modals.assign.staff_placeholder')} />
+                  <SelectValue placeholder={t('modals.create_card.group_placeholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {groupsList
@@ -804,7 +801,7 @@ function TransitionButtons({
   onTransition,
   t,
 }: {
-  allowed: EnrollmentStatus[];
+  allowed: readonly EnrollmentStatus[];
   onTransition: (target: EnrollmentStatus) => void;
   t: (key: string) => string;
 }) {

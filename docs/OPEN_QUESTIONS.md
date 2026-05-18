@@ -205,6 +205,12 @@ HANDOFF §24: исторически `/admin/*` мог быть заскопле
 
 Решение: форма создания mentor делает 2 шага — `POST /admin/staff` → затем `POST /groups/:id/mentor {staff_member_id}`. Частичный сбой (staff создан, assign упал) — warning-тост, пользователь дозначает из карточки. Backend-forced, не блокирует B6. Пересмотр: backend добавит атомарный create+assign → упростить.
 
+### C13 — Enrollments: нет поля пола ребёнка → child после card_created с пустым gender · parked/watch (2026-05-19, W4/B5-fix)
+
+Контекст: при `card_created` система авто-создаёт `children` из данных лида. Пользователь хочет вводить пол ребёнка на этапе лида, чтобы у созданной карточки `gender` не был пустым. Сверка live `/docs-json` (2026-05-19, повторно): `CreateEnrollmentDto` / `UpdateEnrollmentDto` / `TransitionEnrollmentDto` **не имеют поля gender** (поля enrollment — §A11). Фронт физически не может пробросить пол через воронку лида.
+
+Решение (CLAUDE §2 — не выдумывать поле; не добавлять мёртвый непишущийся контрол): UI лида **без поля пола** (не вводим то, что контракт не примет). **Workaround (рабочий сейчас):** после `card_created` админ задаёт пол на карточке ребёнка — `routes/children/tabs/profile-tab.tsx` имеет рабочий gender-Select (male/female, B4). Backend-need каталогизирован в [`BACKEND_NEEDINGS_HANDOFF.md`](BACKEND_NEEDINGS_HANDOFF.md) **N5**. Не блокирует B5 (acceptance закрыт; gender выставляется на карточке ребёнка). Пересмотр: backend добавит `gender` в CreateEnrollmentDto/TransitionEnrollmentDto → добавить селект пола в форму лида, обновить HANDOFF §6 (first-document).
+
 ---
 
 _Производный документ. Первоисточники — [`ADMIN_FRONTEND_HANDOFF.md`](ADMIN_FRONTEND_HANDOFF.md), [`ADMIN_DESIGN_SPEC.md`](ADMIN_DESIGN_SPEC.md). Обновлять при изменении backend-scope или решений владельца._

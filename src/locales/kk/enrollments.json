@@ -135,6 +135,7 @@
       "tariff_label": "Тариф тағайындау",
       "tariff_start_label": "Тариф күшіне ену күні",
       "group_label": "Топ",
+      "group_placeholder": "Топты таңдаңыз",
       "confirm": "Карточка мен шотты жасау",
       "cancel": "Болдырмау"
     },

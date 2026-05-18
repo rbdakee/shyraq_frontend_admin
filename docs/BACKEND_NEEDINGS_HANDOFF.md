@@ -86,6 +86,20 @@
 
 ---
 
+## N5 — Enrollments DTO без поля пола ребёнка — child после `card_created` с пустым `gender` · `forward-looking`
+
+**Нужно фронту.** Воронка лида при `card_created` авто-создаёт `children`. Чтобы у созданной карточки сразу был заполнен пол (не пустой), фронту нужно поле пола в контракте лида (на создании лида или в transition card_created).
+
+**Live backend (проверено 2026-05-19).** `CreateEnrollmentDto` = `{contactName*, contactPhone*, childName?, childDob?, childIin?, source?, notes?, assignedTo?}`; `UpdateEnrollmentDto` = те же поля (все опц.); `TransitionEnrollmentDto` = `{toStatus*, comment?, currentGroupId?}`. **Поля `gender` нет ни в одном** (контракт enrollments — OPEN_QUESTIONS §A11). `ChildDto` (§A8) и `CreateChildDto`/`UpdateChildDto` пол **поддерживают** (`gender: male|female`, nullable).
+
+**Влияние.** Ребёнок, созданный через `card_created`, имеет `gender = null`. Не блокирует B5 (acceptance закрыт). **Workaround (работает сейчас):** админ выставляет пол на карточке ребёнка — `routes/children/tabs/profile-tab.tsx` имеет рабочий gender-Select (B4, `PATCH /children/:id`).
+
+**Предлагаемый контракт.** Добавить `gender?: 'male'|'female'` в `CreateEnrollmentDto` (и/или `TransitionEnrollmentDto` для card_created) — backend проставляет его в авто-создаваемый `children`. Тогда фронт добавит селект пола в форму лида.
+
+**Источник.** OPEN_QUESTIONS §C13 (2026-05-19, W4/B5-fix, запрос владельца). **Действие.** Сделать когда backend расширит enrollment-DTO; тогда обновить HANDOFF §6 + добавить селект пола в форму лида (first-document).
+
+---
+
 ## Что НЕ нужно от backend (доступно — не считать gap'ом)
 
 Чтобы не плодить ложные «нехватки» — это **есть** на live и используется:

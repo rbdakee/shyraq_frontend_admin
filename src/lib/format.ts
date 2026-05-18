@@ -54,6 +54,8 @@ export function formatDate(value: string | Date, timeZone: string): string {
 
 // KZ IIN (ИИН) is an immutable spec: exactly 12 decimal digits.
 const IIN_MAX_DIGITS = 12;
+// Non-breaking space prevents line-wrap between IIN digit groups in narrow table cells
+const NBSP = ' ';
 
 /**
  * Canonical IIN value: digits only, capped at 12. The form/Zod/submit always
@@ -64,12 +66,29 @@ export function maskIin(raw: string): string {
 }
 
 /**
- * Display mask for the IIN field: `123456 789012` (6 + space + 6), matching the
- * `000000 000000` placeholder. Input only — the stored value stays digit-only.
+ * Display mask for the IIN field (6 + NBSP + 6), matching the
+ * placeholder. Input only — the stored value stays digit-only.
  */
 export function formatIinDisplay(raw: string): string {
   const d = maskIin(raw);
-  return d.length > 6 ? `${d.slice(0, 6)} ${d.slice(6)}` : d;
+  return d.length > 6 ? d.slice(0, 6) + NBSP + d.slice(6) : d;
+}
+
+const IIN_VISIBLE_PREFIX = 6;
+const IIN_MASK_CHAR = '•'; // U+2022 BULLET
+
+/**
+ * Partial-mask for list views: first 6 digits visible, last 6 replaced with bullets.
+ * Groups joined by NBSP (U+00A0). Null/undefined/empty returns empty string.
+ */
+export function formatIinMasked(raw: string | null | undefined): string {
+  if (!raw) return '';
+  const d = maskIin(raw);
+  if (d.length === 0) return '';
+  const visible = d.slice(0, IIN_VISIBLE_PREFIX);
+  const hiddenCount = d.length > IIN_VISIBLE_PREFIX ? d.length - IIN_VISIBLE_PREFIX : 0;
+  if (hiddenCount === 0) return visible;
+  return visible + NBSP + IIN_MASK_CHAR.repeat(hiddenCount);
 }
 
 /**

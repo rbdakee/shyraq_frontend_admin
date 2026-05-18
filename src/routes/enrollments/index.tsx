@@ -31,6 +31,7 @@ import {
 import { DataTable } from '@/components/data-table/data-table';
 import type { OffsetPagination } from '@/components/data-table/types';
 import { PhoneInput } from '@/components/forms/phone-input';
+import { IinInput } from '@/components/forms/iin-input';
 import { EntityCombobox } from '@/components/forms/entity-combobox';
 import type { ComboboxOption } from '@/components/forms/entity-combobox';
 import { mapValidationErrors } from '@/components/forms/map-validation-errors';
@@ -543,9 +544,17 @@ export default function EnrollmentsListPage() {
                 <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
                   {t('create.child_iin')}
                 </Label>
-                <Input
-                  {...form.register('childIin')}
-                  placeholder={t('create.child_iin_placeholder')}
+                <Controller
+                  control={form.control}
+                  name="childIin"
+                  render={({ field }) => (
+                    <IinInput
+                      value={field.value ?? ''}
+                      onChange={field.onChange}
+                      placeholder={t('create.child_iin_placeholder')}
+                      aria-invalid={!!form.formState.errors.childIin}
+                    />
+                  )}
                 />
                 {form.formState.errors.childIin && (
                   <p className="text-[12px] text-[color:var(--danger-fg)]">

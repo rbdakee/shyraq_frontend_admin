@@ -6,6 +6,7 @@ import {
   formatPhone,
   maskIin,
   formatIinDisplay,
+  formatIinMasked,
   getInitials,
 } from './format';
 
@@ -151,21 +152,70 @@ describe('maskIin', () => {
   });
 });
 
+describe('formatIinMasked', () => {
+  it('masks last 6 digits of a full 12-digit IIN', () => {
+    expect(formatIinMasked('123456789012')).toBe('123456 ••••••');
+  });
+
+  it('returns empty string for null', () => {
+    expect(formatIinMasked(null)).toBe('');
+  });
+
+  it('returns empty string for undefined', () => {
+    expect(formatIinMasked(undefined)).toBe('');
+  });
+
+  it('returns empty string for empty string', () => {
+    expect(formatIinMasked('')).toBe('');
+  });
+
+  it('returns only visible prefix when input has 6 or fewer digits', () => {
+    expect(formatIinMasked('123456')).toBe('123456');
+    expect(formatIinMasked('12345')).toBe('12345');
+  });
+
+  it('masks partial tail for input between 7 and 11 digits', () => {
+    expect(formatIinMasked('1234567')).toBe('123456 •');
+    expect(formatIinMasked('12345678901')).toBe('123456 •••••');
+  });
+
+  it('strips non-digit characters before masking', () => {
+    expect(formatIinMasked('1234 5678 9012')).toBe('123456 ••••••');
+    expect(formatIinMasked('abc123def456ghi789jkl012')).toBe('123456 ••••••');
+  });
+
+  it('caps at 12 digits (extra digits stripped)', () => {
+    expect(formatIinMasked('1234567890129999')).toBe('123456 ••••••');
+  });
+
+  it('uses NBSP (U+00A0) as group separator, not regular space', () => {
+    const result = formatIinMasked('123456789012');
+    expect(result).not.toContain(' ');
+    expect(result.charCodeAt(6)).toBe(0x00a0);
+  });
+});
+
 describe('formatIinDisplay', () => {
-  it('groups 12 digits as "6 + space + 6"', () => {
-    expect(formatIinDisplay('123456789012')).toBe('123456 789012');
+  it('groups 12 digits as "6 + NBSP + 6"', () => {
+    expect(formatIinDisplay('123456789012')).toBe('123456 789012');
   });
 
   it('does not add a space until past 6 digits', () => {
     expect(formatIinDisplay('123456')).toBe('123456');
-    expect(formatIinDisplay('1234567')).toBe('123456 7');
+    expect(formatIinDisplay('1234567')).toBe('123456 7');
   });
 
   it('strips non-digits and caps at 12 before grouping', () => {
-    expect(formatIinDisplay('1234 5678 9012 99')).toBe('123456 789012');
+    expect(formatIinDisplay('1234 5678 9012 99')).toBe('123456 789012');
   });
 
   it('returns empty string for empty input', () => {
     expect(formatIinDisplay('')).toBe('');
+  });
+
+  it('uses NBSP (U+00A0) as group separator, not regular space', () => {
+    const result = formatIinDisplay('123456789012');
+    expect(result).not.toContain(' ');
+    expect(result.charCodeAt(6)).toBe(0x00a0);
   });
 });

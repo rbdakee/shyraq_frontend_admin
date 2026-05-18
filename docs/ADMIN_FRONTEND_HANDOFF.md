@@ -216,7 +216,18 @@
 
 **Назначение:** воронка от заявки родителя до создания карточки ребёнка. BP §1.
 
-**State machine лида:** `new → in_processing → {waitlist | card_created | cancelled} → archive`. Логируется в `enrollment_status_log`. При переходе в `card_created` система создаёт `children` + `child_guardians` (primary) + первый `invoice`.
+**State machine лида** (точная таблица переходов, зеркалирует backend VO `EnrollmentStatus.TRANSITIONS`):
+
+| Текущий статус  | Допустимые переходы                     |
+| --------------- | --------------------------------------- |
+| `new`           | `in_processing`                         |
+| `in_processing` | `waitlist`, `card_created`, `cancelled` |
+| `waitlist`      | `in_processing`                         |
+| `card_created`  | `archive`                               |
+| `cancelled`     | `archive`                               |
+| `archive`       | _(терминальный — переходов нет)_        |
+
+Логируется в `enrollment_status_log`. При переходе в `card_created` система создаёт `children` + `child_guardians` (primary) + первый `invoice`.
 
 > **Фактический контракт (подтверждено по live `/docs-json` 2026-05-18, §A11):**
 >

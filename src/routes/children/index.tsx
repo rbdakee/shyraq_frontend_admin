@@ -19,7 +19,7 @@ import { DataTable } from '@/components/data-table/data-table';
 import type { OffsetPagination } from '@/components/data-table/types';
 import { useChildrenList } from '@/hooks/use-children';
 import { useGroups } from '@/hooks/use-groups';
-import { formatDate, getInitials } from '@/lib/format';
+import { formatDate, formatIinMasked, getInitials } from '@/lib/format';
 import { DEFAULT_TIMEZONE, SEARCH_DEBOUNCE_MS } from '@/lib/constants';
 
 type ChildrenListData = NonNullable<ReturnType<typeof useChildrenList>['data']>;
@@ -156,8 +156,8 @@ export default function ChildrenListPage() {
         id: 'iin',
         header: () => t('columns.iin'),
         cell: ({ row }) => (
-          <span className="font-mono text-[color:var(--text-3)]">
-            {row.original.iin ?? t('no_data')}
+          <span className="whitespace-nowrap font-mono text-[color:var(--text-3)]">
+            {row.original.iin ? formatIinMasked(row.original.iin) : t('no_data')}
           </span>
         ),
       },

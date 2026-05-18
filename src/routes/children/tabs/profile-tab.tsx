@@ -21,7 +21,7 @@ import { FieldErrorDisplay } from '@/components/forms/form-error';
 import { mapValidationErrors } from '@/components/forms/map-validation-errors';
 import { useChild, useUpdateChild } from '@/hooks/use-children';
 import { toI18nKey } from '@/lib/error-map';
-import { formatDate } from '@/lib/format';
+import { formatDate, formatIinDisplay } from '@/lib/format';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
 
 type Gender = 'male' | 'female';
@@ -235,7 +235,11 @@ export default function ProfileTab({ childId }: { childId: string }) {
           <>
             <div className="grid grid-cols-2 gap-4">
               <ViewField label={t('detail.profile.full_name')} value={child.full_name} />
-              <ViewField label={t('detail.profile.iin')} value={child.iin ?? '—'} mono />
+              <ViewField
+                label={t('detail.profile.iin')}
+                value={child.iin ? formatIinDisplay(child.iin) : '—'}
+                mono
+              />
               <ViewField
                 label={t('detail.profile.date_of_birth')}
                 value={formatDate(child.date_of_birth, tz)}
@@ -322,7 +326,9 @@ function ViewField({
   return (
     <div className={className}>
       <div className="mb-1 text-[12px] font-semibold text-[color:var(--text-3)]">{label}</div>
-      <div className={`text-[14px] text-[color:var(--text-1)] ${mono ? 'font-mono' : ''}`}>
+      <div
+        className={`text-[14px] text-[color:var(--text-1)] ${mono ? 'whitespace-nowrap font-mono' : ''}`}
+      >
         {value}
       </div>
     </div>
