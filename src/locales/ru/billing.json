@@ -1,0 +1,149 @@
+{
+  "invoices": {
+    "title": "Счета",
+    "subtitle": "Начисления и оплаты",
+    "empty_title": "Счетов пока нет",
+    "empty_description": "Счета появятся после зачисления детей и назначения тарифов.",
+    "filtered_empty_title": "Ничего не найдено",
+    "filtered_empty_description": "Попробуйте изменить параметры фильтров.",
+    "create_button": "Создать начисление",
+    "load_more": "Загрузить ещё",
+
+    "status": {
+      "pending": "Ожидает",
+      "partial": "Частично",
+      "paid": "Оплачен",
+      "overdue": "Просрочен",
+      "refunded": "Возврат",
+      "cancelled": "Отменён"
+    },
+
+    "type": {
+      "monthly": "Ежемесячный",
+      "prepayment_3m": "Предоплата 3 мес",
+      "prepayment_6m": "Предоплата 6 мес",
+      "prepayment_12m": "Предоплата 12 мес",
+      "prepayment_24m": "Предоплата 24 мес",
+      "additional_service": "Доп. услуга",
+      "late_pickup_fee": "Штраф за опоздание",
+      "other": "Прочее"
+    },
+
+    "columns": {
+      "child": "Ребёнок",
+      "type": "Тип",
+      "period": "Период",
+      "amount_due": "Сумма",
+      "amount_after_discount": "К оплате",
+      "status": "Статус",
+      "due_date": "Срок оплаты",
+      "created_at": "Дата создания",
+      "actions": "Действия"
+    },
+
+    "filters": {
+      "status": "Статус",
+      "type": "Тип",
+      "child": "Ребёнок",
+      "due_date_from": "Срок от",
+      "due_date_to": "Срок до",
+      "all_statuses": "Все статусы",
+      "all_types": "Все типы"
+    },
+
+    "detail": {
+      "breadcrumb": "Счета",
+      "not_found": "Счёт не найден или нет доступа",
+      "invoice_number": "Счёт #{{id}}",
+      "child_label": "Ребёнок",
+      "type_label": "Тип",
+      "period_label": "Период",
+      "due_date_label": "Срок оплаты",
+      "amount_due_label": "Сумма",
+      "discount_label": "Скидка",
+      "discount_reason_label": "Причина скидки",
+      "amount_after_discount_label": "К оплате",
+      "description_label": "Описание",
+      "prorated_label": "Пропорционально за дней",
+      "created_at_label": "Создан",
+      "updated_at_label": "Обновлён",
+
+      "line_items": {
+        "title": "Позиции",
+        "description": "Описание",
+        "quantity": "Кол-во",
+        "unit_price": "Цена за ед.",
+        "line_total": "Итого",
+        "empty": "Нет позиций"
+      },
+
+      "actions": {
+        "mark_paid": "Отметить оплату наличными",
+        "cancel": "Отменить счёт"
+      },
+
+      "related_payments": "Связанные оплаты",
+      "payments_unavailable": "Данные об оплатах недоступны",
+      "payments_unavailable_hint": "Информация об оплатах предоставляется в отдельном разделе «Оплаты».",
+      "fiscal_receipt": "Фискальный чек",
+      "fiscal_unavailable": "Данные о фискальных чеках недоступны в текущем API."
+    },
+
+    "create": {
+      "title": "Создать начисление",
+      "child_id": "Ребёнок",
+      "child_id_placeholder": "Выберите ребёнка",
+      "invoice_type": "Тип начисления",
+      "invoice_type_placeholder": "Выберите тип",
+      "amount_due": "Сумма (KZT)",
+      "amount_due_placeholder": "0",
+      "due_date": "Срок оплаты",
+      "period_start": "Начало периода",
+      "period_end": "Конец периода",
+      "description": "Описание",
+      "description_placeholder": "Описание начисления (необязательно)",
+      "discount_pct": "Скидка (%)",
+      "discount_pct_placeholder": "0",
+      "discount_reason": "Причина скидки",
+      "discount_reason_placeholder": "Причина предоставления скидки",
+
+      "line_items": {
+        "title": "Позиции",
+        "add": "Добавить позицию",
+        "remove": "Удалить",
+        "description": "Описание",
+        "description_placeholder": "Описание позиции",
+        "quantity": "Кол-во",
+        "unit_price": "Цена за ед.",
+        "tariff_plan_id": "Тарифный план",
+        "tariff_plan_id_placeholder": "Не указан"
+      },
+
+      "submit": "Создать",
+      "cancel": "Отмена",
+      "success": "Счёт создан"
+    },
+
+    "mark_paid": {
+      "title": "Отметить оплату наличными",
+      "paid_at": "Дата оплаты",
+      "paid_at_placeholder": "Оставьте пустым для текущей даты",
+      "note": "Примечание",
+      "note_placeholder": "Комментарий к оплате (необязательно)",
+      "confirm": "Подтвердить оплату",
+      "cancel": "Отмена",
+      "success": "Счёт отмечен как оплаченный",
+      "info_banner": "Будет создан платёж со статусом «Проведён» и поставлена в очередь задача на фискальный чек."
+    },
+
+    "cancel_invoice": {
+      "title": "Отменить счёт",
+      "warning": "Это действие необратимо. Отменённый счёт нельзя восстановить.",
+      "reason": "Причина отмены",
+      "reason_placeholder": "Укажите причину (необязательно)",
+      "confirm": "Отменить счёт",
+      "cancel": "Назад",
+      "success": "Счёт отменён"
+    }
+  }
+}

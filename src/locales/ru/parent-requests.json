@@ -1,0 +1,118 @@
+{
+  "title": "Заявки родителей",
+  "subtitle": "Обработка заявок родителей",
+  "subtitle_pending": "{{count}} требуют решения",
+  "empty_title": "Заявок пока нет",
+  "empty_description": "Когда родители отправят заявки, они появятся здесь.",
+  "filtered_empty_title": "Ничего не найдено",
+  "filtered_empty_description": "Попробуйте изменить параметры фильтров.",
+  "load_more": "Загрузить ещё",
+  "no_data": "—",
+
+  "request_type": {
+    "trusted_person": "Доверенное лицо",
+    "day_off": "Выходные",
+    "vacation": "Отпуск",
+    "late_pickup": "Поздний забор",
+    "open_request": "Открытое обращение"
+  },
+
+  "status": {
+    "pending": "Ожидает",
+    "accepted": "Принята",
+    "rejected": "Отклонена",
+    "cancelled": "Отменена"
+  },
+
+  "recipient_type": {
+    "admin": "Администратор",
+    "mentor": "Воспитатель",
+    "specialist": "Специалист"
+  },
+
+  "columns": {
+    "type": "Тип",
+    "child": "Ребёнок",
+    "status": "Статус",
+    "recipient": "Получатель",
+    "date": "Дата",
+    "created_at": "Дата создания"
+  },
+
+  "filters": {
+    "status": "Статус",
+    "type": "Тип заявки",
+    "child": "Ребёнок",
+    "group": "Группа",
+    "recipient_type": "Получатель",
+    "all": "Все"
+  },
+
+  "detail": {
+    "breadcrumb": "Заявки родителей",
+    "not_found": "Заявка не найдена или нет доступа",
+    "request_info": "Детали заявки",
+    "child_card": "Ребёнок",
+    "recipient_card": "Получатель заявки",
+    "recipient_card_note": "Заявку также видит администрация садика.",
+    "date_from": "Дата начала",
+    "date_to": "Дата окончания",
+    "requester": "Заявитель",
+    "recipient": "Получатель",
+    "details": "Подробности",
+    "description_label": "Описание родителя:",
+    "review_note_label": "Комментарий к решению",
+    "review_note_placeholder": "Оставьте комментарий (необязательно)",
+    "reviewed_by": "Рассмотрел",
+    "reviewed_at": "Дата рассмотрения",
+    "invoice_link": "Связанный счёт",
+
+    "late_pickup_note": "При принятии заявки будет автоматически создан счёт за поздний забор.",
+    "late_pickup_banner_title": "Будет создан счёт",
+
+    "accept_disabled": "Действие недоступно в текущем статусе",
+
+    "actions": {
+      "accept": "Принять",
+      "reject": "Отклонить",
+      "cancel": "Отмена"
+    },
+
+    "conflict": {
+      "title": "Заявка уже обработана",
+      "description": "Заявка была обработана другим сотрудником. Данные обновлены."
+    },
+
+    "detail_keys": {
+      "full_name": "ФИО",
+      "phone": "Телефон",
+      "relation": "Связь",
+      "valid_until": "Действует",
+      "document": "Документ",
+      "period": "Период",
+      "type": "Тип",
+      "tariff_impact": "Влияние на тариф",
+      "reason": "Причина",
+      "time": "Время",
+      "notes": "Заметки"
+    }
+  },
+
+  "thread": {
+    "title": "Обсуждение",
+    "empty": "Сообщений пока нет",
+    "input_placeholder": "Написать ответ...",
+    "send": "Отправить",
+    "author_parent": "Родитель",
+    "author_staff": "Сотрудник",
+    "author_unknown": "Неизвестный",
+    "attachments": "Вложения",
+    "load_more": "Загрузить ранние сообщения"
+  },
+
+  "success": {
+    "accepted": "Заявка принята",
+    "rejected": "Заявка отклонена",
+    "message_sent": "Сообщение отправлено"
+  }
+}

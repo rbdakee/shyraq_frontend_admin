@@ -1,0 +1,118 @@
+{
+  "title": "Ата-ана өтініштері",
+  "subtitle": "Ата-ана өтініштерін өңдеу",
+  "subtitle_pending": "{{count}} шешім қажет",
+  "empty_title": "Өтініштер жоқ",
+  "empty_description": "Ата-аналар өтініш жібергенде, олар осында көрсетіледі.",
+  "filtered_empty_title": "Ештеңе табылмады",
+  "filtered_empty_description": "Сүзгі параметрлерін өзгертіп көріңіз.",
+  "load_more": "Тағы жүктеу",
+  "no_data": "—",
+
+  "request_type": {
+    "trusted_person": "Сенімді тұлға",
+    "day_off": "Демалыс",
+    "vacation": "Демалыс (каникул)",
+    "late_pickup": "Кеш алып кету",
+    "open_request": "Ашық өтініш"
+  },
+
+  "status": {
+    "pending": "Күтілуде",
+    "accepted": "Қабылданды",
+    "rejected": "Қабылданбады",
+    "cancelled": "Бас тартылды"
+  },
+
+  "recipient_type": {
+    "admin": "Әкімші",
+    "mentor": "Тәрбиеші",
+    "specialist": "Маман"
+  },
+
+  "columns": {
+    "type": "Түрі",
+    "child": "Бала",
+    "status": "Күйі",
+    "recipient": "Алушы",
+    "date": "Күні",
+    "created_at": "Жасалған күні"
+  },
+
+  "filters": {
+    "status": "Күйі",
+    "type": "Өтініш түрі",
+    "child": "Бала",
+    "group": "Топ",
+    "recipient_type": "Алушы",
+    "all": "Барлығы"
+  },
+
+  "detail": {
+    "breadcrumb": "Ата-ана өтініштері",
+    "not_found": "Өтініш табылмады немесе қол жеткізу жоқ",
+    "request_info": "Өтініш мәліметтері",
+    "child_card": "Бала",
+    "recipient_card": "Өтініш алушы",
+    "recipient_card_note": "Өтінішті сонымен қатар бала бақша әкімшілігі көреді.",
+    "date_from": "Басталу күні",
+    "date_to": "Аяқталу күні",
+    "requester": "Өтініш беруші",
+    "recipient": "Алушы",
+    "details": "Мәліметтер",
+    "description_label": "Ата-ана сипаттамасы:",
+    "review_note_label": "Шешімге пікір",
+    "review_note_placeholder": "Пікір қалдырыңыз (міндетті емес)",
+    "reviewed_by": "Қарастырған",
+    "reviewed_at": "Қарастыру күні",
+    "invoice_link": "Байланысты шот",
+
+    "late_pickup_note": "Өтінішті қабылдаған кезде кеш алып кетуге автоматты шот жасалады.",
+    "late_pickup_banner_title": "Шот жасалады",
+
+    "accept_disabled": "Қазіргі күйінде іс-әрекет қолжетімсіз",
+
+    "actions": {
+      "accept": "Қабылдау",
+      "reject": "Қабылдамау",
+      "cancel": "Болдырмау"
+    },
+
+    "conflict": {
+      "title": "Өтініш бұрын өңделген",
+      "description": "Өтінішті басқа қызметкер өңдеді. Деректер жаңартылды."
+    },
+
+    "detail_keys": {
+      "full_name": "Аты-жөні",
+      "phone": "Телефон",
+      "relation": "Байланыс",
+      "valid_until": "Жарамды",
+      "document": "Құжат",
+      "period": "Кезең",
+      "type": "Түрі",
+      "tariff_impact": "Тарифке әсері",
+      "reason": "Себеп",
+      "time": "Уақыт",
+      "notes": "Жазбалар"
+    }
+  },
+
+  "thread": {
+    "title": "Талқылау",
+    "empty": "Хабарламалар жоқ",
+    "input_placeholder": "Жауап жазу...",
+    "send": "Жіберу",
+    "author_parent": "Ата-ана",
+    "author_staff": "Қызметкер",
+    "author_unknown": "Белгісіз",
+    "attachments": "Тіркемелер",
+    "load_more": "Бұрынғы хабарламаларды жүктеу"
+  },
+
+  "success": {
+    "accepted": "Өтініш қабылданды",
+    "rejected": "Өтініш қабылданбады",
+    "message_sent": "Хабарлама жіберілді"
+  }
+}

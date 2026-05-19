@@ -12,6 +12,8 @@ import ruChildren from '@/locales/ru/children.json';
 import ruEnrollments from '@/locales/ru/enrollments.json';
 import ruGroups from '@/locales/ru/groups.json';
 import ruStaff from '@/locales/ru/staff.json';
+import ruBilling from '@/locales/ru/billing.json';
+import ruParentRequests from '@/locales/ru/parent-requests.json';
 import kkCommon from '@/locales/kk/common.json';
 import kkErrors from '@/locales/kk/errors.json';
 import kkAuth from '@/locales/kk/auth.json';
@@ -23,6 +25,8 @@ import kkChildren from '@/locales/kk/children.json';
 import kkEnrollments from '@/locales/kk/enrollments.json';
 import kkGroups from '@/locales/kk/groups.json';
 import kkStaff from '@/locales/kk/staff.json';
+import kkBilling from '@/locales/kk/billing.json';
+import kkParentRequests from '@/locales/kk/parent-requests.json';
 
 const initialLocale = useUiStore.getState().locale;
 
@@ -40,6 +44,8 @@ void i18n.use(initReactI18next).init({
       enrollments: ruEnrollments,
       groups: ruGroups,
       staff: ruStaff,
+      billing: ruBilling,
+      'parent-requests': ruParentRequests,
     },
     kk: {
       common: kkCommon,
@@ -53,6 +59,8 @@ void i18n.use(initReactI18next).init({
       enrollments: kkEnrollments,
       groups: kkGroups,
       staff: kkStaff,
+      billing: kkBilling,
+      'parent-requests': kkParentRequests,
     },
   },
   lng: initialLocale,

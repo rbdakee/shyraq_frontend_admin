@@ -122,8 +122,20 @@ export const router = createBrowserRouter([
           { path: 'meal-plans', lazy: lazyStub },
           { path: 'content', lazy: lazyStub },
           { path: 'content/qundylyq', lazy: lazyStub },
-          { path: 'billing/invoices', lazy: lazyStub },
-          { path: 'billing/invoices/:id', lazy: lazyStub },
+          {
+            path: 'billing/invoices',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/billing/invoices/index');
+              return { Component };
+            },
+          },
+          {
+            path: 'billing/invoices/:id',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/billing/invoices/$id');
+              return { Component };
+            },
+          },
           { path: 'billing/payments', lazy: lazyStub },
           { path: 'billing/payments/:id', lazy: lazyStub },
           { path: 'billing/tariff-plans', lazy: lazyStub },
@@ -134,8 +146,20 @@ export const router = createBrowserRouter([
           { path: 'billing/discounts/new', lazy: lazyStub },
           { path: 'billing/discounts/:id', lazy: lazyStub },
           { path: 'billing/fiscal-receipts', lazy: lazyStub },
-          { path: 'parent-requests', lazy: lazyStub },
-          { path: 'parent-requests/:id', lazy: lazyStub },
+          {
+            path: 'parent-requests',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/parent-requests/index');
+              return { Component };
+            },
+          },
+          {
+            path: 'parent-requests/:id',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/parent-requests/$id');
+              return { Component };
+            },
+          },
           { path: 'attendance', lazy: lazyStub },
           { path: 'attendance/daily-status', lazy: lazyStub },
           { path: 'diagnostics/templates', lazy: lazyStub },

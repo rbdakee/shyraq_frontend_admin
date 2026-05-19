@@ -65,6 +65,7 @@
   "parent_request_not_found": "Ата-ана өтініші табылмады",
   "parent_request_already_processed": "Ата-ана өтініші бұрын өңделген",
   "parent_request_cursor_invalid": "Беттеу курсоры жарамсыз",
+  "parent_request_forbidden": "Ата-ана өтінішіне қол жеткізу мүмкін емес",
   "template_has_entries": "Диагностика үлгісінде жазбалар бар",
   "lifecycle_job_not_found": "Өмірлік цикл тапсырмасы табылмады",
   "lifecycle_job_not_in_failed_state": "Тапсырма қате күйінде емес",

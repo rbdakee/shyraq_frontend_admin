@@ -117,11 +117,34 @@ HANDOFF §6 обновлён под факт в этом коммите. Код 
 
 HANDOFF §7/§8 будут обновлены под факт в wave-коммите B6. Код B6 conform к live с defensive Zod.
 
+### A14 — Invoices: snake_case, plain-array list (no pagination envelope), required period, line_items-only detail · resolved (2026-05-19)
+
+Контекст: при B7 (invoices data+UI) сверка live `/docs-json` выявила расхождения HANDOFF §13/§2.5 ↔ факт. Решение: прецедент §A7/§A8/§A11 — live = факт. Зафиксированные расхождения (HANDOFF §13 правлен под факт в wave-коммите B7+B8 — first-document):
+
+1. **Casing:** snake_case (request + response). Per-module, не экстраполировать.
+2. **Path:** `/api/v1/admin/invoices*` (WITH `/admin/`) — совпадает с §13.
+3. **List pagination:** HANDOFF §2.5 подразумевал offset. Live `GET /admin/invoices` имеет `cursor`+`limit`-параметры, но возвращает **bare `InvoiceResponseDto[]`** — БЕЗ envelope/`total`/`next_cursor`. Реальной cursor-пагинации нет; фронт использует только `limit` (cap), список клиентский. Defensive: `z.array(InvoiceSchema)`.
+4. **Filters:** не единичный `due_date` — а `due_date_from`+`due_date_to` (range) + `period_start`+`period_end`+`status`+`child_id`+`invoice_type`.
+5. **CreateInvoiceOneOffDto:** `period_start`/`period_end` **обязательны** (§13 указывал опц.). Required: `child_id, invoice_type, amount_due, due_date, period_start, period_end`; опц. `description, discount_pct, discount_reason, line_items`. `CreateLineItemDto = {description*, quantity*(≥1), unit_price*(≥0), tariff_plan_id?}`.
+6. **Detail DTO:** `InvoiceResponseDto` содержит только `line_items: InvoiceLineItemResponseDto[]` + плоские поля скидки (`discount_pct?, discount_reason?, amount_after_discount`). Массивов `payments/refunds/fiscal_receipts/discounts` нет → §C14 (честная деградация секций карточки), BACKEND_NEEDINGS N6.
+7. `InvoiceLineItemResponseDto = {id, invoice_id, kindergarten_id, description, tariff_plan_id?, quantity, unit_price, line_total, created_at}`. `manual-mark-paid` тело `{paid_at?, payer_user_id?, note?}`; `cancel` тело `{reason?}`. nullable-поля (`tariff_plan_id, discount_pct, discount_reason, description, prorated_for_days`) — Zod `.nullable()`. Код B7 conform к live с defensive Zod.
+
+### A15 — Parent-requests: list `/admin/*` vs detail/actions `/staff/*`, `type` filter, snake_case, cursor · resolved (2026-05-19)
+
+Контекст: при B8 (parent-requests data+UI) сверка live `/docs-json` выявила существенное расхождение HANDOFF §19 ↔ факт. Решение: прецедент §A7/§A8 — live = факт. Зафиксировано (HANDOFF §19 правлен под факт в wave-коммите B7+B8 — first-document):
+
+1. **Префикс расщеплён:** HANDOFF §19 — всё под `/admin/parent-requests/*`. Live: **только list** = `GET /api/v1/admin/parent-requests`; **detail / accept / reject / messages (GET+POST)** = под `/api/v1/staff/parent-requests/{id}/*`. Эндпоинта `/admin/parent-requests/:id` нет.
+2. **RBAC:** Admin JWT авторизован для `/staff/parent-requests/*` (admin — staff_member с role=admin; подтверждено сводкой live-операции «Admin sees everything in kg»). НЕ blocker. 403 → `parent_request_forbidden` (штатный RBAC, не исключение admin) — добавлено в error-map + i18n (RU/KK).
+3. **Filter param:** `type` (НЕ `request_type`). Прочие: `status, child_id, group_id, recipient_type, limit, cursor`.
+4. **Casing:** snake_case (request + response). `ReviewRequestDto {review_note?}`, `AddMessageDto {body*, attachments?:string[]}`.
+5. **Cursor подтверждён:** list + messages → `{items, next_cursor:string|null}` (null на последней странице). Невалидный cursor → 400 `parent_request_cursor_invalid`.
+6. **DTO:** `ParentRequestResponseDto` (18 полей, snake_case; `request_type` enum `trusted_person|day_off|vacation|late_pickup|open_request`, `status` enum `pending|accepted|rejected|cancelled`, `recipient_type` enum `admin|mentor|specialist`, `details` JSONB по типу — `.passthrough()`, не over-model; nullable: `date_from, date_to, recipient_type, recipient_staff_id, reviewed_by, reviewed_at, review_note, invoice_id`). `ParentRequestMessageResponseDto` — только UUID автора (`author_user_id`/`author_staff_id`), без имени → §C15 / N7. Код B8 conform к live с defensive Zod.
+
 ---
 
 ## B. Открытые (open — НЕ кодить до resolve)
 
-_Пусто. Добавлять сюда при обнаружении расхождения handoff↔backend↔design в ходе батча._ (B1→A7, B2→A8, B3→A10.)
+_Пусто. Добавлять сюда при обнаружении расхождения handoff↔backend↔design в ходе батча._ (B1→A7, B2→A8, B3→A10, B5→A11, B6→A12/A13, B7→A14, B8→A15 — все разрешены как live=факт по прецеденту, без blocker'ов.)
 
 Формат записи:
 
@@ -210,6 +233,18 @@ HANDOFF §24: исторически `/admin/*` мог быть заскопле
 Контекст: при `card_created` система авто-создаёт `children` из данных лида. Пользователь хочет вводить пол ребёнка на этапе лида, чтобы у созданной карточки `gender` не был пустым. Сверка live `/docs-json` (2026-05-19, повторно): `CreateEnrollmentDto` / `UpdateEnrollmentDto` / `TransitionEnrollmentDto` **не имеют поля gender** (поля enrollment — §A11). Фронт физически не может пробросить пол через воронку лида.
 
 Решение (CLAUDE §2 — не выдумывать поле; не добавлять мёртвый непишущийся контрол): UI лида **без поля пола** (не вводим то, что контракт не примет). **Workaround (рабочий сейчас):** после `card_created` админ задаёт пол на карточке ребёнка — `routes/children/tabs/profile-tab.tsx` имеет рабочий gender-Select (male/female, B4). Backend-need каталогизирован в [`BACKEND_NEEDINGS_HANDOFF.md`](BACKEND_NEEDINGS_HANDOFF.md) **N5**. Не блокирует B5 (acceptance закрыт; gender выставляется на карточке ребёнка). Пересмотр: backend добавит `gender` в CreateEnrollmentDto/TransitionEnrollmentDto → добавить селект пола в форму лида, обновить HANDOFF §6 (first-document).
+
+### C14 — Invoice detail: контракт не отдаёт payments/refunds/fiscal-массивы · parked/watch (2026-05-19, W5/B7)
+
+Контекст: дизайн `screens-billing.jsx` `InvoiceDetail` + DESIGN §6.10.1 рисуют секции карточки счёта: Позиции, **Связанные оплаты, Возвраты, Фискальные чеки**, Применённые скидки. Live `GET /admin/invoices/:id` (`InvoiceResponseDto`, §A14.6) содержит **только `line_items[]`** + плоские поля скидки (`discount_pct?, discount_reason?, amount_after_discount`). Массивов `payments`/`refunds`/`fiscal_receipts`/`discounts` в DTO нет; отдельных вложенных эндпоинтов в scope B7 тоже нет.
+
+Решение (design-fidelity допускает отклонение под backend-контракт, CLAUDE §6; прецедент §C4/§C8/§C11): фронт B7 строит секции **Позиции** (line_items) и **Скидка** (плоские поля) 1:1; секции **Оплаты/Возвраты/Фискальные чеки** — **честная деградация**: scaffold/лейаут секции прототипа сохранён, внутри — информативный empty/info-state (локализованный «данные предоставляются отдельно / недоступно в текущем API»), данные **не выдумываются**. Не блокирует B7 (acceptance закрыт). Каталог backend-need — [`BACKEND_NEEDINGS_HANDOFF.md`](BACKEND_NEEDINGS_HANDOFF.md) **N6**. Пересмотр: backend добавит вложенные массивы в `InvoiceResponseDto` ИЛИ выделенные эндпоинты (`/admin/invoices/:id/{payments,refunds,fiscal-receipts}`) → вернуть секции по факту, обновить HANDOFF §13 + DESIGN §6.10.1 (first-document).
+
+### C15 — Parent-request: DTO без отображаемых имён автора/заявителя/ребёнка · parked/watch (2026-05-19, W5/B8)
+
+Контекст: дизайн `screens-ops.jsx` `RequestDetail`/`RequestsList` рисует именованные пузыри треда (ФИО автора), имя заявителя в шапке, имя ребёнка в колонке списка. Live `ParentRequestResponseDto` даёт только `requester_user_id`/`child_id` (UUID); `ParentRequestMessageResponseDto` — только `author_user_id`/`author_staff_id` (UUID, ровно один). Отображаемых имён в контракте нет; batch-резолва users в scope B8 нет. Аналог §C4.
+
+Решение (CLAUDE §6 — честная деградация, без фабрикации из UUID): сторона пузыря/автор определяется по тому, какой `author_*_id` задан → обобщённый локализованный лейбл (родитель / администрация-сотрудник), без выдуманного имени/инициалов; имя ребёнка в списке резолвится отдельным `useChildrenList` (children-домен это уже отдаёт), fallback — усечённый идентификатор; лейаут пузырей прототипа сохранён. Не блокирует B8 (acceptance закрыт). Каталог backend-need — [`BACKEND_NEEDINGS_HANDOFF.md`](BACKEND_NEEDINGS_HANDOFF.md) **N7**. Пересмотр: backend встроит `author_display_name`/`requester_name`/`child_name` в DTO ИЛИ даст users-lookup (как §C4/N2) → показать имена по факту, обновить HANDOFF §19.
 
 ---
 

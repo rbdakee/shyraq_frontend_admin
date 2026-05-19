@@ -1,6 +1,8 @@
 import type { ChildListFilters, OffsetPaginationParams } from '@/api/children';
 import type { EnrollmentListFilters } from '@/api/enrollments';
 import type { GroupListFilters } from '@/api/groups';
+import type { InvoiceListFilters } from '@/api/invoices';
+import type { ParentRequestListFilters } from '@/api/parent-requests';
 import type { StaffListFilters } from '@/api/staff';
 
 // Query keys are hashed structurally (by value) by TanStack Query, so plain
@@ -45,5 +47,17 @@ export const qk = {
     all: ['staff'] as const,
     list: (filters: StaffListFilters = {}) => ['staff', 'list', filters] as const,
     detail: (id: string) => ['staff', 'detail', id] as const,
+  },
+  invoices: {
+    all: ['invoices'] as const,
+    list: (filters: InvoiceListFilters = {}) => ['invoices', 'list', filters] as const,
+    detail: (id: string) => ['invoices', 'detail', id] as const,
+  },
+  parentRequests: {
+    all: ['parent-requests'] as const,
+    list: (filters: Omit<ParentRequestListFilters, 'cursor'> = {}) =>
+      ['parent-requests', 'list', filters] as const,
+    detail: (id: string) => ['parent-requests', 'detail', id] as const,
+    messages: (id: string) => ['parent-requests', 'messages', id] as const,
   },
 } as const;

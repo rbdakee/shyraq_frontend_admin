@@ -99,6 +99,7 @@ export const KNOWN_ERROR_CODES = [
   'parent_request_not_found',
   'parent_request_already_processed',
   'parent_request_cursor_invalid',
+  'parent_request_forbidden',
   // diagnostic templates §21
   'template_has_entries',
   // lifecycle DLQ §24

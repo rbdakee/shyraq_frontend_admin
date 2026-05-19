@@ -458,22 +458,29 @@
 
 **State machine инвойса:** `pending → {partial, paid, overdue, refunded, cancelled}`. Платежи (`payments`): `initiated → {processing, completed, failed, refunded}`.
 
-| Метод | Путь                                   | Назначение                                                                                                                                                                       |
-| ----- | -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET   | `/admin/invoices`                      | `?status=&due_date=&child_id=&invoice_type=`. Полные поля инвойса.                                                                                                               |
-| GET   | `/admin/invoices/:id`                  | + `invoice_line_items` + `payments`, `refunds`, `fiscal_receipts`, применённые скидки.                                                                                           |
-| POST  | `/admin/invoices`                      | Разовое начисление: `{child_id, invoice_type, amount_due, due_date, description?, period_start?, period_end?, line_items?:[{description,tariff_plan_id?,quantity,unit_price}]}`. |
-| POST  | `/admin/invoices/:id/manual-mark-paid` | Отметить оплату наличкой (`payments provider='cash' completed`). 409 `invoice_already_paid`.                                                                                     |
-| POST  | `/admin/invoices/:id/cancel`           | Отменить (только pending/partial). 409 `invoice_status_invalid`.                                                                                                                 |
-| GET   | `/admin/payments`                      | `?provider=&status=&child_id=&from=&to=`.                                                                                                                                        |
-| GET   | `/admin/payments/:id`                  | Детали + `provider_payload`.                                                                                                                                                     |
+> **Уточнение (подтверждено live `/docs-json` 2026-05-19, OPEN_QUESTIONS §A14, прецедент §A7/§A8/§A11 — live = факт, first-document):** контракт invoices правлен под live. **Casing — snake_case** (request + response; per-module, не экстраполировать). Ключевые расхождения прежней редакции ↔ live:
+>
+> - `GET /admin/invoices` query — `status, due_date_from, due_date_to, child_id, invoice_type, period_start, period_end, cursor, limit` (НЕ единичный `due_date`). Ответ — **plain `InvoiceResponseDto[]`** (bare array, БЕЗ envelope/`total`/`next_cursor`), несмотря на наличие `cursor`/`limit`-параметров: реальной cursor-пагинации нет, фронт использует только `limit` как cap (НЕ offset из §2.5).
+> - `GET /admin/invoices/:id` → `InvoiceResponseDto` содержит **только `line_items: InvoiceLineItemResponseDto[]`** + плоские поля скидки (`discount_pct?, discount_reason?, amount_after_discount`). Массивов `payments`/`refunds`/`fiscal_receipts`/`discounts` в DTO **нет** (см. OPEN_QUESTIONS §C14 / BACKEND_NEEDINGS N6 — честная деградация секций карточки).
+> - `POST /admin/invoices` `CreateInvoiceOneOffDto`: required `child_id, invoice_type, amount_due, due_date, period_start, period_end` (⚠ `period_start/period_end` **обязательны**, не опц.); опц. `description?, discount_pct?, discount_reason?, line_items?`. `CreateLineItemDto = {description*, quantity*(≥1), unit_price*(≥0), tariff_plan_id?}`. `InvoiceLineItemResponseDto = {id, invoice_id, kindergarten_id, description, tariff_plan_id?, quantity, unit_price, line_total, created_at}`.
+> - `manual-mark-paid` тело `{paid_at?, payer_user_id?, note?}` (все опц.); `cancel` тело `{reason?}` (опц.). `invoice_type` enum: `monthly|prepayment_3m|prepayment_6m|prepayment_12m|prepayment_24m|additional_service|late_pickup_fee|other`.
+
+| Метод | Путь                                   | Назначение                                                                                                                                                                         |
+| ----- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET   | `/admin/invoices`                      | `?status=&due_date_from=&due_date_to=&child_id=&invoice_type=&period_start=&period_end=&limit=`. Ответ — plain `InvoiceResponseDto[]`.                                             |
+| GET   | `/admin/invoices/:id`                  | `InvoiceResponseDto` + `line_items[]` + плоские поля скидки. (payments/refunds/fiscal/discounts в DTO нет — §C14.)                                                                 |
+| POST  | `/admin/invoices`                      | Разовое начисление: `{child_id*, invoice_type*, amount_due*, due_date*, period_start*, period_end*, description?, discount_pct?, discount_reason?, line_items?:[CreateLineItem]}`. |
+| POST  | `/admin/invoices/:id/manual-mark-paid` | Отметить оплату наличкой `{paid_at?, payer_user_id?, note?}` (`payments provider='cash' completed`). 409 `invoice_already_paid`.                                                   |
+| POST  | `/admin/invoices/:id/cancel`           | Отменить `{reason?}` (только pending/partial). 409 `invoice_status_invalid`.                                                                                                       |
+| GET   | `/admin/payments`                      | `?provider=&status=&child_id=&from=&to=`.                                                                                                                                          |
+| GET   | `/admin/payments/:id`                  | Детали + `provider_payload`.                                                                                                                                                       |
 
 Ошибки: `invoice_not_found`(404), `child_not_found`(404), `invoice_already_paid`(409), `invoice_status_invalid`(409), 422 validation.
 
 **Страницы:**
 
 - **Счета** — таблица: ребёнок, тип, период, сумма (amount_due / после скидки), статус-бейдж, due_date. Фильтры. Кнопка «Создать начисление».
-- **Карточка счёта** — позиции (line items), связанные оплаты/возвраты/фискальные чеки/скидки, действия: «Отметить оплату наличными», «Отменить счёт» (с подтверждением, обработкой 409).
+- **Карточка счёта** — позиции (line items) + скидка (плоские поля DTO); секции связанных оплат/возвратов/фискальных чеков — **честная деградация** (контракт их не отдаёт, §C14/N6: scaffold секции сохранён, данные не выдумываются); действия: «Отметить оплату наличными», «Отменить счёт» (с подтверждением, обработкой 409).
 - **Оплаты** — таблица: ребёнок, сумма, провайдер, статус, дата. Детали платежа (provider_payload — для саппорта).
 
 ---
@@ -576,22 +583,24 @@
 
 ---
 
-## 19. Заявки родителей — `/admin/parent-requests/*`
+## 19. Заявки родителей — list `/admin/parent-requests` · detail/actions `/staff/parent-requests/*`
 
 **Назначение:** обработка заявок (доверенное лицо, выходные, поздний забор, отпуск, открытое обращение). BP §6. Админ видит **все** заявки садика. **State machine:** `pending → accepted | rejected | cancelled` (терминальные, race-guarded).
 
-| Метод | Путь                                  | Назначение                                                                                                                                                                                        |
-| ----- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET   | `/admin/parent-requests`              | Все заявки. Фильтр `status,request_type,child_id,group_id,recipient_type`. **Cursor-paged** `(created_at DESC, id DESC)`; `next_cursor` base64; невалидный → 400 `parent_request_cursor_invalid`. |
-| GET   | `/admin/parent-requests/:id`          | Детали + `parent_request_messages` (тред).                                                                                                                                                        |
-| POST  | `/admin/parent-requests/:id/accept`   | `{review_note?}`. Conditional UPDATE WHERE pending; 409 при гонке.                                                                                                                                |
-| POST  | `/admin/parent-requests/:id/reject`   | `{review_note?}`.                                                                                                                                                                                 |
-| POST  | `/admin/parent-requests/:id/messages` | Ответить в треде `{body, attachments?}`.                                                                                                                                                          |
-| GET   | `/admin/parent-requests/:id/messages` | Список сообщений (cursor-paged).                                                                                                                                                                  |
+> **Уточнение (подтверждено live `/docs-json` 2026-05-19, OPEN_QUESTIONS §A15, прецедент §A7/§A8 — live = факт, first-document):** контракт parent-requests правлен под live. **Расщеплён по префиксам:** **список** — `GET /api/v1/admin/parent-requests` (admin видит весь садик); **деталь / accept / reject / messages (GET+POST)** — под `/api/v1/staff/parent-requests/{id}/*` (эндпоинта `/admin/parent-requests/:id` **нет**). Admin JWT авторизован для `/staff/parent-requests/*` (admin — staff_member с role=admin; подтверждено сводкой live-операции). 403 → `parent_request_forbidden` (штатный RBAC, не исключение admin). **Casing — snake_case** (request + response): `ReviewRequestDto {review_note?}`, `AddMessageDto {body*, attachments?:string[]}`. **Фильтр типа — `type`** (НЕ `request_type`). Cursor подтверждён: list и messages → `{items, next_cursor}` (`next_cursor` nullable, null на последней странице). Сообщения треда — только UUID автора (`author_user_id`/`author_staff_id`), без отображаемого имени (§C15 / N7 — честная деградация).
 
-**Типы (`request_type`):** `trusted_person, day_off (ребёнок остаётся в саду в выходной), vacation (ребёнок НЕ ходит), late_pickup (генерит late_pickup_fee invoice при accept), open_request`. Семантика day_off vs vacation — не путать.
+| Метод | Путь                                  | Назначение                                                                                                                                                                                         |
+| ----- | ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET   | `/admin/parent-requests`              | Все заявки. Фильтр `status,type,child_id,group_id,recipient_type`, `limit,cursor`. **Cursor-paged** `(created_at DESC, id DESC)`; `next_cursor`; невалидный → 400 `parent_request_cursor_invalid`. |
+| GET   | `/staff/parent-requests/:id`          | Детали `ParentRequestResponseDto` (+ `details` JSONB по типу).                                                                                                                                     |
+| POST  | `/staff/parent-requests/:id/accept`   | `{review_note?}`. Conditional UPDATE WHERE pending; 409 при гонке.                                                                                                                                 |
+| POST  | `/staff/parent-requests/:id/reject`   | `{review_note?}`.                                                                                                                                                                                  |
+| POST  | `/staff/parent-requests/:id/messages` | Ответить в треде `{body, attachments?}`.                                                                                                                                                           |
+| GET   | `/staff/parent-requests/:id/messages` | Список сообщений (cursor-paged `{items, next_cursor}`).                                                                                                                                            |
 
-**Страница:** список заявок (тип-бейдж, ребёнок, статус, дата, получатель), фильтры, cursor-пагинация. Детальная: данные заявки по типу (`details` JSONB различается), двусторонний тред сообщений (родитель ↔ staff/admin, вложения), кнопки Принять/Отклонить (с review_note), поле ответа в тред. Ошибки: `parent_request_not_found`(404), `parent_request_already_processed`(409).
+**Типы (`request_type`):** `trusted_person, day_off (ребёнок остаётся в саду в выходной), vacation (ребёнок НЕ ходит), late_pickup (генерит late_pickup_fee invoice при accept), open_request`. Семантика day_off vs vacation — не путать. `recipient_type` enum: `admin|mentor|specialist`.
+
+**Страница:** список заявок (тип-бейдж, ребёнок, статус, дата, получатель), фильтры, cursor-пагинация. Детальная: данные заявки по типу (`details` JSONB различается), двусторонний тред сообщений (родитель ↔ staff/admin, вложения, автор по `author_*_id` без имени — §C15), кнопки Принять/Отклонить (с review_note, только pending), поле ответа в тред. Ошибки: `parent_request_not_found`(404), `parent_request_already_processed`(409), `parent_request_forbidden`(403), `parent_request_cursor_invalid`(400).
 
 ---
 

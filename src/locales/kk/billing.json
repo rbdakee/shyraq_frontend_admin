@@ -1,0 +1,149 @@
+{
+  "invoices": {
+    "title": "Шоттар",
+    "subtitle": "Есептеулер мен төлемдер",
+    "empty_title": "Шоттар әзірге жоқ",
+    "empty_description": "Шоттар балаларды қабылдап, тариф тағайындағаннан кейін пайда болады.",
+    "filtered_empty_title": "Ештеңе табылмады",
+    "filtered_empty_description": "Сүзгі параметрлерін өзгертіп көріңіз.",
+    "create_button": "Есептеу жасау",
+    "load_more": "Тағы жүктеу",
+
+    "status": {
+      "pending": "Күтуде",
+      "partial": "Ішінара",
+      "paid": "Төленген",
+      "overdue": "Мерзімі өткен",
+      "refunded": "Қайтарылған",
+      "cancelled": "Бас тартылған"
+    },
+
+    "type": {
+      "monthly": "Ай сайынғы",
+      "prepayment_3m": "Алдын ала 3 ай",
+      "prepayment_6m": "Алдын ала 6 ай",
+      "prepayment_12m": "Алдын ала 12 ай",
+      "prepayment_24m": "Алдын ала 24 ай",
+      "additional_service": "Қосымша қызмет",
+      "late_pickup_fee": "Кешігу айыппұлы",
+      "other": "Басқа"
+    },
+
+    "columns": {
+      "child": "Бала",
+      "type": "Түрі",
+      "period": "Кезең",
+      "amount_due": "Сома",
+      "amount_after_discount": "Төлемге",
+      "status": "Күйі",
+      "due_date": "Төлем мерзімі",
+      "created_at": "Жасалған күні",
+      "actions": "Әрекеттер"
+    },
+
+    "filters": {
+      "status": "Күйі",
+      "type": "Түрі",
+      "child": "Бала",
+      "due_date_from": "Мерзімі бастап",
+      "due_date_to": "Мерзімі дейін",
+      "all_statuses": "Барлық күйлер",
+      "all_types": "Барлық түрлер"
+    },
+
+    "detail": {
+      "breadcrumb": "Шоттар",
+      "not_found": "Шот табылмады немесе рұқсат жоқ",
+      "invoice_number": "Шот #{{id}}",
+      "child_label": "Бала",
+      "type_label": "Түрі",
+      "period_label": "Кезең",
+      "due_date_label": "Төлем мерзімі",
+      "amount_due_label": "Сома",
+      "discount_label": "Жеңілдік",
+      "discount_reason_label": "Жеңілдік себебі",
+      "amount_after_discount_label": "Төлемге",
+      "description_label": "Сипаттама",
+      "prorated_label": "Күндерге пропорционалды",
+      "created_at_label": "Жасалған",
+      "updated_at_label": "Жаңартылған",
+
+      "line_items": {
+        "title": "Позициялар",
+        "description": "Сипаттама",
+        "quantity": "Саны",
+        "unit_price": "Бірлік бағасы",
+        "line_total": "Жиыны",
+        "empty": "Позициялар жоқ"
+      },
+
+      "actions": {
+        "mark_paid": "Қолма-қол төлемді белгілеу",
+        "cancel": "Шотты жою"
+      },
+
+      "related_payments": "Байланысты төлемдер",
+      "payments_unavailable": "Төлемдер туралы деректер қолжетімсіз",
+      "payments_unavailable_hint": "Төлемдер туралы ақпарат «Төлемдер» бөлімінде берілген.",
+      "fiscal_receipt": "Фискалдық чек",
+      "fiscal_unavailable": "Фискалдық чектер туралы деректер ағымдағы API-де қолжетімсіз."
+    },
+
+    "create": {
+      "title": "Есептеу жасау",
+      "child_id": "Бала",
+      "child_id_placeholder": "Баланы таңдаңыз",
+      "invoice_type": "Есептеу түрі",
+      "invoice_type_placeholder": "Түрді таңдаңыз",
+      "amount_due": "Сома (KZT)",
+      "amount_due_placeholder": "0",
+      "due_date": "Төлем мерзімі",
+      "period_start": "Кезең басы",
+      "period_end": "Кезең соңы",
+      "description": "Сипаттама",
+      "description_placeholder": "Есептеу сипаттамасы (міндетті емес)",
+      "discount_pct": "Жеңілдік (%)",
+      "discount_pct_placeholder": "0",
+      "discount_reason": "Жеңілдік себебі",
+      "discount_reason_placeholder": "Жеңілдік беру себебі",
+
+      "line_items": {
+        "title": "Позициялар",
+        "add": "Позиция қосу",
+        "remove": "Жою",
+        "description": "Сипаттама",
+        "description_placeholder": "Позиция сипаттамасы",
+        "quantity": "Саны",
+        "unit_price": "Бірлік бағасы",
+        "tariff_plan_id": "Тариф жоспары",
+        "tariff_plan_id_placeholder": "Көрсетілмеген"
+      },
+
+      "submit": "Жасау",
+      "cancel": "Болдырмау",
+      "success": "Шот жасалды"
+    },
+
+    "mark_paid": {
+      "title": "Қолма-қол төлемді белгілеу",
+      "paid_at": "Төлем күні",
+      "paid_at_placeholder": "Ағымдағы күн үшін бос қалдырыңыз",
+      "note": "Ескертпе",
+      "note_placeholder": "Төлемге пікір (міндетті емес)",
+      "confirm": "Төлемді растау",
+      "cancel": "Болдырмау",
+      "success": "Шот төленген деп белгіленді",
+      "info_banner": "«Өткізілді» мәртебесімен төлем жасалады және фискалдық чекке тапсырма кезекке қойылады."
+    },
+
+    "cancel_invoice": {
+      "title": "Шотты жою",
+      "warning": "Бұл әрекет қайтымсыз. Жойылған шотты қалпына келтіру мүмкін емес.",
+      "reason": "Жою себебі",
+      "reason_placeholder": "Себебін көрсетіңіз (міндетті емес)",
+      "confirm": "Шотты жою",
+      "cancel": "Артқа",
+      "success": "Шот жойылды"
+    }
+  }
+}

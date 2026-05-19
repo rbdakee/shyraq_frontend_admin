@@ -20,6 +20,9 @@
 | N2  | `GuardianDto` без ФИО/телефона пользователя                                   | `degraded`          | `/children/:id` → вкладка «Опекуны»                              |
 | N3  | Storage `child_photo` не реализован                                           | `blocked` (подфича) | `/children/new`, `/children/:id` → фото                          |
 | N4  | `GET /users/me` без `roles[]`/`kindergartens[]`; нет session-restore с ролями | `forward-looking`   | Восстановление сессии после hard-reload (роли для будущего RBAC) |
+| N5  | Enrollments DTO без поля пола ребёнка                                         | `forward-looking`   | `/enrollments` → child после `card_created` с пустым `gender`    |
+| N6  | `InvoiceResponseDto` без массивов payments/refunds/fiscal_receipts            | `degraded`          | `/billing/invoices/:id` → секции Оплаты/Возвраты/Фискальные      |
+| N7  | Parent-request DTO без отображаемых имён автора/заявителя                     | `degraded`          | `/parent-requests`, `/parent-requests/:id` → тред, шапка, список |
 
 ---
 
@@ -97,6 +100,34 @@
 **Предлагаемый контракт.** Добавить `gender?: 'male'|'female'` в `CreateEnrollmentDto` (и/или `TransitionEnrollmentDto` для card_created) — backend проставляет его в авто-создаваемый `children`. Тогда фронт добавит селект пола в форму лида.
 
 **Источник.** OPEN_QUESTIONS §C13 (2026-05-19, W4/B5-fix, запрос владельца). **Действие.** Сделать когда backend расширит enrollment-DTO; тогда обновить HANDOFF §6 + добавить селект пола в форму лида (first-document).
+
+---
+
+## N6 — `InvoiceResponseDto` без массивов `payments`/`refunds`/`fiscal_receipts` · `degraded`
+
+**Нужно фронту.** Карточка счёта (`/billing/invoices/:id`) по дизайну (DESIGN §6.10.1, `screens-billing.jsx` `InvoiceDetail`) рисует секции: Позиции, **Связанные оплаты, Возвраты, Фискальные чеки**, Применённые скидки.
+
+**Live backend (проверено 2026-05-19).** `GET /api/v1/admin/invoices/:id` → `InvoiceResponseDto` содержит `line_items: InvoiceLineItemResponseDto[]` + плоские поля скидки (`discount_pct?, discount_reason?, amount_after_discount`). Массивов `payments`/`refunds`/`fiscal_receipts`/`discounts` в DTO **нет**; вложенных эндпоинтов (`/admin/invoices/:id/payments|refunds|fiscal-receipts`) тоже нет. (`GET /admin/payments` существует, но не связан с конкретным счётом в scope B7.)
+
+**Влияние.** `/billing/invoices/:id`: секции Позиции + Скидка — корректны; секции Оплаты/Возвраты/Фискальные чеки — честная деградация (scaffold/лейаут прототипа сохранён, внутри информативный empty/info-state, данные не выдумываются).
+
+**Предлагаемый контракт.** Встроить в `InvoiceResponseDto` массивы `payments[]`, `refunds[]`, `fiscal_receipts[]`, `applied_discounts[]` — **или** дать выделенные `GET /admin/invoices/:id/{payments,refunds,fiscal-receipts}`.
+
+**Источник.** OPEN_QUESTIONS §C14. **Действие.** Пересмотреть когда backend расширит invoice-DTO/добавит эндпоинты → вернуть секции по факту, обновить HANDOFF §13 + DESIGN §6.10.1 (first-document). Не блокирует B7.
+
+---
+
+## N7 — Parent-request DTO без отображаемых имён автора/заявителя/ребёнка · `degraded`
+
+**Нужно фронту.** `/parent-requests` (колонка ребёнка) и `/parent-requests/:id` (именованные пузыри треда, имя заявителя в шапке) по дизайну (`screens-ops.jsx` `RequestsList`/`RequestDetail`).
+
+**Live backend (проверено 2026-05-19).** `ParentRequestResponseDto` — `requester_user_id`/`child_id` (UUID, без имён). `ParentRequestMessageResponseDto` — `author_user_id`/`author_staff_id` (UUID, ровно один; без имени). Batch-резолва users в scope B8 нет. (`GET /children/*` имя ребёнка отдаёт — фронт резолвит список детей отдельным запросом.)
+
+**Влияние.** Тред: автор → обобщённый лейбл (родитель / администрация-сотрудник) по тому, какой `author_*_id` задан, без выдуманного имени. Шапка: заявитель → обобщённый лейбл. Список: имя ребёнка резолвится `useChildrenList`, fallback — усечённый идентификатор. Лейаут прототипа сохранён. Согласованная честная деградация (аналог N2).
+
+**Предлагаемый контракт.** Встроить `author_display_name` в message-DTO и `requester_name`/`child_name` в `ParentRequestResponseDto` — **или** дать users-lookup (`GET /users?ids=…`, как предложено в N2).
+
+**Источник.** OPEN_QUESTIONS §C15. **Действие.** Пересмотреть когда backend расширит DTO или появится users-резолв (связано с N2) → показать имена по факту, обновить HANDOFF §19. Не блокирует B8.
 
 ---
 
