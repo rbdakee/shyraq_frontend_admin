@@ -1,9 +1,11 @@
 import type { ChildListFilters, OffsetPaginationParams } from '@/api/children';
+import type { CustomDiscountListFilters, ApplicationListFilters } from '@/api/custom-discounts';
 import type { EnrollmentListFilters } from '@/api/enrollments';
 import type { GroupListFilters } from '@/api/groups';
 import type { InvoiceListFilters } from '@/api/invoices';
 import type { ParentRequestListFilters } from '@/api/parent-requests';
 import type { PaymentListFilters } from '@/api/payments';
+import type { RefundListFilters } from '@/api/refunds';
 import type { StaffListFilters } from '@/api/staff';
 import type { TariffAssignmentListFilters } from '@/api/tariff-assignments';
 import type { TariffPlanListFilters } from '@/api/tariff-plans';
@@ -71,6 +73,19 @@ export const qk = {
     list: (filters: TariffAssignmentListFilters = {}) =>
       ['tariff-assignments', 'list', filters] as const,
     detail: (id: string) => ['tariff-assignments', 'detail', id] as const,
+  },
+  refunds: {
+    all: ['refunds'] as const,
+    list: (filters: RefundListFilters = {}) => ['refunds', 'list', filters] as const,
+    detail: (id: string) => ['refunds', 'detail', id] as const,
+  },
+  customDiscounts: {
+    all: ['custom-discounts'] as const,
+    list: (filters: CustomDiscountListFilters = {}) =>
+      ['custom-discounts', 'list', filters] as const,
+    detail: (id: string) => ['custom-discounts', 'detail', id] as const,
+    applications: (id: string, filters: ApplicationListFilters = {}) =>
+      ['custom-discounts', 'applications', id, filters] as const,
   },
   parentRequests: {
     all: ['parent-requests'] as const,

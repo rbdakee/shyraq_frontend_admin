@@ -144,6 +144,23 @@ HANDOFF §7/§8 будут обновлены под факт в wave-комми
 
 HANDOFF §13+§14 обновлены под факт в wave-коммите B9. Код B9 conform к live с defensive Zod.
 
+### A17 — Refunds & Custom-Discounts: bare-array refunds, page-based discounts, snake_case, I18nFieldDto `kk` key in create · resolved (2026-05-21)
+
+Контекст: при B10 (refunds + custom-discounts) сверка live `/docs-json` выявила расхождения HANDOFF §16/§18 с фактическим контрактом. Решение: прецедент §A7/§A8/§A14/§A16 — live = факт. Зафиксированные расхождения (HANDOFF §16+§18 правлены под факт в wave-коммите B10 — first-document):
+
+1. **Refunds list:** `GET /admin/refunds` ответ — **bare `RefundResponseDto[]`** (despite having `cursor`+`limit` params). No pagination envelope. Defensive: `z.array(Schema)`. Matches invoices/payments pattern (§A14.3/§A16.8).
+2. **Custom discounts list:** `GET /admin/custom-discounts` ответ — **page-based** `{rows, total, page, limit}` (`CustomDiscountListResponseDto`). Filter params: `status, valid_from_to, valid_until_from, target_type, page, limit`.
+3. **Custom discount detail:** `GET /admin/custom-discounts/:id` — envelope `{discount: CustomDiscountResponseDto, stats: {count, total_amount_applied}}`. NOT flat DTO.
+4. **Custom discount applications:** page-based `{rows, total, page, limit}` (`CustomDiscountApplicationListResponseDto`).
+5. **`I18nFieldDto`** for create/update body uses key `kk` (BCP 47), but response JSONB stores `kz` (historical). Consistent with §2.4.
+6. **`CreateCustomDiscountDto`:** `name` required (I18nFieldDto with `ru`+`kk`), `notification_title`/`notification_body` **required when `notify_on_activation=true`** (422 if missing). Confirmed.
+7. **`RejectRefundDto`:** `reason` required 1..500, overwrites original reason column (single-column design).
+8. **`ApproveRefundDto`:** empty body `{}`.
+9. **RefundResponseDto fields:** `invoice_id`, `processed_by`, `provider_ref` — all nullable strings. `status` enum: `pending|approved|processed|rejected`.
+10. **Casing:** snake_case throughout for both modules (request + response). Per-module, not extrapolated.
+
+HANDOFF §16+§18 обновлены под факт в wave-коммите B10. Код B10 conform к live с defensive Zod.
+
 ### A15 — Parent-requests: list `/admin/*` vs detail/actions `/staff/*`, `type` filter, snake_case, cursor · resolved (2026-05-19)
 
 Контекст: при B8 (parent-requests data+UI) сверка live `/docs-json` выявила существенное расхождение HANDOFF §19 ↔ факт. Решение: прецедент §A7/§A8 — live = факт. Зафиксировано (HANDOFF §19 правлен под факт в wave-коммите B7+B8 — first-document):

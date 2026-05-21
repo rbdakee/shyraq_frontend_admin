@@ -537,22 +537,26 @@
 
 ## 16. Биллинг: Возвраты — `/admin/refunds/*`
 
+> **Уточнение (подтверждено live `/docs-json` 2026-05-21, OPEN_QUESTIONS §A17, прецедент §A14/§A16 — live = факт, first-document):**
+
 **State machine:** `pending → approved → processed` | `pending → rejected`.
 
-| Метод | Путь                         | Назначение                                                                       |
-| ----- | ---------------------------- | -------------------------------------------------------------------------------- |
-| GET   | `/admin/refunds`             | `?status=&payment_id=`.                                                          |
-| GET   | `/admin/refunds/:id`         | Детали.                                                                          |
-| POST  | `/admin/refunds`             | `{payment_id, amount, reason}`. Чек: payment completed, amount ≤ payment.amount. |
-| POST  | `/admin/refunds/:id/approve` | pending → approved.                                                              |
-| POST  | `/admin/refunds/:id/reject`  | `{reason}` (1..500). pending → rejected.                                         |
-| POST  | `/admin/refunds/:id/process` | approved → processed (через провайдера; правит payment/invoice/баланс).          |
+| Метод | Путь                         | Назначение                                                                                           |
+| ----- | ---------------------------- | ---------------------------------------------------------------------------------------------------- |
+| GET   | `/admin/refunds`             | `?status=&payment_id=&cursor=&limit=`. Ответ — bare `RefundResponseDto[]` (без pagination envelope). |
+| GET   | `/admin/refunds/:id`         | Детали.                                                                                              |
+| POST  | `/admin/refunds`             | `{payment_id, amount, reason}`. Чек: payment completed, amount ≤ payment.amount. Все поля required.  |
+| POST  | `/admin/refunds/:id/approve` | pending → approved. Body: `{}` (пустой).                                                             |
+| POST  | `/admin/refunds/:id/reject`  | `{reason}` required (1..500). pending → rejected. Overwrites original reason column.                 |
+| POST  | `/admin/refunds/:id/process` | approved → processed (через провайдера; правит payment/invoice/баланс).                              |
+
+**RefundResponseDto** (snake_case): `id, kindergarten_id, payment_id, invoice_id(nullable), amount, reason, status(pending|approved|processed|rejected), processed_by(nullable), provider_ref(nullable), created_at, updated_at`.
 
 Ошибки: `refund_not_found`(404), `payment_not_found`(404), `refund_already_processed`(409).
 
 **Контекст:** pro-rata refund при архивации ребёнка создаётся автоматически (`status=pending`, reason `pro_rata_archive`) — админ его видит здесь и проводит через approve→process вручную.
 
-**Страница:** список возвратов (статус-бейджи, причина, сумма), детали, кнопки approve/reject(с причиной)/process в зависимости от текущего статуса.
+**Страница:** список возвратов (статус-бейджи, причина, сумма), inline state-machine actions по статусу, кнопки approve/reject(с причиной)/process в зависимости от текущего статуса.
 
 ---
 
@@ -574,26 +578,32 @@
 
 ## 18. Биллинг: Кастомные скидки — `/admin/custom-discounts/*`
 
+> **Уточнение (подтверждено live `/docs-json` 2026-05-21, OPEN_QUESTIONS §A17, прецедент §A14/§A16 — live = факт, first-document):**
+
 **Назначение:** конструктор праздничных/льготных/промо-скидок. BP §4.1. **State machine:** `draft → active → paused ↔ active | cancelled; active/paused → expired (cron)`.
 
-| Метод | Путь                                       | Назначение                                                                                                                                                                                                                                                               |
-| ----- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| GET   | `/admin/custom-discounts`                  | Список (фильтр статус/период).                                                                                                                                                                                                                                           |
-| POST  | `/admin/custom-discounts`                  | Создать (draft): `name{ru,kz}, description, discount_type(percentage/fixed_amount), amount, conditions(JSONB), target_type+target_ids[], valid_from/until, max_uses_per_child, total_max_uses, priority, stackable, notify_on_activation, notification_title/body_i18n`. |
-| GET   | `/admin/custom-discounts/:id`              | Детали + статистика применений.                                                                                                                                                                                                                                          |
-| PATCH | `/admin/custom-discounts/:id`              | Обновить (только draft).                                                                                                                                                                                                                                                 |
-| POST  | `/admin/custom-discounts/:id/activate`     | draft → active. Если `notify_on_activation` — push родителям.                                                                                                                                                                                                            |
-| POST  | `/admin/custom-discounts/:id/pause`        | active → paused.                                                                                                                                                                                                                                                         |
-| POST  | `/admin/custom-discounts/:id/resume`       | paused → active.                                                                                                                                                                                                                                                         |
-| POST  | `/admin/custom-discounts/:id/cancel`       | → cancelled (финал).                                                                                                                                                                                                                                                     |
-| GET   | `/admin/custom-discounts/:id/applications` | Лог применений (`invoice_id, child_id, amount_applied`).                                                                                                                                                                                                                 |
+| Метод | Путь                                       | Назначение                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| ----- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET   | `/admin/custom-discounts`                  | Список (фильтр `status, valid_from_to, valid_until_from, target_type, page, limit`). Ответ — **page-based** `{rows: CustomDiscountResponseDto[], total, page, limit}`.                                                                                                                                                                                                                                                                                                                                                                                                                |
+| POST  | `/admin/custom-discounts`                  | Создать (draft): `name{ru,kk}(I18nFieldDto required), description?(nullable JSONB), discount_type(percentage/fixed_amount), amount(>0), conditions(JSONB), target_type(all/groups/children/tariff_types/age_range), target_ids?(string[] nullable), valid_from, valid_until?(nullable), max_uses_per_child?(nullable ≥1), total_max_uses?(nullable ≥1), priority(≥0 default 100), stackable(default false), notify_on_activation(default true), notification_title?(nullable I18n, **required when notify=true**), notification_body?(nullable I18n, **required when notify=true**)`. |
+| GET   | `/admin/custom-discounts/:id`              | Детали — envelope `{discount: CustomDiscountResponseDto, stats: {count, total_amount_applied}}`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| PATCH | `/admin/custom-discounts/:id`              | Обновить (только draft). Все поля optional.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| POST  | `/admin/custom-discounts/:id/activate`     | draft → active. Если `notify_on_activation` — push родителям.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| POST  | `/admin/custom-discounts/:id/pause`        | active → paused.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| POST  | `/admin/custom-discounts/:id/resume`       | paused → active.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| POST  | `/admin/custom-discounts/:id/cancel`       | → cancelled (финал).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| GET   | `/admin/custom-discounts/:id/applications` | Лог применений — **page-based** `{rows: [{id, kindergarten_id, custom_discount_id, invoice_id, invoice_line_item_id(nullable), child_id, amount_applied, applied_at}], total, page, limit}`.                                                                                                                                                                                                                                                                                                                                                                                          |
+
+**CustomDiscountResponseDto** (snake_case): `id, kindergarten_id, name(JSONB {ru,kz}), description(JSONB nullable), discount_type, amount, conditions(JSONB), target_type, target_ids(string[] nullable), valid_from, valid_until(nullable), max_uses_per_child(nullable), total_max_uses(nullable), used_count, priority, stackable, notify_on_activation, notification_title(JSONB nullable), notification_body(JSONB nullable), status(draft|active|paused|expired|cancelled), created_by(nullable), created_at, updated_at`.
+
+**I18nFieldDto** (for create/update): `{ru: string, kk: string}` — key `kk` (BCP 47). Response JSONB stores `kz` (historical, §2.4).
 
 **Типы условий (`conditions` JSONB):** `prepayment_months`, `siblings_count`, `age_range`, `benefit_category`, `payment_method`, `early_payment`, `birthday_month`, `date_range`, `first_invoice`, плюс композиты `all_of`/`any_of`. Таргет: `all|groups|children|tariff_types|age_range`.
 
 **Страницы:**
 
 - **Список скидок** — статус-бейджи (draft/active/paused/expired/cancelled), период, использований (`used_count` / лимиты).
-- **Конструктор скидки** — визуальный билдер условий (each condition type → форма; AND/OR композиция), таргетинг (мультиселект групп/детей/тарифов/возраст), период, лимиты, приоритет+stackable, текст push (ru/kz). Кнопки по state machine: Активировать / Пауза / Возобновить / Отменить (необратимо — подтверждение).
+- **Конструктор скидки** — визуальный билдер условий (each condition type → форма; AND/OR композиция), таргетинг (мультиселект групп/детей/тарифов/возраст), период, лимиты, приоритет+stackable, текст push (ru/kk). Кнопки по state machine: Активировать / Пауза / Возобновить / Отменить (необратимо — подтверждение).
 - **Статистика применения** — таблица `applications` (какому ребёнку/счёту, сумма). Превью «N детей попадут» считается на клиенте через applications (dry-run preview backend отложен).
 
 ---

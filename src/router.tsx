@@ -173,10 +173,34 @@ export const router = createBrowserRouter([
             },
           },
           { path: 'billing/holidays', lazy: lazyStub },
-          { path: 'billing/refunds', lazy: lazyStub },
-          { path: 'billing/discounts', lazy: lazyStub },
-          { path: 'billing/discounts/new', lazy: lazyStub },
-          { path: 'billing/discounts/:id', lazy: lazyStub },
+          {
+            path: 'billing/refunds',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/billing/refunds/index');
+              return { Component };
+            },
+          },
+          {
+            path: 'billing/discounts',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/billing/discounts/index');
+              return { Component };
+            },
+          },
+          {
+            path: 'billing/discounts/new',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/billing/discounts/new');
+              return { Component };
+            },
+          },
+          {
+            path: 'billing/discounts/:id',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/billing/discounts/$id');
+              return { Component };
+            },
+          },
           { path: 'billing/fiscal-receipts', lazy: lazyStub },
           {
             path: 'parent-requests',

@@ -95,6 +95,10 @@ export const KNOWN_ERROR_CODES = [
   'refund_not_found',
   'payment_not_found',
   'refund_already_processed',
+  'refund_status_invalid',
+  // custom discounts §18
+  'custom_discount_not_found',
+  'custom_discount_status_invalid',
   // parent requests §19
   'parent_request_not_found',
   'parent_request_already_processed',

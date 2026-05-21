@@ -357,8 +357,8 @@ src/
 
 **Acceptance:**
 
-- [ ] Refund state machine кнопки по статусу; pro-rata archive виден как pending.
-- [ ] Discount wizard: конструктор условий И/ИЛИ, таргетинг, state machine; applications-таблица. Gate exit 0.
+- [x] Refund state machine кнопки по статусу; pro-rata archive виден как pending.
+- [x] Discount wizard: конструктор условий И/ИЛИ, таргетинг, state machine; applications-таблица. Gate exit 0.
 
 ---
 
@@ -468,7 +468,7 @@ src/
 | B7   | Биллинг: Счета                              | P0        | [x]    |
 | B8   | Заявки родителей                            | P0        | [x]    |
 | B9   | Оплаты + Тарифы + Назначения                | P1        | [x]    |
-| B10  | Возвраты + Скидки                           | P1        | [ ]    |
+| B10  | Возвраты + Скидки                           | P1        | [x]    |
 | B11  | Расписание + Меню                           | P1        | [ ]    |
 | B12  | Контент + Qundylyq                          | P1        | [ ]    |
 | B13  | Посещаемость + Диагностика                  | P1        | [ ]    |

@@ -295,6 +295,279 @@
     }
   },
 
+  "refunds": {
+    "title": "Возвраты",
+    "subtitle_pending": "{{count}} требуют решения",
+    "empty_title": "Возвратов нет",
+    "empty_description": "Возвраты появятся при отмене оплат или архивации детей.",
+    "filtered_empty_title": "Ничего не найдено",
+    "filtered_empty_description": "Попробуйте изменить параметры фильтров.",
+    "create_button": "Создать возврат",
+    "pro_rata_banner_title": "Внимание: {{count}} возврат(ов) ждёт решения",
+    "pro_rata_banner_text": "При архивации ребёнка автоматически создаётся возврат за неиспользованные дни — его нужно одобрить и провести вручную.",
+    "pro_rata_reason": "Авто — архивация ребёнка",
+
+    "status": {
+      "pending": "Ожидает",
+      "approved": "Одобрен",
+      "processed": "Проведён",
+      "rejected": "Отклонён"
+    },
+
+    "columns": {
+      "child": "Ребёнок",
+      "payment": "Платёж",
+      "amount": "Сумма",
+      "reason": "Причина",
+      "status": "Статус",
+      "date": "Дата",
+      "actions": "Действия"
+    },
+
+    "filters": {
+      "all_statuses": "Все статусы"
+    },
+
+    "actions": {
+      "approve": "Одобрить",
+      "reject": "Отклонить",
+      "process": "Провести",
+      "details": "Подробности"
+    },
+
+    "approve_confirm": {
+      "title": "Одобрить возврат",
+      "description": "Возврат будет одобрен и готов к проведению.",
+      "success": "Возврат одобрен"
+    },
+
+    "reject_confirm": {
+      "title": "Отклонить возврат",
+      "description": "Укажите причину отклонения. Это действие необратимо.",
+      "success": "Возврат отклонён"
+    },
+
+    "process_confirm": {
+      "title": "Провести возврат",
+      "description": "Средства будут возвращены через провайдера. Это действие необратимо.",
+      "success": "Возврат проведён"
+    },
+
+    "create": {
+      "title": "Создать возврат",
+      "payment_id": "Платёж",
+      "payment_id_placeholder": "Выберите платёж",
+      "amount": "Сумма возврата (KZT)",
+      "amount_placeholder": "0",
+      "amount_hint": "Не более суммы платежа",
+      "reason": "Причина возврата",
+      "reason_placeholder": "Укажите причину возврата",
+      "submit": "Создать",
+      "cancel": "Отмена",
+      "success": "Возврат создан"
+    }
+  },
+
+  "discounts": {
+    "title": "Кастомные скидки",
+    "subtitle": "{{active}} активных · {{drafts}} в черновиках",
+    "empty_title": "Скидок нет",
+    "empty_description": "Создайте первую скидку для детей садика.",
+    "filtered_empty_title": "Ничего не найдено",
+    "filtered_empty_description": "Попробуйте изменить параметры фильтров.",
+    "create_button": "Создать скидку",
+    "search_placeholder": "Поиск по названию",
+
+    "status": {
+      "draft": "Черновик",
+      "active": "Активна",
+      "paused": "На паузе",
+      "expired": "Истекла",
+      "cancelled": "Отменена"
+    },
+
+    "type": {
+      "percentage": "Процент",
+      "fixed_amount": "Фикс. сумма"
+    },
+
+    "target_type": {
+      "all": "Всем активным детям",
+      "groups": "Конкретные группы",
+      "children": "Конкретные дети",
+      "tariff_types": "Конкретные тарифы",
+      "age_range": "Возрастной диапазон"
+    },
+
+    "columns": {
+      "name": "Название",
+      "type": "Тип",
+      "amount": "Размер",
+      "period": "Период",
+      "used": "Применено",
+      "priority": "Приоритет",
+      "status": "Статус"
+    },
+
+    "filters": {
+      "all_statuses": "Все статусы"
+    },
+
+    "wizard": {
+      "breadcrumb": "Скидки",
+      "title_new": "Конструктор скидки",
+      "title_edit": "Редактирование скидки",
+      "subtitle_new": "Создание новой скидки",
+      "subtitle_edit": "Редактирование",
+      "subtitle_note": "после активации правила и условия изменить нельзя",
+      "save_draft": "Сохранить черновик",
+      "activate": "Активировать",
+      "back": "Назад",
+      "next": "Далее",
+      "finish": "Завершить",
+
+      "step1": "Основное",
+      "step2": "Условия",
+      "step3": "Таргетинг",
+      "step4": "Период и лимиты",
+      "step5": "Приоритет и уведомление",
+
+      "basic": {
+        "title": "Основные параметры скидки",
+        "name_ru": "Название (RU)",
+        "name_kk": "Название (KK)",
+        "name_placeholder_ru": "Семейная: 2-й ребёнок",
+        "name_placeholder_kk": "Отбасылық: 2-ші бала",
+        "description": "Описание",
+        "description_placeholder": "Что это за скидка и кому полагается",
+        "discount_type": "Тип скидки",
+        "amount": "Размер",
+        "amount_hint_percentage": "В процентах",
+        "amount_hint_fixed": "В тенге"
+      },
+
+      "conditions": {
+        "title": "Условия применения",
+        "all_of": "Все (И)",
+        "any_of": "Любое (ИЛИ)",
+        "hint_all": "Скидка применяется, если выполнено каждое из условий.",
+        "hint_any": "Скидка применяется, если выполнено хотя бы одно из условий.",
+        "and": "И",
+        "or": "ИЛИ",
+        "add": "Добавить условие",
+        "value_placeholder": "Значение",
+        "type": {
+          "siblings_count": "Кол-во детей в семье",
+          "prepayment_months": "Предоплата N месяцев",
+          "age_range": "Возраст ребёнка",
+          "benefit_category": "Льготная категория",
+          "payment_method": "Способ оплаты",
+          "early_payment": "Ранняя оплата (до N числа)",
+          "birthday_month": "Месяц дня рождения",
+          "date_range": "Период дат",
+          "first_invoice": "Первый платёж"
+        }
+      },
+
+      "targeting": {
+        "title": "Кому применять",
+        "select_groups": "Выберите группы",
+        "select_children": "Выберите детей",
+        "select_tariffs": "Выберите тарифы",
+        "age_from": "От (мес.)",
+        "age_to": "До (мес.)"
+      },
+
+      "period": {
+        "title": "Период действия",
+        "valid_from": "Действует с",
+        "valid_until": "Действует до",
+        "valid_until_hint": "Не указано — бессрочно",
+        "limits_title": "Лимиты использования",
+        "max_per_child": "Макс. применений на ребёнка",
+        "max_per_child_hint": "Пусто — без лимита",
+        "total_max": "Общий лимит применений",
+        "total_max_hint": "Пусто — без лимита"
+      },
+
+      "priority": {
+        "title": "Приоритет и стек",
+        "priority_label": "Приоритет",
+        "priority_hint": "Чем больше — тем раньше применяется",
+        "stackable_label": "Stackable",
+        "stackable_hint": "Можно ли стэкать с другими скидками",
+        "stackable_toggle": "Применять вместе с другими",
+        "notification_title": "Уведомление при активации",
+        "notification_text": "Текст push (RU + KK)",
+        "notification_placeholder": "Например: «Вам начислена скидка 10% — действует с 1 июня»",
+        "notification_warning": "Уведомление отправится всем родителям, попавшим в таргет. Убедитесь в формулировке — отозвать push нельзя."
+      },
+
+      "preview": {
+        "title": "Предпросмотр",
+        "name_default": "Название скидки",
+        "who_title": "Кто попадёт",
+        "who_estimate": "~ {{count}} детей",
+        "who_hint": "Оценка по текущему составу садика",
+        "stackable": "Комбинируется",
+        "stackable_off": "Не комбинируется"
+      },
+
+      "activate_confirm": {
+        "title": "Активировать скидку",
+        "description": "Скидка станет активной и начнёт применяться.",
+        "description_with_notify": "Скидка станет активной. Push-уведомление отправится всем родителям таргета — отозвать push нельзя.",
+        "confirm": "Активировать",
+        "cancel": "Отмена"
+      },
+
+      "success_create": "Черновик скидки создан",
+      "success_update": "Скидка обновлена",
+      "success_activate": "Скидка активирована"
+    },
+
+    "detail": {
+      "not_found": "Скидка не найдена",
+      "stats_title": "Статистика",
+      "stats_count": "Применений",
+      "stats_amount": "Сумма скидок",
+      "applications_title": "Применения скидки",
+      "applications_empty": "Скидка ещё не была применена",
+      "applications_columns": {
+        "child": "Ребёнок",
+        "invoice": "Счёт",
+        "amount": "Сумма скидки",
+        "date": "Дата"
+      }
+    },
+
+    "actions": {
+      "edit": "Редактировать",
+      "activate": "Активировать",
+      "pause": "Приостановить",
+      "resume": "Возобновить",
+      "cancel": "Отменить"
+    },
+
+    "pause_confirm": {
+      "title": "Приостановить скидку",
+      "description": "Скидка будет приостановлена и перестанет применяться. Можно будет возобновить.",
+      "success": "Скидка приостановлена"
+    },
+
+    "resume_confirm": {
+      "title": "Возобновить скидку",
+      "description": "Скидка снова начнёт применяться.",
+      "success": "Скидка возобновлена"
+    },
+
+    "cancel_confirm": {
+      "title": "Отменить скидку",
+      "description": "Это действие необратимо. Отменённую скидку нельзя восстановить или возобновить.",
+      "success": "Скидка отменена"
+    }
+  },
+
   "tariff_assignments": {
     "title": "Назначения тарифов",
     "subtitle": "Индивидуальное назначение тарифов детям",
