@@ -23,6 +23,7 @@
 | N5  | Enrollments DTO без поля пола ребёнка                                         | `forward-looking`   | `/enrollments` → child после `card_created` с пустым `gender`    |
 | N6  | `InvoiceResponseDto` без массивов payments/refunds/fiscal_receipts            | `degraded`          | `/billing/invoices/:id` → секции Оплаты/Возвраты/Фискальные      |
 | N7  | Parent-request DTO без отображаемых имён автора/заявителя                     | `degraded`          | `/parent-requests`, `/parent-requests/:id` → тред, шапка, список |
+| N8  | `StaffMemberDto` без user display-полей (`full_name`/`phone` null)            | `degraded`          | `/staff` → колонки ФИО, телефон, аватар-инициалы                 |
 
 ---
 
@@ -128,6 +129,24 @@
 **Предлагаемый контракт.** Встроить `author_display_name` в message-DTO и `requester_name`/`child_name` в `ParentRequestResponseDto` — **или** дать users-lookup (`GET /users?ids=…`, как предложено в N2).
 
 **Источник.** OPEN_QUESTIONS §C15. **Действие.** Пересмотреть когда backend расширит DTO или появится users-резолв (связано с N2) → показать имена по факту, обновить HANDOFF §19. Не блокирует B8.
+
+---
+
+## N8 — `StaffMemberDto` без user display-полей (`full_name`/`phone` null) · `degraded`
+
+**Нужно фронту.** Страница `/staff` (B6) рисует таблицу с колонками ФИО, Телефон, аватар-инициалы. Когда `staff_members.full_name|phone` null в БД — нужно показать display-поля из таблицы `users` (где значения фактически есть, что подтверждено соседним клиентом SuperAdmin).
+
+**Live backend (проверено 2026-05-21 при ручном QA W6).** `GET /api/v1/admin/staff` → `StaffMemberDto[]` с `full_name: nullable, phone: nullable` (§A13.5). У записей, созданных без явного дублирования в `staff_members`, оба поля приходят null. SuperAdmin (соседний клиент того же backend) на `/admins` для тех же `user_id` показывает реальные `phone` (`+7 (777) 227-00-88`) и `full_name` (`asda qweq`) — то есть JOIN на `users` делает он сам. `/admin/staff/*` такого JOIN не делает.
+
+**Влияние.** `/staff`: колонки ФИО и Телефон у некоторых записей рендерятся `—`, аватар — пустой fallback по инициалам (`?`); реальные поля (роль/статус/специальность) корректны. Это согласованная честная деградация (CLAUDE §6 / §C4-прецедент: не фабриковать имя из UUID/phone — иначе «Имя: +77772270088» путает оператора). При активной работе с большим штатом — заметная UX-проблема (нельзя глазами отличить администраторов друг от друга).
+
+**Предлагаемый контракт.** Один из трёх вариантов (любой закрывает N8):
+
+1. **Backend JOIN на `users`** в `StaffMemberDto`: добавить `user_full_name`, `user_phone` (симметрично предлагаемому N2 для Guardians). Минимальное изменение DTO.
+2. **Backend заполняет `staff_members.full_name|phone`** при INSERT (берёт из `users`). Требует миграции существующих null-записей.
+3. **Дать users-lookup** (`GET /users?ids=<uuid,uuid>` → `[{id, full_name, phone}]`) — единое решение для N2/N7/N8, фронт сам резолвит.
+
+**Источник.** OPEN_QUESTIONS §C16 (W6/B9 ручной QA). Один шаблон с N2 (Guardians) и N7 (Parent-requests). **Действие.** Пересмотреть когда backend закроет один из вариантов → отрендерить ФИО/телефон по факту, обновить HANDOFF §8 (first-document). Не блокирует B6/B9.
 
 ---
 

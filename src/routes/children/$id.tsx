@@ -153,7 +153,7 @@ export default function ChildDetailPage() {
           toast.info(t('modals.reactivate.tariff_banner'), {
             action: {
               label: t('modals.reactivate.tariff_link'),
-              onClick: () => navigate('/billing/tariff-assignments'),
+              onClick: () => navigate(`/billing/tariff-assignments?child=${id}`),
             },
           });
         }

@@ -145,5 +145,204 @@
       "cancel": "Назад",
       "success": "Счёт отменён"
     }
+  },
+
+  "payments": {
+    "title": "Оплаты",
+    "subtitle": "{{count}} транзакций за период",
+    "empty_title": "Оплат пока нет",
+    "empty_description": "Оплаты появятся после проведения платежей.",
+    "filtered_empty_title": "Ничего не найдено",
+    "filtered_empty_description": "Попробуйте изменить параметры фильтров.",
+    "search_placeholder": "Поиск по ID",
+
+    "provider": {
+      "mock": "Mock",
+      "halyk_epay": "Halyk ePay",
+      "kaspi_pay": "Kaspi Pay",
+      "tiptoppay": "TipTopPay",
+      "freedom_pay": "Freedom Pay",
+      "cash": "Наличные"
+    },
+
+    "status": {
+      "initiated": "Инициирован",
+      "processing": "Обработка",
+      "completed": "Проведён",
+      "failed": "Ошибка",
+      "refunded": "Возвращён"
+    },
+
+    "columns": {
+      "invoice": "Счёт",
+      "child": "Ребёнок",
+      "amount": "Сумма",
+      "provider": "Провайдер",
+      "status": "Статус",
+      "date": "Дата"
+    },
+
+    "filters": {
+      "all_providers": "Все провайдеры",
+      "all_statuses": "Все статусы"
+    },
+
+    "detail": {
+      "breadcrumb": "Оплаты",
+      "not_found": "Платёж не найден или нет доступа",
+      "title": "Платёж {{id}}",
+      "details_title": "Детали платежа",
+      "created_label": "Создан",
+      "paid_at_label": "Оплачен",
+      "payload_title": "Данные платежа (DTO)",
+      "payload_label": "Payment DTO",
+      "provider_txn_label": "Provider txn",
+      "related_title": "Связанные сущности",
+      "related_invoice": "Счёт",
+      "related_child": "Ребёнок"
+    }
+  },
+
+  "tariff_plans": {
+    "title": "Тарифные планы",
+    "subtitle": "Управление тарифами и правилами скидок",
+    "go_to_assignments": "Назначения тарифов",
+    "empty_title": "Тарифных планов нет",
+    "empty_description": "Создайте первый тарифный план.",
+    "filtered_empty_title": "Ничего не найдено",
+    "filtered_empty_description": "Попробуйте изменить параметры фильтров.",
+    "create_button": "Создать тариф",
+    "active": "Активен",
+    "inactive": "Деактивирован",
+
+    "type": {
+      "monthly": "Ежемесячный",
+      "additional_service": "Доп. услуга",
+      "late_pickup_fee": "Поздний забор",
+      "prepayment_3m": "Предоплата 3 мес",
+      "prepayment_6m": "Предоплата 6 мес",
+      "prepayment_12m": "Предоплата 12 мес",
+      "prepayment_24m": "Предоплата 24 мес",
+      "other": "Прочее"
+    },
+
+    "applies_to": {
+      "all_children": "Все дети",
+      "group": "Группа",
+      "age_range": "Возрастной диапазон",
+      "individual": "Индивидуально"
+    },
+
+    "columns": {
+      "name": "Название",
+      "type": "Тип",
+      "applies_to": "Применяется к",
+      "amount": "Сумма",
+      "period": "Период",
+      "status": "Статус"
+    },
+
+    "filters": {
+      "all_statuses": "Все статусы",
+      "all_types": "Все типы"
+    },
+
+    "detail": {
+      "title": "Детали тарифа",
+      "not_found": "Тарифный план не найден",
+      "details_title": "Информация о тарифе",
+      "created_at": "Создан",
+      "updated_at": "Обновлён"
+    },
+
+    "create": {
+      "title": "Создать тарифный план",
+      "name": "Название",
+      "name_placeholder": "Введите название тарифа",
+      "description": "Описание (RU/KK)",
+      "tariff_type": "Тип тарифа",
+      "amount": "Сумма (KZT)",
+      "applies_to": "Применяется к",
+      "group": "Группа",
+      "group_placeholder": "Выберите группу",
+      "age_min": "Возраст от (мес)",
+      "age_max": "Возраст до (мес)",
+      "valid_from": "Действует с",
+      "valid_until": "Действует до",
+      "submit": "Создать",
+      "cancel": "Отмена",
+      "success": "Тарифный план создан",
+
+      "discount_rules": {
+        "title": "Правила скидок",
+        "sibling_pct": "Скидка за братьев/сестёр (%)",
+        "prepay_3m": "Предоплата 3 мес (%)",
+        "prepay_6m": "Предоплата 6 мес (%)",
+        "prepay_12m": "Предоплата 12 мес (%)",
+        "prepay_24m": "Предоплата 24 мес (%)",
+        "benefit_category": "Льготная категория",
+        "benefit_placeholder": "Напр.: многодетная семья"
+      }
+    },
+
+    "deactivate": {
+      "button": "Деактивировать",
+      "title": "Деактивировать тариф",
+      "description": "Деактивированный тарифный план нельзя назначать детям. Существующие назначения останутся активными.",
+      "confirm": "Деактивировать",
+      "cancel": "Отмена",
+      "success": "Тарифный план деактивирован"
+    }
+  },
+
+  "tariff_assignments": {
+    "title": "Назначения тарифов",
+    "subtitle": "Индивидуальное назначение тарифов детям",
+    "go_to_plans": "Тарифные планы",
+    "empty_title": "Назначений нет",
+    "empty_description": "Назначьте тарифный план ребёнку.",
+    "filtered_empty_title": "Ничего не найдено",
+    "filtered_empty_description": "Попробуйте изменить параметры фильтров.",
+    "create_button": "Назначить тариф",
+    "reactivate_banner": "После реактивации архивных детей назначьте им новый тариф здесь.",
+    "benefit_prefix": "льгота",
+
+    "columns": {
+      "child": "Ребёнок",
+      "plan": "Тарифный план",
+      "plan_amount": "Сумма по плану",
+      "custom_amount": "Льготная сумма",
+      "period": "Период"
+    },
+
+    "filters": {
+      "active_today": "Активные сегодня",
+      "all": "Все назначения"
+    },
+
+    "create": {
+      "title": "Назначить тариф ребёнку",
+      "child": "Ребёнок",
+      "child_placeholder": "Выберите ребёнка",
+      "plan": "Тарифный план",
+      "plan_placeholder": "Выберите активный тариф",
+      "custom_amount": "Льготная сумма (KZT)",
+      "custom_reason": "Причина льготы",
+      "custom_reason_placeholder": "Напр.: многодетная семья",
+      "valid_from": "Действует с",
+      "valid_until": "Действует до",
+      "submit": "Назначить",
+      "cancel": "Отмена",
+      "success": "Тариф назначен"
+    },
+
+    "close": {
+      "button": "Закрыть назначение",
+      "title": "Закрыть назначение тарифа",
+      "description": "Назначение тарифа будет закрыто на сегодня. Это действие нельзя отменить.",
+      "confirm": "Закрыть",
+      "cancel": "Отмена",
+      "success": "Назначение закрыто"
+    }
   }
 }

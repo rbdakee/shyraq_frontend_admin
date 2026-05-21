@@ -3,7 +3,10 @@ import type { EnrollmentListFilters } from '@/api/enrollments';
 import type { GroupListFilters } from '@/api/groups';
 import type { InvoiceListFilters } from '@/api/invoices';
 import type { ParentRequestListFilters } from '@/api/parent-requests';
+import type { PaymentListFilters } from '@/api/payments';
 import type { StaffListFilters } from '@/api/staff';
+import type { TariffAssignmentListFilters } from '@/api/tariff-assignments';
+import type { TariffPlanListFilters } from '@/api/tariff-plans';
 
 // Query keys are hashed structurally (by value) by TanStack Query, so plain
 // tuples are sufficient — no need to memoize/identity-cache them.
@@ -52,6 +55,22 @@ export const qk = {
     all: ['invoices'] as const,
     list: (filters: InvoiceListFilters = {}) => ['invoices', 'list', filters] as const,
     detail: (id: string) => ['invoices', 'detail', id] as const,
+  },
+  payments: {
+    all: ['payments'] as const,
+    list: (filters: PaymentListFilters = {}) => ['payments', 'list', filters] as const,
+    detail: (id: string) => ['payments', 'detail', id] as const,
+  },
+  tariffPlans: {
+    all: ['tariff-plans'] as const,
+    list: (filters: TariffPlanListFilters = {}) => ['tariff-plans', 'list', filters] as const,
+    detail: (id: string) => ['tariff-plans', 'detail', id] as const,
+  },
+  tariffAssignments: {
+    all: ['tariff-assignments'] as const,
+    list: (filters: TariffAssignmentListFilters = {}) =>
+      ['tariff-assignments', 'list', filters] as const,
+    detail: (id: string) => ['tariff-assignments', 'detail', id] as const,
   },
   parentRequests: {
     all: ['parent-requests'] as const,

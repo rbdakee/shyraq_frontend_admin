@@ -145,5 +145,204 @@
       "cancel": "Артқа",
       "success": "Шот жойылды"
     }
+  },
+
+  "payments": {
+    "title": "Төлемдер",
+    "subtitle": "{{count}} транзакция осы кезеңде",
+    "empty_title": "Төлемдер жоқ",
+    "empty_description": "Төлемдер жүргізілгеннен кейін пайда болады.",
+    "filtered_empty_title": "Ештеңе табылмады",
+    "filtered_empty_description": "Сүзгі параметрлерін өзгертіп көріңіз.",
+    "search_placeholder": "ID бойынша іздеу",
+
+    "provider": {
+      "mock": "Mock",
+      "halyk_epay": "Halyk ePay",
+      "kaspi_pay": "Kaspi Pay",
+      "tiptoppay": "TipTopPay",
+      "freedom_pay": "Freedom Pay",
+      "cash": "Қолма-қол"
+    },
+
+    "status": {
+      "initiated": "Бастама",
+      "processing": "Өңделуде",
+      "completed": "Өткізілді",
+      "failed": "Қате",
+      "refunded": "Қайтарылды"
+    },
+
+    "columns": {
+      "invoice": "Шот",
+      "child": "Бала",
+      "amount": "Сома",
+      "provider": "Провайдер",
+      "status": "Күйі",
+      "date": "Күні"
+    },
+
+    "filters": {
+      "all_providers": "Барлық провайдерлер",
+      "all_statuses": "Барлық күйлер"
+    },
+
+    "detail": {
+      "breadcrumb": "Төлемдер",
+      "not_found": "Төлем табылмады немесе рұқсат жоқ",
+      "title": "Төлем {{id}}",
+      "details_title": "Төлем мәліметтері",
+      "created_label": "Жасалған",
+      "paid_at_label": "Төленген",
+      "payload_title": "Төлем деректері (DTO)",
+      "payload_label": "Payment DTO",
+      "provider_txn_label": "Provider txn",
+      "related_title": "Байланысты нысандар",
+      "related_invoice": "Шот",
+      "related_child": "Бала"
+    }
+  },
+
+  "tariff_plans": {
+    "title": "Тариф жоспарлары",
+    "subtitle": "Тарифтер мен жеңілдік ережелерін басқару",
+    "go_to_assignments": "Тариф тағайындаулары",
+    "empty_title": "Тариф жоспарлары жоқ",
+    "empty_description": "Алғашқы тариф жоспарын жасаңыз.",
+    "filtered_empty_title": "Ештеңе табылмады",
+    "filtered_empty_description": "Сүзгі параметрлерін өзгертіп көріңіз.",
+    "create_button": "Тариф жасау",
+    "active": "Белсенді",
+    "inactive": "Белсенді емес",
+
+    "type": {
+      "monthly": "Ай сайынғы",
+      "additional_service": "Қосымша қызмет",
+      "late_pickup_fee": "Кешігу",
+      "prepayment_3m": "Алдын ала 3 ай",
+      "prepayment_6m": "Алдын ала 6 ай",
+      "prepayment_12m": "Алдын ала 12 ай",
+      "prepayment_24m": "Алдын ала 24 ай",
+      "other": "Басқа"
+    },
+
+    "applies_to": {
+      "all_children": "Барлық балалар",
+      "group": "Топ",
+      "age_range": "Жас ауқымы",
+      "individual": "Жеке"
+    },
+
+    "columns": {
+      "name": "Атауы",
+      "type": "Түрі",
+      "applies_to": "Қолданылады",
+      "amount": "Сома",
+      "period": "Кезең",
+      "status": "Күйі"
+    },
+
+    "filters": {
+      "all_statuses": "Барлық күйлер",
+      "all_types": "Барлық түрлер"
+    },
+
+    "detail": {
+      "title": "Тариф мәліметтері",
+      "not_found": "Тариф жоспары табылмады",
+      "details_title": "Тариф туралы ақпарат",
+      "created_at": "Жасалған",
+      "updated_at": "Жаңартылған"
+    },
+
+    "create": {
+      "title": "Тариф жоспарын жасау",
+      "name": "Атауы",
+      "name_placeholder": "Тариф атауын енгізіңіз",
+      "description": "Сипаттама (RU/KK)",
+      "tariff_type": "Тариф түрі",
+      "amount": "Сома (KZT)",
+      "applies_to": "Қолданылады",
+      "group": "Топ",
+      "group_placeholder": "Топты таңдаңыз",
+      "age_min": "Жасы бастап (ай)",
+      "age_max": "Жасы дейін (ай)",
+      "valid_from": "Басталуы",
+      "valid_until": "Аяқталуы",
+      "submit": "Жасау",
+      "cancel": "Болдырмау",
+      "success": "Тариф жоспары жасалды",
+
+      "discount_rules": {
+        "title": "Жеңілдік ережелері",
+        "sibling_pct": "Бауырлас жеңілдігі (%)",
+        "prepay_3m": "Алдын ала 3 ай (%)",
+        "prepay_6m": "Алдын ала 6 ай (%)",
+        "prepay_12m": "Алдын ала 12 ай (%)",
+        "prepay_24m": "Алдын ала 24 ай (%)",
+        "benefit_category": "Жеңілдікті санаты",
+        "benefit_placeholder": "Мыс.: көп балалы отбасы"
+      }
+    },
+
+    "deactivate": {
+      "button": "Белсенді емес ету",
+      "title": "Тарифті белсенді емес ету",
+      "description": "Белсенді емес тариф жоспарын балаларға тағайындау мүмкін емес. Бар тағайындаулар белсенді қалады.",
+      "confirm": "Белсенді емес ету",
+      "cancel": "Болдырмау",
+      "success": "Тариф жоспары белсенді емес етілді"
+    }
+  },
+
+  "tariff_assignments": {
+    "title": "Тариф тағайындаулары",
+    "subtitle": "Балаларға жеке тариф тағайындау",
+    "go_to_plans": "Тариф жоспарлары",
+    "empty_title": "Тағайындаулар жоқ",
+    "empty_description": "Балаға тариф жоспарын тағайындаңыз.",
+    "filtered_empty_title": "Ештеңе табылмады",
+    "filtered_empty_description": "Сүзгі параметрлерін өзгертіп көріңіз.",
+    "create_button": "Тариф тағайындау",
+    "reactivate_banner": "Мұрағаттан шығарылған балаларға жаңа тариф осы жерде тағайындаңыз.",
+    "benefit_prefix": "жеңілдік",
+
+    "columns": {
+      "child": "Бала",
+      "plan": "Тариф жоспары",
+      "plan_amount": "Жоспар бойынша сома",
+      "custom_amount": "Жеңілдік сомасы",
+      "period": "Кезең"
+    },
+
+    "filters": {
+      "active_today": "Бүгін белсенді",
+      "all": "Барлық тағайындаулар"
+    },
+
+    "create": {
+      "title": "Балаға тариф тағайындау",
+      "child": "Бала",
+      "child_placeholder": "Баланы таңдаңыз",
+      "plan": "Тариф жоспары",
+      "plan_placeholder": "Белсенді тарифті таңдаңыз",
+      "custom_amount": "Жеңілдік сомасы (KZT)",
+      "custom_reason": "Жеңілдік себебі",
+      "custom_reason_placeholder": "Мыс.: көп балалы отбасы",
+      "valid_from": "Басталуы",
+      "valid_until": "Аяқталуы",
+      "submit": "Тағайындау",
+      "cancel": "Болдырмау",
+      "success": "Тариф тағайындалды"
+    },
+
+    "close": {
+      "button": "Тағайындауды жабу",
+      "title": "Тариф тағайындауын жабу",
+      "description": "Тариф тағайындауы бүгінгі күнге жабылады. Бұл әрекетті болдырмау мүмкін емес.",
+      "confirm": "Жабу",
+      "cancel": "Болдырмау",
+      "success": "Тағайындау жабылды"
+    }
   }
 }

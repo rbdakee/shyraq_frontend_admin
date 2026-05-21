@@ -335,9 +335,13 @@ src/
 
 **Acceptance:**
 
-- [ ] Payments список/деталь + provider_payload viewer.
-- [ ] Tariff-plan форма с discount_rules-конструктором; overlap-ошибки человекочитаемы.
-- [ ] Tariff-assignment с custom_amount; inted из reactivate-баннера. Gate exit 0.
+- [x] Payments список/деталь + provider*payload viewer. *(B9 wave 2026-05-21: live `PaymentResponseDto` БЕЗ поля `provider_payload` — JSON-viewer показывает полный snake*case DTO; OPEN_QUESTIONS §A16 live=факт.)*
+- [x] Tariff-plan форма с discount*rules-конструктором; overlap-ошибки человекочитаемы. *(Структурированные 5 number-полей + benefit*category — НЕ wizard И/ИЛИ; wizard остаётся для B10 custom-discounts.)*
+- [x] Tariff-assignment с custom*amount; inted из reactivate-баннера. Gate exit 0. *(Deep-link `?child=<uuid>` auto-open модала; fixup `routes/children/$id.tsx:156`.)\_
+
+**Wave-fixup (variant C UX):** cross-links между `/billing/tariff-plans` и `/billing/tariff-assignments` (правый блок header, ссылка primary-цветом + `ArrowRightIcon`) — после ручного QA уточнено, что sidebar содержит один пункт «Тарифы» и переход между парными страницами нужно сделать явным. Sitemap §28 не нарушен (два маршрута сохранены).
+
+**Related finding (manual QA):** OPEN_QUESTIONS §C16 + BACKEND_NEEDINGS N8 — `StaffMemberDto` возвращает null `full_name`/`phone` (нет JOIN на `users`), на странице `/staff` колонки ФИО/телефон деградируют `—`. Аналог §C4/§C15, не блокирует.
 
 ---
 
@@ -463,7 +467,7 @@ src/
 | B6   | Группы + Сотрудники                         | P0        | [x]    |
 | B7   | Биллинг: Счета                              | P0        | [x]    |
 | B8   | Заявки родителей                            | P0        | [x]    |
-| B9   | Оплаты + Тарифы + Назначения                | P1        | [ ]    |
+| B9   | Оплаты + Тарифы + Назначения                | P1        | [x]    |
 | B10  | Возвраты + Скидки                           | P1        | [ ]    |
 | B11  | Расписание + Меню                           | P1        | [ ]    |
 | B12  | Контент + Qundylyq                          | P1        | [ ]    |

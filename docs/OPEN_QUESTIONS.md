@@ -129,6 +129,21 @@ HANDOFF §7/§8 будут обновлены под факт в wave-комми
 6. **Detail DTO:** `InvoiceResponseDto` содержит только `line_items: InvoiceLineItemResponseDto[]` + плоские поля скидки (`discount_pct?, discount_reason?, amount_after_discount`). Массивов `payments/refunds/fiscal_receipts/discounts` нет → §C14 (честная деградация секций карточки), BACKEND_NEEDINGS N6.
 7. `InvoiceLineItemResponseDto = {id, invoice_id, kindergarten_id, description, tariff_plan_id?, quantity, unit_price, line_total, created_at}`. `manual-mark-paid` тело `{paid_at?, payer_user_id?, note?}`; `cancel` тело `{reason?}`. nullable-поля (`tariff_plan_id, discount_pct, discount_reason, description, prorated_for_days`) — Zod `.nullable()`. Код B7 conform к live с defensive Zod.
 
+### A16 — Tariffs & Payments: enum/schema discrepancies, bare-array lists, close endpoint, no provider_payload · resolved (2026-05-21)
+
+Контекст: при B9 (payments + tariff-plans + tariff-assignments) сверка live `/docs-json` выявила расхождения HANDOFF §13 (payments)/§14 (tariffs) с фактическим контрактом. Решение: прецедент §A7/§A8/§A14 — live = факт. Зафиксированные расхождения (HANDOFF §13+§14 правлены под факт в wave-коммите B9 — first-document):
+
+1. **`tariff_type` enum:** HANDOFF §14: `monthly_base/additional_service/late_pickup/meal_upgrade`. Live: `monthly | additional_service | late_pickup_fee | prepayment_3m | prepayment_6m | prepayment_12m | prepayment_24m | other`.
+2. **`applies_to` enum:** HANDOFF §14: `child/group/age_range`. Live: `all_children | group | age_range | individual`.
+3. **`description` in `TariffPlanResponseDto`:** i18n JSONB `{ru, kz}` (key `kz`, not `kk`; matches §2.4).
+4. **`POST /admin/tariff-assignments/:id/close`:** separate endpoint (live). Effectively sets `valid_until = today`.
+5. **`assigned_by`** in `TariffAssignmentResponseDto`: read-only from `req.user`; on create NOT sent.
+6. **Payments list:** `GET /admin/payments` filter params `from_date`/`to_date` (NOT `from`/`to`). Ответ — bare `PaymentResponseDto[]`.
+7. **`PaymentResponseDto` WITHOUT `provider_payload`:** contains `provider, provider_txn_id, idempotency_key, redirect_url?, deeplink?, status, paid_at?, refund_id?, payer_user_id?`. Design prototype's JSON-viewer equivalent: show full DTO snake_case (read-only, for support). NOT inventing `provider_payload`.
+8. **All three lists (payments, tariff-plans, tariff-assignments):** bare `[]`, no pagination envelope. Defensive: `z.array(Schema)`.
+
+HANDOFF §13+§14 обновлены под факт в wave-коммите B9. Код B9 conform к live с defensive Zod.
+
 ### A15 — Parent-requests: list `/admin/*` vs detail/actions `/staff/*`, `type` filter, snake_case, cursor · resolved (2026-05-19)
 
 Контекст: при B8 (parent-requests data+UI) сверка live `/docs-json` выявила существенное расхождение HANDOFF §19 ↔ факт. Решение: прецедент §A7/§A8 — live = факт. Зафиксировано (HANDOFF §19 правлен под факт в wave-коммите B7+B8 — first-document):
@@ -245,6 +260,12 @@ HANDOFF §24: исторически `/admin/*` мог быть заскопле
 Контекст: дизайн `screens-ops.jsx` `RequestDetail`/`RequestsList` рисует именованные пузыри треда (ФИО автора), имя заявителя в шапке, имя ребёнка в колонке списка. Live `ParentRequestResponseDto` даёт только `requester_user_id`/`child_id` (UUID); `ParentRequestMessageResponseDto` — только `author_user_id`/`author_staff_id` (UUID, ровно один). Отображаемых имён в контракте нет; batch-резолва users в scope B8 нет. Аналог §C4.
 
 Решение (CLAUDE §6 — честная деградация, без фабрикации из UUID): сторона пузыря/автор определяется по тому, какой `author_*_id` задан → обобщённый локализованный лейбл (родитель / администрация-сотрудник), без выдуманного имени/инициалов; имя ребёнка в списке резолвится отдельным `useChildrenList` (children-домен это уже отдаёт), fallback — усечённый идентификатор; лейаут пузырей прототипа сохранён. Не блокирует B8 (acceptance закрыт). Каталог backend-need — [`BACKEND_NEEDINGS_HANDOFF.md`](BACKEND_NEEDINGS_HANDOFF.md) **N7**. Пересмотр: backend встроит `author_display_name`/`requester_name`/`child_name` в DTO ИЛИ даст users-lookup (как §C4/N2) → показать имена по факту, обновить HANDOFF §19.
+
+### C16 — Staff DTO без отображаемых полей user (full_name/phone null когда staff_members.\* null) · parked/watch (2026-05-21, W6/B9 manual QA)
+
+Контекст: при ручном QA волны B9 (страница `/staff` в проде Vercel) обнаружено — у staff-записей таблица показывает ФИО `—`, телефон `—`, аватар-инициалы пустые (`?`). Соседний клиент SuperAdmin (того же backend) на `/admins` для тех же `user_id` показывает реальные `phone` (`+7 (777) 227-00-88`) и `full_name` (`asda qweq`) — то есть значения **есть** в таблице `users`, но `staff_members.full_name|phone` пусты, и `/admin/staff/*` JOIN на `users` не делает. `StaffMemberDto` (§A13.5) официально допускает оба поля nullable. Прямой аналог §C4 (Guardians: только UUID, нет user-display) и §C15 (Parent-requests). FE B6 не виноват — Zod корректно парсит nullable, колонки честно рендерят `—` (CLAUDE §6 / §C4-прецедент: не фабриковать имя из phone/UUID, иначе путаница «Имя: +77772270088»).
+
+Решение (CLAUDE §6 — честная деградация, без фабрикации; прецедент §C4/§C11/§C15): фронт **остаётся как есть** — `full_name ?? '—'`, `phone ? formatPhone : '—'`, аватар fallback по initials (пустой при null). Лейаут таблицы сохранён, реальные поля (роль/статус/specialist_type) корректны. **Не подмешивать phone в колонку «Имя»** (как делает SuperAdmin fallback'ом) — это не имя, путает оператора. Каталог backend-need — [`BACKEND_NEEDINGS_HANDOFF.md`](BACKEND_NEEDINGS_HANDOFF.md) **N8**. Не блокирует B6/B9 (acceptance оба закрыты). Пересмотр: backend сделает JOIN на `users` в `StaffMemberDto` (как просит N2 для GuardianDto) ИЛИ заполнит `staff_members.full_name|phone` при INSERT из `users` ИЛИ даст общий users-lookup `GET /users?ids=…` (как просят N2/N7) → имя/телефон появятся, обновить HANDOFF §8.
 
 ---
 

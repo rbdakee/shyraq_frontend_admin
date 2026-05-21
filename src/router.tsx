@@ -136,10 +136,42 @@ export const router = createBrowserRouter([
               return { Component };
             },
           },
-          { path: 'billing/payments', lazy: lazyStub },
-          { path: 'billing/payments/:id', lazy: lazyStub },
-          { path: 'billing/tariff-plans', lazy: lazyStub },
-          { path: 'billing/tariff-assignments', lazy: lazyStub },
+          {
+            path: 'billing/payments',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/billing/payments/index');
+              return { Component };
+            },
+          },
+          {
+            path: 'billing/payments/:id',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/billing/payments/$id');
+              return { Component };
+            },
+          },
+          {
+            path: 'billing/tariff-plans',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/billing/tariff-plans/index');
+              return { Component };
+            },
+          },
+          {
+            path: 'billing/tariff-plans/:id',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/billing/tariff-plans/$id');
+              return { Component };
+            },
+          },
+          {
+            path: 'billing/tariff-assignments',
+            lazy: async () => {
+              const { default: Component } =
+                await import('@/routes/billing/tariff-assignments/index');
+              return { Component };
+            },
+          },
           { path: 'billing/holidays', lazy: lazyStub },
           { path: 'billing/refunds', lazy: lazyStub },
           { path: 'billing/discounts', lazy: lazyStub },
