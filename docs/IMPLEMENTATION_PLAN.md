@@ -1,6 +1,6 @@
 # Shyraq Admin Web — Implementation Plan
 
-Безопасный поэтапный план разработки фронтенда админки. **16 батчей (B0–B15)**, каждый ≈ одна Claude Code сессия, заканчивается рабочим коммитом с зелёным acceptance. Стек и конвенции — наше решение (§Foundations). Готовый дизайн `docs/design/handoff/shyraq-admin/*` — строим 1:1 по нему. `../frontend_superadmin/` — соседний сервис на похожем стеке: только пример при открытом архитектурном вопросе, не эталон.
+Безопасный поэтапный план разработки фронтенда админки. **23 батча (B0–B22)**: B0–B15 — desktop (16 батчей), B16–B22 — mobile-адаптация (7 батчей). Каждый ≈ одна Claude Code сессия, заканчивается рабочим коммитом с зелёным acceptance. Стек и конвенции — наше решение (§Foundations). Готовый дизайн: desktop `docs/design/handoff/shyraq-admin/*`, mobile `docs/design/handoff-with-mobile/shyraq-admin/*` — строим 1:1 по ним. `../frontend_superadmin/` — соседний сервис на похожем стеке: только пример при открытом архитектурном вопросе, не эталон.
 
 **Source of truth контрактов** — [`ADMIN_FRONTEND_HANDOFF.md`](ADMIN_FRONTEND_HANDOFF.md) (далее **HANDOFF §X**). UI-спека — [`ADMIN_DESIGN_SPEC.md`](ADMIN_DESIGN_SPEC.md) (далее **DESIGN §X**). Визуал — `docs/design/handoff/shyraq-admin/project/` (далее **VIS**). Этот план **не дублирует** контракты — ссылается на § handoff/design. Backend live: `http://194.32.140.219:5678`.
 
@@ -454,6 +454,362 @@ src/
 
 ---
 
+---
+
+## Mobile batches (B16–B22)
+
+Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи зависят от завершения desktop-батчей B11–B15 (desktop screens должны существовать, чтобы mobile-адаптация строилась поверх них). Mobile-дизайн: `docs/design/handoff-with-mobile/shyraq-admin/project/` (`mobile-app.jsx`, `mobile-screens.jsx`, `mobile-screens-2.jsx`, `mobile.css`). UI-спека: DESIGN §10.
+
+**Resolved:** OPEN_QUESTIONS M1–M10 закрыты 2026-05-24. Mobile-батчи B16–B22 могут стартовать.
+
+---
+
+## B16 — Mobile foundation (shell)
+
+**Goal:** адаптивный shell — mobile top bar, bottom tab bar, FAB, breakpoint hook, safe-area utilities. App корректно переключается между desktop и mobile shell.
+
+**Inputs:** DESIGN §10.2–§10.4 (breakpoint, mobile shell, tabs); `mobile.css` (`.m-shell`, `.m-bar`, `.m-tabbar`, `.m-fab`, `.m-scroll`, `.m-iconbtn`); `mobile-screens.jsx` MBar/MTabBar primitives; OPEN_QUESTIONS M1 (breakpoint), M2 (tablet), M5 (adaptive vs separate routes), M8 (detection hook).
+
+**Dependencies:** B0–B2 (scaffold, auth, desktop shell), B15 (settings/themes). Decisions: OPEN_QUESTIONS M1, M2, M5, M8 resolved.
+
+**Tasks:**
+
+- `hooks/use-breakpoint.ts` — `useBreakpoint()` hook based on `window.matchMedia` (OPEN_QUESTIONS M8 resolution). Returns `{ isMobile: boolean, isDesktop: boolean }`. Unit tests.
+- `components/layout/mobile-shell.tsx` — MobileShell layout: `.m-bar` top bar component (back/title/sub/action), `.m-scroll` content area, `.m-tabbar` bottom tab bar (5 tabs with badges), safe-area paddings.
+- `components/layout/mobile-top-bar.tsx` — reusable top bar with `back`, `title`, `sub`, `action` props; `.flat` variant.
+- `components/layout/mobile-tab-bar.tsx` — bottom tab bar with 5 tabs (Главная/Дети/Заявки/Счета/Ещё), active state, badge counts (unread requests, overdue invoices).
+- `components/ui/fab.tsx` — FAB component (`.m-fab`), primary color, absolute positioning.
+- Port `.m-*` base styles from `mobile.css` into `src/styles/globals.css` (or Tailwind @layer utilities) preserving CSS-var token references: `.m-shell`, `.m-bar`, `.m-bar.flat`, `.m-scroll`, `.m-tabbar`, `.m-tab`, `.m-fab`, `.m-iconbtn`, `.m-btn`, `.m-section-h`, safe-area utilities.
+- Integration in `App.tsx` / root layout: conditional render `<DesktopShell>` vs `<MobileShell>` based on `useBreakpoint`. Navigation works on both shells.
+- Verify themes apply correctly on mobile (CSS-vars from `ui-store` apply to `:root` → mobile inherits automatically).
+
+**Files to create/modify:**
+
+- `src/hooks/use-breakpoint.ts` (create)
+- `src/components/layout/mobile-shell.tsx` (create)
+- `src/components/layout/mobile-top-bar.tsx` (create)
+- `src/components/layout/mobile-tab-bar.tsx` (create)
+- `src/components/ui/fab.tsx` (create)
+- `src/styles/globals.css` (modify — add `.m-*` styles)
+- `src/App.tsx` (modify — adaptive shell render)
+- `src/router.tsx` (modify — add `/notifications` route for mobile)
+
+**Design references:**
+
+- `mobile.css` L1–108 (shell, bar, tabbar, iconbtn)
+- `mobile.css` L369–381 (FAB)
+- `mobile.css` L383–402 (m-btn)
+- `mobile-screens.jsx` L10–43 (MBar, MTabBar primitives)
+
+**Acceptance:**
+
+- [ ] App renders correctly at 390px / 414px / 768px / 1024px / 1280px widths — mobile shell < 1024px, desktop shell >= 1024px.
+- [ ] Bottom tab bar has 5 tabs, active state highlighted, badges show dynamic counts.
+- [ ] Navigation works on both shells — same routes, different layout.
+- [ ] FAB visible on list screens, positioned per design (bottom 96px, right 18px).
+- [ ] Themes (all 8 + radii) apply correctly on mobile shell (inherited from `:root` CSS-vars).
+- [ ] `useBreakpoint` hook responds to window resize (DevTools responsive mode).
+- [ ] typecheck + lint + test exit 0.
+
+---
+
+## B17 — Mobile DataTable + forms infra
+
+**Goal:** переиспользуемые mobile-адаптивные компоненты: DataTable mobile mode (card-list), filter bottom-sheet, full-screen sheet для модалов, sticky bottom action bar.
+
+**Inputs:** DESIGN §10.6 (mobile UI-паттерны); `mobile.css` (`.m-card`, `.m-list-row`, `.m-chips`, `.m-search`, `.m-kv`, `.m-segmented`, `.m-att-grid`); OPEN_QUESTIONS M7 (date-picker), M9 (bottom-sheet).
+
+**Dependencies:** B16 (mobile shell), B3 (DataTable desktop). Decisions: OPEN_QUESTIONS M7, M9 resolved.
+
+**Tasks:**
+
+- `components/data-table/data-table-mobile.tsx` — mobile mode for DataTable: renders card-list (`.m-card.flush` + `.m-list-row`) instead of `<table>`. Accept `renderMobileRow` prop for custom row rendering. Integrates with existing DataTable — adaptive based on `useBreakpoint`.
+- `components/forms/filter-bottom-sheet.tsx` — bottom-sheet for filters on mobile (replaces filter sidebar/popover). Uses Radix `Sheet` with `side="bottom"` (per M9 resolution).
+- `components/forms/full-screen-sheet.tsx` — full-screen sheet for modals on mobile (replaces Dialog on mobile). Back button in top bar, scroll content, optional sticky bottom actions.
+- `components/layout/sticky-bottom-bar.tsx` — sticky bottom action bar for create/save forms (position absolute, bottom 88px, left/right 8px, flex gap 8).
+- Port mobile component styles from `mobile.css`: `.m-card`, `.m-card.flush`, `.m-list-row`, `.m-row-title`, `.m-row-sub`, `.m-row-meta`, `.m-row-chev`, `.m-chips`, `.m-chip`, `.m-search`, `.m-kv`, `.m-segmented`, `.m-att-grid`, `.m-att-cell`, `.m-inv-row`, `.m-inv-amount`, `.m-kpi-row`, `.m-kpi`, `.m-lead`, `.m-req-row`, `.m-drawer-item`, `.m-drawer-ic`, `.m-tl`, `.m-tl-item`, `.m-tl-dot`, `.m-donut`, `.m-avatar`, `.m-status-dot`, `.m-profile-head`, `.m-qa-row`, `.m-quick-grid`, `.m-quick`, `.m-att-bar`, `.m-att-pill`, `.m-otp-row`, `.m-otp-cell`, `.m-auth`, `.m-empty`.
+- Component tests: DataTable mobile mode, filter bottom-sheet open/close.
+
+**Files to create/modify:**
+
+- `src/components/data-table/data-table-mobile.tsx` (create)
+- `src/components/forms/filter-bottom-sheet.tsx` (create)
+- `src/components/forms/full-screen-sheet.tsx` (create)
+- `src/components/layout/sticky-bottom-bar.tsx` (create)
+- `src/styles/globals.css` (modify — add remaining `.m-*` component styles)
+- `src/components/data-table/data-table.tsx` (modify — integrate mobile mode)
+
+**Design references:**
+
+- `mobile.css` L128–201 (cards, list rows)
+- `mobile.css` L203–244 (chips)
+- `mobile.css` L246–267 (search)
+- `mobile.css` L507–530 (segmented)
+- `mobile.css` L578–588 (KV-list)
+- `mobile.css` L480–504 (invoice row, request row)
+
+**Acceptance:**
+
+- [ ] DataTable renders card-list on mobile, table on desktop — same data, same hooks.
+- [ ] Filter bottom-sheet opens from filter icon on mobile, closes on overlay tap / swipe.
+- [ ] Full-screen sheet used for forms/modals on mobile, Dialog on desktop.
+- [ ] Sticky bottom action bar visible on form screens (InvoiceDetail, DiscountWizard style).
+- [ ] All `.m-*` component styles ported and rendering per design.
+- [ ] Component tests green. typecheck + lint + test exit 0.
+
+---
+
+## B18 — Mobile core screens (8 экранов)
+
+**Goal:** ScreenLogin, ScreenOtp, ScreenDashboard, ScreenNotifications, ScreenMore, ScreenChildren, ScreenChildDetail, ScreenLeads.
+
+**Inputs:** DESIGN §10.5 (#1–#8); `mobile-screens.jsx` (ScreenLogin L72–106, ScreenOtp L111–153, ScreenDashboard L158–316, ScreenChildren L321–378, ScreenChildDetail L383–483, ScreenLeads L489–539, ScreenMore L776–902, ScreenNotifications L907–972).
+
+**Dependencies:** B16 (mobile shell), B17 (mobile infra), B2 (auth), B3 (dashboard), B4 (children), B5 (enrollments). Decision: OPEN_QUESTIONS M10 resolved (notifications route).
+
+**Tasks:**
+
+- `routes/login.tsx` — add mobile-adaptive layout: `.m-auth` hero + `.m-auth-card` + phone input on mobile. Desktop layout unchanged.
+- `routes/login.tsx` — OTP step: `.m-otp-row` + `.m-otp-cell` on mobile. Back button, timer, change-number link.
+- `routes/dashboard.tsx` — mobile layout: MBar (greeting + notifications bell + QR), KPI row (2-col grid), overdue alert card, donut attendance, quick actions grid, activity timeline. Reuse existing dashboard hooks.
+- `/notifications` route (create) — mobile: full-screen with segmented (Все/Непрочитанные), grouped by day. Desktop: redirect or page (per M10 resolution).
+- ScreenMore — mobile drawer menu: profile card, grouped nav items (Воспитанники/Режим дня/Биллинг/Операции), logout. This is the mobile equivalent of sidebar.
+- `routes/children/index.tsx` — mobile: MBar + search + chips filter + card-list (avatar + name + age/group + status dot/badge). FAB for create.
+- `routes/children/$id.tsx` — mobile: flat bar + profile header (avatar, name, group, badge) + quick actions row + KV sections (Guardians, Billing, Timeline). Desktop tabs become scrollable sections.
+- `routes/enrollments/index.tsx` — mobile: MBar + segmented (Воронка/Список/Архив) + chips by stage + lead cards with stage-colored strip. Kanban becomes list.
+
+**Files to create/modify:**
+
+- `src/routes/login.tsx` (modify — mobile layout)
+- `src/routes/dashboard.tsx` (modify — mobile layout)
+- `src/routes/notifications.tsx` (create)
+- `src/routes/children/index.tsx` (modify — mobile layout)
+- `src/routes/children/$id.tsx` (modify — mobile layout)
+- `src/routes/enrollments/index.tsx` (modify — mobile layout)
+- `src/components/layout/mobile-more-menu.tsx` (create)
+- `src/locales/ru/common.json` (modify — mobile tab/drawer labels)
+- `src/locales/kk/common.json` (modify — same)
+
+**Design references:**
+
+- `mobile-screens.jsx` L72–106 (Login)
+- `mobile-screens.jsx` L111–153 (OTP)
+- `mobile-screens.jsx` L158–316 (Dashboard)
+- `mobile-screens.jsx` L321–378 (Children list)
+- `mobile-screens.jsx` L383–483 (Child detail)
+- `mobile-screens.jsx` L489–539 (Leads)
+- `mobile-screens.jsx` L776–902 (More menu)
+- `mobile-screens.jsx` L907–972 (Notifications)
+
+**Acceptance:**
+
+- [ ] Login/OTP mobile layout matches design (hero, card, OTP cells).
+- [ ] Dashboard mobile: KPI row, overdue alert, donut, quick actions, activity — real data.
+- [ ] Notifications full-screen: grouped by day, segmented Все/Непрочитанные.
+- [ ] More menu: profile + grouped nav + logout — taps navigate to correct routes.
+- [ ] Children list: search + chips + card-list; child detail: profile header + sections.
+- [ ] Leads: segmented + chips + lead cards (kanban -> list).
+- [ ] All screens use real data from existing hooks (no new API calls).
+- [ ] typecheck + lint + test exit 0. Browser QA TBD by user.
+
+---
+
+## B19 — Mobile ops screens (2 экрана)
+
+**Goal:** ScreenRequests, ScreenAttendance.
+
+**Inputs:** DESIGN §10.5 (#17, #18); `mobile-screens.jsx` (ScreenRequests L617–655, ScreenAttendance L661–770).
+
+**Dependencies:** B16–B17 (mobile infra), B8 (parent-requests desktop), B13 (attendance desktop).
+
+**Tasks:**
+
+- `routes/parent-requests/index.tsx` — mobile: MBar + segmented (Новые/В работе/Закрытые) + request inbox cards (unread dot, avatar, type badge, body preview 2-line clamp, timestamp). Filter icon → bottom-sheet.
+- `routes/attendance/index.tsx` + `daily-status.tsx` — mobile: MBar + date strip (h-scroll pills, active = primary) + overall stats card (total/fill %) + stat pills (В саду/Опозд./Болеют/Нет) + per-group capacity bars + child grid (2-col, avatar + status dot + name + group).
+
+**Files to create/modify:**
+
+- `src/routes/parent-requests/index.tsx` (modify — mobile layout)
+- `src/routes/attendance/index.tsx` (modify — mobile layout)
+- `src/routes/attendance/daily-status.tsx` (modify — mobile layout)
+
+**Design references:**
+
+- `mobile-screens.jsx` L617–655 (Requests)
+- `mobile-screens.jsx` L661–770 (Attendance)
+
+**Acceptance:**
+
+- [ ] Requests: segmented tabs + inbox cards with unread indicator; taps navigate to detail.
+- [ ] Attendance: date strip scrollable, stats card, group capacity bars, child grid.
+- [ ] Data from existing hooks; no new API calls.
+- [ ] typecheck + lint + test exit 0. Browser QA TBD by user.
+
+---
+
+## B20 — Mobile billing screens (10 экранов)
+
+**Goal:** ScreenInvoices, ScreenInvoiceDetail, ScreenPayments, ScreenPaymentDetail, ScreenTariffs, ScreenRefunds, ScreenDiscounts, ScreenDiscountWizard, ScreenHolidays, ScreenFiscal.
+
+**Inputs:** DESIGN §10.5 (#19–#28); `mobile-screens.jsx` ScreenInvoices (L545–611); `mobile-screens-2.jsx` (ScreenInvoiceDetail L515–568, ScreenPayments L574–624, ScreenPaymentDetail L630–692, ScreenTariffs L698–739, ScreenRefunds L745–790, ScreenDiscounts L796–839, ScreenDiscountWizard L845–905, ScreenHolidays L911–978, ScreenFiscal L984–1034).
+
+**Dependencies:** B16–B17 (mobile infra), B7 (invoices desktop), B9 (payments/tariffs desktop), B10 (refunds/discounts desktop), B15 (holidays/fiscal desktop). Decisions: OPEN_QUESTIONS M3 (tariff merge), M6 (discount wizard) resolved.
+
+**Tasks:**
+
+- `routes/billing/invoices/index.tsx` — mobile: MBar + KPI summary row (Выставлено/Оплачено/Долг) + chips filter + invoice rows + FAB.
+- `routes/billing/invoices/$id.tsx` — mobile: hero amount card (status gradient bg) + KV details + line items + payments + fiscal + sticky bottom actions (PDF + Отправить).
+- `routes/billing/payments/index.tsx` — mobile: MBar + KPI row (Сумма/Успех/Ошибок) + provider chips + payment rows.
+- `routes/billing/payments/$id.tsx` — mobile: hero status circle + KV details + event timeline.
+- `routes/billing/tariff-plans/index.tsx` + `routes/billing/tariff-assignments/index.tsx` — mobile: segmented «Планы / Назначения» (per M3 resolution); plan cards with price/status/kids count.
+- `routes/billing/refunds/index.tsx` — mobile: Phase A warning banner + segmented (Ожидают/В работе/История) + refund cards.
+- `routes/billing/discounts/index.tsx` — mobile: discount cards with type/stats/period.
+- `routes/billing/discounts/new.tsx` (or `$id.tsx`) — mobile: 4-step wizard with stepper bar + conditions + preview + sticky bottom nav (Назад / Далее).
+- `routes/billing/holidays.tsx` — mobile: month nav + calendar grid (7-col, holiday dates danger-colored) + holiday list with KK names.
+- `routes/billing/fiscal-receipts.tsx` — mobile: Phase A info banner + KPI row + receipt list.
+
+**Files to create/modify:**
+
+- `src/routes/billing/invoices/index.tsx` (modify)
+- `src/routes/billing/invoices/$id.tsx` (modify)
+- `src/routes/billing/payments/index.tsx` (modify)
+- `src/routes/billing/payments/$id.tsx` (modify)
+- `src/routes/billing/tariff-plans/index.tsx` (modify)
+- `src/routes/billing/tariff-assignments/index.tsx` (modify)
+- `src/routes/billing/refunds/index.tsx` (modify)
+- `src/routes/billing/discounts/index.tsx` (modify)
+- `src/routes/billing/discounts/new.tsx` or `$id.tsx` (modify)
+- `src/routes/billing/holidays.tsx` (modify)
+- `src/routes/billing/fiscal-receipts.tsx` (modify)
+
+**Design references:**
+
+- `mobile-screens.jsx` L545–611 (Invoices)
+- `mobile-screens-2.jsx` L515–568 (InvoiceDetail)
+- `mobile-screens-2.jsx` L574–624 (Payments)
+- `mobile-screens-2.jsx` L630–692 (PaymentDetail)
+- `mobile-screens-2.jsx` L698–739 (Tariffs)
+- `mobile-screens-2.jsx` L745–790 (Refunds)
+- `mobile-screens-2.jsx` L796–839 (Discounts)
+- `mobile-screens-2.jsx` L845–905 (DiscountWizard)
+- `mobile-screens-2.jsx` L911–978 (Holidays)
+- `mobile-screens-2.jsx` L984–1034 (Fiscal)
+
+**Acceptance:**
+
+- [ ] Invoices: KPI + chips + rows + FAB; detail: hero + KV + sticky bottom actions.
+- [ ] Payments: KPI + chips + rows; detail: hero + KV + timeline.
+- [ ] Tariffs: segmented Plans/Assignments, plan cards.
+- [ ] Refunds: Phase A banner + segmented + cards.
+- [ ] Discounts: card list + wizard (4-step stepper + sticky nav).
+- [ ] Holidays: calendar grid + holiday list with KK names.
+- [ ] Fiscal: Phase A banner + KPI + list.
+- [ ] All data from existing hooks. typecheck + lint + test exit 0. Browser QA TBD by user.
+
+---
+
+## B21 — Mobile secondary screens (8 экранов)
+
+**Goal:** ScreenGroups, ScreenGroupDetail, ScreenStaff, ScreenStaffDetail, ScreenStructure, ScreenSchedule, ScreenMeals, ScreenContent.
+
+**Inputs:** DESIGN §10.5 (#9–#16); `mobile-screens-2.jsx` (ScreenGroups L24–71, ScreenGroupDetail L99–159, ScreenStaff L165–211, ScreenStaffDetail L217–277, ScreenStructure L283–327, ScreenSchedule L332–387, ScreenMeals L392–456, ScreenContent L461–509).
+
+**Dependencies:** B16–B17 (mobile infra), B6 (groups/staff desktop), B11 (schedule/meals desktop), B12 (content desktop), B14 (structure desktop).
+
+**Tasks:**
+
+- `routes/groups/index.tsx` — mobile: KPI row (Групп/Детей/Перепол.) + group cards (emoji + name + age + mentor + location + capacity bar).
+- `routes/groups/$id.tsx` — mobile: gradient header (capacity) + KV info + segmented (Дети/Расписание/История) + child list.
+- `routes/staff/index.tsx` — mobile: search + chips (role filter) + staff card-list (avatar + name + role badge + group) + FAB.
+- `routes/staff/$id.tsx` — mobile: profile header + quick actions + KV sections (Контакты/Трудовая/Документы).
+- `routes/structure/index.tsx` — mobile: segmented (Локации/Камеры) + location list (icon + name + desc + group/cam counts). Phase C info banner for cameras.
+- `routes/schedule/templates/$id.tsx` — mobile: day strip (h-scroll Пн–Вс) + time-slot list (time grid + colored slot cards).
+- `routes/meal-plans/index.tsx` — mobile: day strip + calories summary card + meal cards (type + time + KK name + items list + cal badge) + allergen chips.
+- `routes/content/index.tsx` — mobile: segmented (Лента/Запланированные/Черновики) + social-feed cards (author avatar + title + body + image placeholder + likes/comments) + FAB.
+
+**Files to create/modify:**
+
+- `src/routes/groups/index.tsx` (modify)
+- `src/routes/groups/$id.tsx` (modify)
+- `src/routes/staff/index.tsx` (modify)
+- `src/routes/staff/$id.tsx` (modify)
+- `src/routes/structure/index.tsx` (modify)
+- `src/routes/schedule/templates/$id.tsx` (modify)
+- `src/routes/meal-plans/index.tsx` (modify)
+- `src/routes/content/index.tsx` (modify)
+
+**Design references:**
+
+- `mobile-screens-2.jsx` L24–71 (Groups)
+- `mobile-screens-2.jsx` L99–159 (GroupDetail)
+- `mobile-screens-2.jsx` L165–211 (Staff)
+- `mobile-screens-2.jsx` L217–277 (StaffDetail)
+- `mobile-screens-2.jsx` L283–327 (Structure)
+- `mobile-screens-2.jsx` L332–387 (Schedule)
+- `mobile-screens-2.jsx` L392–456 (Meals)
+- `mobile-screens-2.jsx` L461–509 (Content)
+
+**Acceptance:**
+
+- [ ] Groups: KPI + cards with capacity bars; detail: gradient header + segmented.
+- [ ] Staff: search + chips + card-list; detail: profile header + KV sections.
+- [ ] Structure: segmented Локации/Камеры + list; Phase C banner.
+- [ ] Schedule: day strip + time-slot cards.
+- [ ] Meals: day strip + meal cards with KK names + allergen chips.
+- [ ] Content: segmented + social-feed cards + FAB.
+- [ ] All data from existing hooks. typecheck + lint + test exit 0. Browser QA TBD by user.
+
+---
+
+## B22 — Mobile system + i18n + QA (5 экранов)
+
+**Goal:** ScreenDiagnostics, ScreenFaceId, ScreenDlq, ScreenSettings, ScreenError. Полный i18n sweep RU+KK всех mobile-specific строк. Manual QA pass на ключевых брейкпоинтах.
+
+**Inputs:** DESIGN §10.5 (#29–#33), §10.8 (Phase placeholders), §10.10 (i18n); `mobile-screens-2.jsx` (ScreenDiagnostics L1040–1082, ScreenFaceId L1088–1156, ScreenDlq L1162–1211, ScreenSettings L1217–1314, ScreenError L1320–1341); OPEN_QUESTIONS M4 (i18n strategy).
+
+**Dependencies:** B16–B17 (mobile infra), B13 (diagnostics desktop), B15 (face/DLQ/settings desktop). Decision: OPEN_QUESTIONS M4 resolved.
+
+**Tasks:**
+
+- `routes/diagnostics/templates.tsx` — mobile: specialist chips + template cards (spec badge + name + version + used count + active badge).
+- `routes/face.tsx` — mobile: Phase C warning gradient banner + segmented (Согласия/Профили/Камеры) + KPI row + consent list.
+- `routes/operations/lifecycle-dlq.tsx` — mobile: danger banner + task cards (icon + title + detail + error mono + retries + retry button).
+- `routes/settings.tsx` — mobile: drawer-style sections (Садик/Биллинг/Уведомления/Внешний вид/Интеграции) + theme picker grid (2-col, color swatches + name + checkmark).
+- `routes/_404.tsx` — mobile: centered 404 block (large mono number + title + description + CTA buttons).
+- i18n sweep: add all mobile-specific keys to `src/locales/ru/common.json` and `src/locales/kk/common.json` (per M4 resolution). Keys include: tab labels (mobile_tab_home, mobile_tab_children, mobile_tab_requests, mobile_tab_invoices, mobile_tab_more), drawer section headers, quick action labels, mobile-specific button labels.
+- Full review of all mobile screens for hardcoded strings, missing translations.
+
+**Files to create/modify:**
+
+- `src/routes/diagnostics/templates.tsx` (modify)
+- `src/routes/face.tsx` (modify)
+- `src/routes/operations/lifecycle-dlq.tsx` (modify)
+- `src/routes/settings.tsx` (modify)
+- `src/routes/_404.tsx` (modify)
+- `src/locales/ru/common.json` (modify)
+- `src/locales/kk/common.json` (modify)
+
+**Design references:**
+
+- `mobile-screens-2.jsx` L1040–1082 (Diagnostics)
+- `mobile-screens-2.jsx` L1088–1156 (FaceId)
+- `mobile-screens-2.jsx` L1162–1211 (Dlq)
+- `mobile-screens-2.jsx` L1217–1314 (Settings)
+- `mobile-screens-2.jsx` L1320–1341 (Error/404)
+
+**Acceptance:**
+
+- [ ] Diagnostics: chips + template cards per design.
+- [ ] Face ID: Phase C banner + segmented + KPI + consent list.
+- [ ] DLQ: danger banner + task cards + retry action.
+- [ ] Settings: drawer sections + theme picker grid.
+- [ ] 404: centered layout with CTA.
+- [ ] All mobile-specific strings localized RU + KK (no hardcoded text).
+- [ ] Manual QA pass: all 33 screens verified at 390px and 414px widths — layout, spacing, badges, actions.
+- [ ] typecheck + lint + test exit 0. Browser QA TBD by user.
+
+---
+
 ## Tracker
 
 | Батч | Тема                                        | Приоритет | Статус |
@@ -474,6 +830,13 @@ src/
 | B13  | Посещаемость + Диагностика                  | P1        | [ ]    |
 | B14  | Структура + Профиль/Уведомления/WS          | P1        | [ ]    |
 | B15  | Праздники/Фискальные/DLQ/Настройки/Face     | P2        | [ ]    |
+| B16  | Mobile foundation (shell)                   | mobile    | [ ]    |
+| B17  | Mobile DataTable + forms infra              | mobile    | [ ]    |
+| B18  | Mobile core screens (8 экранов)             | mobile    | [ ]    |
+| B19  | Mobile ops screens (2 экрана)               | mobile    | [ ]    |
+| B20  | Mobile billing screens (10 экранов)         | mobile    | [ ]    |
+| B21  | Mobile secondary screens (8 экранов)        | mobile    | [ ]    |
+| B22  | Mobile system + i18n + QA (5 экранов)       | mobile    | [ ]    |
 
 ---
 

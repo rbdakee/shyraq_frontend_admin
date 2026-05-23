@@ -6,7 +6,7 @@ Onboarding for every Claude Code session in this repo. **Read top to bottom befo
 
 ## 1. Project
 
-**Shyraq Admin Web** — веб-кабинет управления **одним садиком** для сотрудника с ролью `admin` (заведующая/управляющий). Операционный, насыщенный данными инструмент ежедневного использования. Desktop-first (1280–1920, корректно на 1366×768), RU + KK.
+**Shyraq Admin Web** — веб-кабинет управления **одним садиком** для сотрудника с ролью `admin` (заведующая/управляющий). Операционный, насыщенный данными инструмент ежедневного использования. Desktop-first (1280–1920, корректно на 1366×768), плюс **mobile-shell (<1024px, 33 экрана)** — см. `docs/design/handoff-with-mobile/`. RU + KK.
 
 **1 из 4 клиентов одного backend:** SuperAdmin (`../frontend_superadmin/`), **Admin (этот репо)**, Staff App, Parent App. Backend один: `http://194.32.140.219:5678`.
 
@@ -18,16 +18,17 @@ Onboarding for every Claude Code session in this repo. **Read top to bottom befo
 
 Никогда не выдумывать endpoint, поле DTO, бизнес-логику или экран.
 
-| Аспект                                                    | Файл                                                                                                                                                                                   |
-| --------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Контракты API + бизнес-процессы + статус backend          | [`docs/ADMIN_FRONTEND_HANDOFF.md`](docs/ADMIN_FRONTEND_HANDOFF.md)                                                                                                                     |
-| UI-спека (страницы, состояния, поведение, дизайн-система) | [`docs/ADMIN_DESIGN_SPEC.md`](docs/ADMIN_DESIGN_SPEC.md)                                                                                                                               |
-| Implementation tracker (батчи, acceptance, TODO backlog)  | [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)                                                                                                                           |
-| Открытые вопросы / blocker'ы (что НЕ делать без решения)  | [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md)                                                                                                                                     |
-| Backend-нехватки для полноты данных (каталог)             | [`docs/BACKEND_NEEDINGS_HANDOFF.md`](docs/BACKEND_NEEDINGS_HANDOFF.md)                                                                                                                 |
-| Визуальный handoff (HTML/JSX прототип всех 28 экранов)    | [`docs/design/handoff/shyraq-admin/project/`](docs/design/handoff/shyraq-admin/project/)                                                                                               |
-| Дизайн-токены / темы / Tweaks-панель                      | [`docs/design/handoff/shyraq-admin/project/styles.css`](docs/design/handoff/shyraq-admin/project/styles.css), [`app.jsx`](docs/design/handoff/shyraq-admin/project/app.jsx) (`THEMES`) |
-| Backend OpenAPI (live)                                    | `http://194.32.140.219:5678/docs-json` · Swagger `…/docs`                                                                                                                              |
+| Аспект                                                    | Файл                                                                                                                                                                                            |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Контракты API + бизнес-процессы + статус backend          | [`docs/ADMIN_FRONTEND_HANDOFF.md`](docs/ADMIN_FRONTEND_HANDOFF.md)                                                                                                                              |
+| UI-спека (страницы, состояния, поведение, дизайн-система) | [`docs/ADMIN_DESIGN_SPEC.md`](docs/ADMIN_DESIGN_SPEC.md)                                                                                                                                        |
+| Implementation tracker (батчи, acceptance, TODO backlog)  | [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md)                                                                                                                                    |
+| Открытые вопросы / blocker'ы (что НЕ делать без решения)  | [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md)                                                                                                                                              |
+| Backend-нехватки для полноты данных (каталог)             | [`docs/BACKEND_NEEDINGS_HANDOFF.md`](docs/BACKEND_NEEDINGS_HANDOFF.md)                                                                                                                          |
+| Визуальный handoff (HTML/JSX прототип всех 28 экранов)    | [`docs/design/handoff/shyraq-admin/project/`](docs/design/handoff/shyraq-admin/project/)                                                                                                        |
+| Визуальный handoff (mobile, 33 экрана)                    | [`docs/design/handoff-with-mobile/shyraq-admin/project/`](docs/design/handoff-with-mobile/shyraq-admin/project/) (`mobile-app.jsx`, `mobile-screens.jsx`, `mobile-screens-2.jsx`, `mobile.css`) |
+| Дизайн-токены / темы / Tweaks-панель                      | [`docs/design/handoff/shyraq-admin/project/styles.css`](docs/design/handoff/shyraq-admin/project/styles.css), [`app.jsx`](docs/design/handoff/shyraq-admin/project/app.jsx) (`THEMES`)          |
+| Backend OpenAPI (live)                                    | `http://194.32.140.219:5678/docs-json` · Swagger `…/docs`                                                                                                                                       |
 
 **Backend code** (`../backend_shyraq_v2/`) — читать **только** при критической неопределённости или подозрении на расхождение с handoff. После расхождения — обновить наши docs.
 
@@ -91,6 +92,7 @@ Folder structure — `docs/IMPLEMENTATION_PLAN.md` §«Foundations».
 - **Темы — оставляем ВСЕ как в дизайне** (`THEMES` в `app.jsx`: green/orange/blue/mono/warmCream/forestMint/oceanBlue/dark + радиусы sharp/soft/round). Это user-facing фича: отдельная вкладка **«Дизайн»** в Настройках садика (`/settings`). Выбор персистится (localStorage через Zustand `ui-store`) и применяется при загрузке (set CSS-vars на `:root`). Каждая тема — бандл CSS-var override, цвета не хардкодим.
 - **Шрифты:** Manrope + JetBrains Mono (как в `index.html` handoff). **Иконки:** Lucide React; mapping handoff-иконок (`ds.jsx#Icon`) → Lucide в `components/ui/icon.ts`. Прототип-компоненты handoff не копируем — переписываем на shadcn/Radix, матчим визуал.
 - Маршруты приложения — по sitemap `ADMIN_FRONTEND_HANDOFF.md` §28 (канонично). JSX-роутер handoff — только визуальный референс; расхождения путей решаем в пользу §28.
+- **Mobile-дизайн** строится по тому же правилу «1:1 по готовому дизайну» — источник `docs/design/handoff-with-mobile/shyraq-admin/project/` (`mobile.html`, `mobile.css`, `mobile-app.jsx`, `mobile-screens.jsx`, `mobile-screens-2.jsx`). Mobile использует те же CSS-var токены из `styles.css` → темы автоматически применяются. Стили с префиксом `.m-*` из `mobile.css` переносятся в `src/styles/globals.css` (или Tailwind utilities) с сохранением token-ссылок.
 
 ---
 
@@ -114,7 +116,7 @@ Folder structure — `docs/IMPLEMENTATION_PLAN.md` §«Foundations».
 - Не амендить опубликованные коммиты / force-push без явной просьбы. Не пропускать husky (`--no-verify`) без просьбы. Коммит — только когда пользователь явно попросил.
 - Не реализовывать то, что в `OPEN_QUESTIONS.md` не `resolved`. Не оставлять `// TODO` без backlog-записи.
 - Phase B/C модули (Фискальные чеки full, Face ID, тест камер) — строить как видимые заглушки «доступно позже», не подключать к данным.
-- Не отходить от готового дизайна `docs/design/handoff/shyraq-admin/*` (визуал/лейаут/поведение — 1:1; нужно отклонение → `OPEN_QUESTIONS.md`, не самовольно).
+- Не отходить от готового дизайна `docs/design/handoff/shyraq-admin/*` (desktop) и `docs/design/handoff-with-mobile/shyraq-admin/*` (mobile) — визуал/лейаут/поведение 1:1; нужно отклонение → `OPEN_QUESTIONS.md`, не самовольно.
 
 ---
 
@@ -147,6 +149,7 @@ Folder structure — `docs/IMPLEMENTATION_PLAN.md` §«Foundations».
 - [`docs/IMPLEMENTATION_PLAN.md`](docs/IMPLEMENTATION_PLAN.md) — батчи + acceptance + TODO backlog
 - [`docs/OPEN_QUESTIONS.md`](docs/OPEN_QUESTIONS.md) — blocker'ы (что НЕ делать)
 - [`docs/BACKEND_NEEDINGS_HANDOFF.md`](docs/BACKEND_NEEDINGS_HANDOFF.md) — каталог backend-нехваток для полноты данных (N1–N4)
-- [`docs/design/handoff/shyraq-admin/`](docs/design/handoff/shyraq-admin/) — **готовый дизайн 28 экранов (строим 1:1 по нему)**
+- [`docs/design/handoff/shyraq-admin/`](docs/design/handoff/shyraq-admin/) — **готовый дизайн 28 desktop-экранов (строим 1:1 по нему)**
+- [`docs/design/handoff-with-mobile/shyraq-admin/`](docs/design/handoff-with-mobile/shyraq-admin/) — **готовый дизайн 33 mobile-экранов (строим 1:1 по нему)**
 - `../frontend_superadmin/` — соседний сервис на похожем стеке; пример при открытых архитектурных вопросах, не эталон
 - `../backend_shyraq_v2/` — backend repo (read-only, только при критике)

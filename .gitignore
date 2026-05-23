@@ -38,6 +38,9 @@ coverage/
 *.tmp
 .cache/
 
+# Design handoff archives (expanded content is committed under docs/design/)
+docs/*.zip
+
 # Vite
 .vite/
 

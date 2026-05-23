@@ -22,7 +22,7 @@
 5. Контент: опубликовать новость/меню/расписание.
 6. Управление детьми/группами/сотрудниками (реже, но критично).
 
-**Среда:** desktop-first (1280–1920px), браузеры Chrome/Safari/Edge актуальные. Должна корректно работать на ноутбуке 1366×768. **Mobile/tablet (<1024px)** — адаптивный mobile shell (33 экрана), см. **§10**. **Desktop (>=1024px)** — sidebar/topbar shell. Для родителей/сотрудников есть отдельные нативные приложения.
+**Среда:** desktop-first (1280–1920px), браузеры Chrome/Safari/Edge актуальные. Должна корректно работать на ноутбуке 1366×768. Планшет (≥768px) — желательно адаптивно (просмотр + лёгкие действия). Мобайл — не приоритет (для родителей/сотрудников есть нативные приложения).
 
 **Языки интерфейса:** Русский и Казахский (переключатель в шапке). Весь UI и контент мультиязычны. Часть пользовательских данных вводится на двух языках (название блюда, заголовок новости, название праздника/скидки) — формы должны иметь парные поля RU/KK.
 
@@ -189,7 +189,7 @@
 - **Создание (`/children/new`) — форма:** ФИО*, ИИН (12 цифр, опц. — карточка может быть до получения ИИН), дата рождения*, пол, фото (drag&drop, загрузка через presigned), группа, мед.заметки, аллергии. Подсказка: для перевода из другого садика/офлайн-договора.
 - **Карточка ребёнка (`/children/:id`) — Layout:** шапка (фото + ФИО + статус-бейдж + кнопки: **Перевести в группу**, **Архивировать**/**Реактивировать**) + табы:
   1. **Профиль** — все поля, режим просмотр/редактирование.
-  2. **Опекуны** — таблица: ФИО, телефон, роль (primary/secondary/nanny), статус (`pending_approval`/approved/rejected/revoked — бейдж), can*pickup (✓/✗), право одобрения (has_approval_rights ✓/✗). Действия: «Добавить опекуна» (модал — **приглашение существующего пользователя**: телефон E.164 **или** user_id, роль, can_pickup; поля свободного ввода ФИО нет — имя резолвится из аккаунта пользователя, контракт `InviteGuardianDto`, HANDOFF §A8), изменить роль/can_pickup, «Отозвать доступ» (destructive-confirm), «Отозвать все QR пользователя» (destructive-confirm с объяснением). *Визуал/лейаут модала — 1:1 по `screens-core.jsx` ChildDetail; меняется только набор полей под фактический контракт.\_
+  2. **Опекуны** — таблица: ФИО, телефон, роль (primary/secondary/nanny), статус (pending/approved/rejected/revoked — бейдж), can_pickup (✓/✗), право одобрения (has_approval_rights ✓/✗). Действия: «Добавить опекуна» (модал: телефон/ФИО/роль/can_pickup), изменить роль/can_pickup, «Отозвать доступ» (destructive-confirm), «Отозвать все QR пользователя» (destructive-confirm с объяснением).
   3. **Группа и история** — текущая группа + таймлайн переводов (из→в, кто, причина, дата). Модал «Перевести»: выбор группы + причина.
   4. **Timeline** — лента событий ребёнка (check-in/out, активности, заметки, фото) — read-only, по датам.
   5. **Платежи** — превью счетов/оплат (мини-таблица + ссылка «Все платежи» в Биллинг с фильтром по ребёнку).
@@ -428,155 +428,6 @@
 | 28  | Библиотека компонентов (дизайн-система §4)            | Foundations             | P0        |
 
 **Приоритет:** P0 — критичный ежедневный путь; P1 — важный регулярный; P2 — обслуживающий/редкий/Phase B-C.
-
----
-
----
-
-## 10. Mobile-адаптация (<1024px)
-
-### 10.1 Цель и контекст
-
-Mobile-адаптация существующих экранов Admin Web. Не отдельный продукт и не PWA — то же веб-приложение, которое корректно работает со смартфона. Основная аудитория по-прежнему desktop (ежедневная CRM-работа в кабинете), но администратор может проверить дашборд, принять заявку родителя, посмотреть посещаемость или отметить оплату со смартфона (вне кабинета, на ходу, в выходной).
-
-Для родителей и сотрудников существуют **отдельные нативные приложения** — mobile-shell Admin Web не заменяет их.
-
-### 10.2 Брейкпоинт и стратегия
-
-**Брейкпоинт** (resolved, см. OPEN_QUESTIONS M1/M2):
-
-- `< 1024px` — mobile shell (bottom tab bar, mobile top bar, card-based lists)
-- `>= 1024px` — desktop shell (sidebar, topbar, table-based lists)
-
-Tablet (768-1023px) использует mobile shell: touch-friendly UI важнее data density в этом диапазоне.
-
-### 10.3 Mobile shell
-
-В отличие от desktop shell (sidebar + topbar + content area), mobile shell состоит из:
-
-- **Top bar** (`.m-bar`): back-кнопка / title / subtitle / action-кнопки. Высота 96px с safe-area padding (56px top для status bar / dynamic island). Вариант `.flat` — прозрачный фон (для detail-экранов с profile header).
-- **Scrollable content area** (`.m-scroll`): основной контент с padding 16px, bottom padding 110px (room для tab bar + home indicator). Вариант `.no-bar` — уменьшенный верхний padding.
-- **Bottom tab bar** (`.m-tabbar`): floating pill-bar с backdrop-blur, border-radius 22px, shadow, position absolute bottom 22px. 5 primary tabs. z-index: 5.
-- **FAB** (`.m-fab`): плавающая кнопка создания, bottom 96px right 18px, 56x56, primary-цвет. Присутствует на экранах со списками (Children, Staff, Invoices, Content и др.).
-
-**Canvas:** iPhone Pro Max, 402x874 (design artboard).
-
-### 10.4 Primary tabs (bottom tab bar)
-
-| #   | Tab     | Иконка    | Route (desktop)     | Badge                |
-| --- | ------- | --------- | ------------------- | -------------------- |
-| 1   | Главная | `Home`    | `/`                 | --                   |
-| 2   | Дети    | `Users`   | `/children`         | --                   |
-| 3   | Заявки  | `Inbox`   | `/parent-requests`  | unread count (live)  |
-| 4   | Счета   | `Receipt` | `/billing/invoices` | overdue count (live) |
-| 5   | Ещё     | `Menu`    | (drawer)            | --                   |
-
-Tab «Ещё» открывает полноэкранный drawer-меню со всеми разделами, сгруппированными как sidebar на desktop (Воспитанники, Режим дня, Биллинг, Операции) + профиль пользователя + «Выйти».
-
-### 10.5 Mobile-сайтмап (все 33 экрана)
-
-| #   | Экран (component name) | Desktop route(s)                                       | Tab     | Notes                                                  |
-| --- | ---------------------- | ------------------------------------------------------ | ------- | ------------------------------------------------------ |
-| 1   | ScreenLogin            | `/login`                                               | --      | Auth, pre-shell                                        |
-| 2   | ScreenOtp              | `/login` (step 2)                                      | --      | Auth, pre-shell                                        |
-| 3   | ScreenDashboard        | `/`                                                    | Главная | KPI + donut + overdue alert + quick actions + activity |
-| 4   | ScreenNotifications    | (popover on desktop)                                   | --      | Full-screen route on mobile                            |
-| 5   | ScreenMore             | (sidebar on desktop)                                   | Ещё     | Drawer-style full menu                                 |
-| 6   | ScreenChildren         | `/children`                                            | Дети    | Table -> card list with chips filter                   |
-| 7   | ScreenChildDetail      | `/children/:id`                                        | Дети    | Profile header + KV sections + timeline                |
-| 8   | ScreenLeads            | `/enrollments`                                         | Ещё     | Kanban -> segmented (Воронка/Список/Архив) + card list |
-| 9   | ScreenGroups           | `/groups`                                              | Ещё     | Card list with capacity bars                           |
-| 10  | ScreenGroupDetail      | `/groups/:id`                                          | Ещё     | KV info + segmented (Дети/Расписание/История)          |
-| 11  | ScreenStaff            | `/staff`                                               | Ещё     | Card list with role badges + chips filter              |
-| 12  | ScreenStaffDetail      | `/staff/:id`                                           | Ещё     | Profile header + KV sections + documents               |
-| 13  | ScreenStructure        | `/structure/locations`, `/structure/cameras`           | Ещё     | Segmented (Локации/Камеры) + list; Phase C banner      |
-| 14  | ScreenSchedule         | `/schedule/templates/:id`                              | Ещё     | Day strip (h-scroll) + time-slot list                  |
-| 15  | ScreenMeals            | `/meal-plans`                                          | Ещё     | Day strip + meal cards with allergen chips             |
-| 16  | ScreenContent          | `/content`                                             | Ещё     | Social-feed card list + segmented + FAB                |
-| 17  | ScreenRequests         | `/parent-requests`                                     | Заявки  | Segmented (Новые/В работе/Закрытые) + inbox cards      |
-| 18  | ScreenAttendance       | `/attendance`, `/attendance/daily-status`              | Главная | Date strip + stats + group bars + child grid           |
-| 19  | ScreenInvoices         | `/billing/invoices`                                    | Счета   | KPI summary + chips filter + invoice rows + FAB        |
-| 20  | ScreenInvoiceDetail    | `/billing/invoices/:id`                                | Счета   | Hero amount + KV + line items + sticky bottom actions  |
-| 21  | ScreenPayments         | `/billing/payments`                                    | Ещё     | KPI summary + provider chips + payment rows            |
-| 22  | ScreenPaymentDetail    | `/billing/payments/:id`                                | Ещё     | Hero status + KV + event timeline                      |
-| 23  | ScreenTariffs          | `/billing/tariff-plans`, `/billing/tariff-assignments` | Ещё     | **Merged:** segmented (Планы/Назначения); see M3       |
-| 24  | ScreenRefunds          | `/billing/refunds`                                     | Ещё     | Phase A banner + segmented + refund cards              |
-| 25  | ScreenDiscounts        | `/billing/discounts`                                   | Ещё     | Discount cards with type/stats                         |
-| 26  | ScreenDiscountWizard   | `/billing/discounts/new`                               | Ещё     | 4-step stepper + sticky bottom nav                     |
-| 27  | ScreenHolidays         | `/billing/holidays`                                    | Ещё     | Calendar grid + holiday list with KK names             |
-| 28  | ScreenFiscal           | `/billing/fiscal-receipts`                             | Ещё     | Phase A read-only banner + KPI + receipt list          |
-| 29  | ScreenDiagnostics      | `/diagnostics/templates`                               | Ещё     | Specialist chips + template cards                      |
-| 30  | ScreenFaceId           | `/face`                                                | Ещё     | Phase C banner + segmented (Согласия/Профили/Камеры)   |
-| 31  | ScreenDlq              | `/operations/lifecycle-dlq`                            | Ещё     | Danger banner + task cards with retry                  |
-| 32  | ScreenSettings         | `/settings`                                            | Ещё     | Drawer-style sections + theme picker grid              |
-| 33  | ScreenError            | (404/catch-all)                                        | --      | Centered 404 block + CTA                               |
-
-### 10.6 Mobile UI-паттерны
-
-Следующие паттерны применяются ко всем mobile-экранам и заменяют соответствующие desktop-паттерны:
-
-**10.6.1 Tables -> List-row cards.** Desktop DataTable заменяется на `.m-card.flush` + `.m-list-row` (3-column grid: avatar 40px / content 1fr / meta auto). Строки разделяются `border-bottom`. Дизайн-референс: `mobile-screens.jsx` ScreenChildren (L356-371).
-
-**10.6.2 Filter sidebar/popover -> Chips row.** Горизонтально-скроллируемая лента `.m-chips` с `.m-chip` (pill-shaped, active state primary-soft). Дизайн-референс: `mobile-screens.jsx` ScreenChildren (L347-353).
-
-**10.6.3 Modal -> Full-screen sheet.** Desktop-модалы на mobile становятся full-screen sheet (back-кнопка в bar, scroll content). Дизайн-референс: `mobile-screens-2.jsx` ScreenDiscountWizard.
-
-**10.6.4 Sticky bottom action bar.** Для wizards/forms две кнопки внизу (position absolute, bottom 88px, left/right 8px). Дизайн-референс: `mobile-screens-2.jsx` ScreenInvoiceDetail (L562-565), ScreenDiscountWizard (L900-904).
-
-**10.6.5 Segmented control.** `.m-segmented` — pill-shaped tab switcher внутри экрана (bg-sunken, active=bg-elev+shadow). Заменяет desktop tabs. Дизайн-референс: `mobile-screens.jsx` ScreenLeads (L502-506).
-
-**10.6.6 Date strip.** Горизонтально-скроллируемые pills с днями недели (flexShrink:0, scrollbar hidden). Активный день — primary background. Используется: Schedule, Attendance, Meals. Дизайн-референс: `mobile-screens.jsx` ScreenAttendance (L691-705).
-
-**10.6.7 KV-list.** `.m-kv` — label/value пары для detail-секций (flex space-between, border-bottom separators). Дизайн-референс: `mobile-screens.jsx` ScreenChildDetail (L434-449).
-
-**10.6.8 Donut/bar chart compact.** Dashboard donut 96x96 (`.m-donut`) + stat pills (`.m-att-bar`/`.m-att-pill`). Attendance per-group capacity bars (`cap-bar`/`cap-fill`). Дизайн-референс: `mobile-screens.jsx` ScreenDashboard (L233-245), ScreenAttendance (L718-725).
-
-**10.6.9 Profile header.** `.m-profile-head` — full-bleed gradient header с аватаром, именем, мета, badge. Под ним — quick action row (`.m-qa-row`, 4-column grid). Используется: ChildDetail, StaffDetail. Дизайн-референс: `mobile-screens.jsx` ScreenChildDetail (L393-405).
-
-**10.6.10 Timeline mobile.** `.m-tl` с вертикальной линией (`::before` pseudo-element), dot-иконками по тону (success/info/warning/neutral). Дизайн-референс: `mobile-screens.jsx` ScreenDashboard (L281-310).
-
-**10.6.11 Lead card.** `.m-lead` с цветной strip-полоской слева (`.m-lead-strip` по тону стадии). Заменяет kanban-колонки desktop. Дизайн-референс: `mobile-screens.jsx` ScreenLeads (L516-534).
-
-**10.6.12 Invoice/Payment row.** `.m-inv-row` — flex layout с avatar, info, amount+badge. Amount overdue подсвечивается danger. Дизайн-референс: `mobile-screens.jsx` ScreenInvoices (L586-605).
-
-**10.6.13 Request inbox card.** `.m-req-row` — card с unread dot (primary circle), avatar, type badge, body preview (2-line clamp), timestamp. Дизайн-референс: `mobile-screens.jsx` ScreenRequests (L637-653).
-
-**10.6.14 Drawer menu item.** `.m-drawer-item` с `.m-drawer-ic` (32x32 icon container, тематический цвет) + label + optional badge + chevron. Дизайн-референс: `mobile-screens.jsx` ScreenMore (L794-898).
-
-**10.6.15 Quick actions grid.** `.m-quick-grid` (2-column grid) с `.m-quick` cards (icon + label + sub + optional badge). Dashboard-only. Дизайн-референс: `mobile-screens.jsx` ScreenDashboard (L251-274).
-
-### 10.7 Tariff plans + assignments merged on mobile
-
-Desktop имеет 2 отдельных route'а: `/billing/tariff-plans` и `/billing/tariff-assignments`. Mobile-дизайн **объединяет** их в один экран «Тарифы» (ScreenTariffs) с segmented control «Планы / Назначения». На mobile оба desktop-route'а рендерят общий adaptive-компонент; начальный tab определяется по pathname. Решение — см. OPEN_QUESTIONS M3.
-
-### 10.8 Phase placeholders на mobile
-
-Те же Phase B/C заглушки что на desktop — на mobile тоже видимы:
-
-- **Face ID** (ScreenFaceId, #30): warning-gradient banner «Phase C — в разработке» + segmented tabs (Согласия/Профили/Камеры) + KPI + consent list. Сбор согласий и профилей доступен, распознавание — нет.
-- **Fiscal receipts** (ScreenFiscal, #28): info banner «Phase A: read-only. Ретраи и отчёты появятся в Phase B.» + KPI + receipt list.
-- **Structure — cameras** (ScreenStructure, #13): info banner «Просмотр потоков с камер появится в Phase C».
-
-### 10.9 Источник истины (дизайн)
-
-Mobile-дизайн: `docs/design/handoff-with-mobile/shyraq-admin/project/`. Правило «1:1 по готовому дизайну» (CLAUDE.md §6) распространяется на mobile. Файлы:
-
-- `mobile-app.jsx` — canonical sitemap (33 артборда в 7 секциях)
-- `mobile-screens.jsx` — экраны 1-8, 17-19 (Login, OTP, Dashboard, Children, ChildDetail, Leads, Invoices, Requests, Attendance, More, Notifications)
-- `mobile-screens-2.jsx` — экраны 9-16, 20-33 (Groups, GroupDetail, Staff, StaffDetail, Structure, Schedule, Meals, Content, InvoiceDetail, Payments, PaymentDetail, Tariffs, Refunds, Discounts, DiscountWizard, Holidays, Fiscal, Diagnostics, FaceId, Dlq, Settings, Error)
-- `mobile.css` — 148 стилей с префиксом `.m-*`, на тех же CSS-var токенах из `styles.css`
-- `mobile.html` — entry point
-
-### 10.10 i18n
-
-Mobile-дизайн уже включает частичную KK-локализацию (казахские названия праздников в ScreenHolidays, казахские названия приёмов пищи в ScreenMeals, казахские названия тем в ScreenSettings). Mobile-specific строки добавляются в существующие namespaces с префиксом `mobile_`, без отдельного `mobile.*` namespace. Решение — см. OPEN_QUESTIONS M4.
-
-### 10.11 Что вне scope
-
-- **Native apps** — не делаем (есть Parent App и Staff App).
-- **PWA install banner** — позже.
-- **Push notifications** — отдельный вопрос (mobile web notifications ненадёжны; админ и так получает тосты/in-app notifications).
-- **Offline mode** — не предусмотрен (Admin Web — online-инструмент).
 
 ---
 

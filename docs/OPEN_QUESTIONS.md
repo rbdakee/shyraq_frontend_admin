@@ -176,8 +176,6 @@ HANDOFF §16+§18 обновлены под факт в wave-коммите B10.
 
 ## B. Открытые (open — НЕ кодить до resolve)
 
-_Пусто. Добавлять сюда при обнаружении расхождения handoff↔backend↔design в ходе батча._ (B1→A7, B2→A8, B3→A10, B5→A11, B6→A12/A13, B7→A14, B8→A15 — все разрешены как live=факт по прецеденту, без blocker'ов.)
-
 Формат записи:
 
 ```
@@ -185,6 +183,149 @@ _Пусто. Добавлять сюда при обнаружении расх�
 Контекст: <что обнаружено, где>. Блокирует: <батч/слайс>.
 Нужно решение: <вопрос владельцу/backend>. Гипотеза: <если есть>.
 ```
+
+---
+
+## M. Mobile — вопросы (resolved 2026-05-24)
+
+Все M1–M10 разрешены пользователем 2026-05-24. M2 mobile-выбор фактически переопределил M1 на вариант 2 (effective breakpoint `<1024px`), чтобы избежать противоречия. Mobile-батчи B16–B22 могут стартовать.
+
+### M1 — Брейкпоинт mobile/desktop · resolved (2026-05-24)
+
+**Контекст:** mobile-дизайн (33 экрана) добавлен; нужно определить границу между mobile shell и desktop shell. Блокирует: B11 (Mobile foundation).
+
+**Варианты:**
+
+1. `< 768px` = mobile, `>= 768px` = desktop. _Pros:_ стандартный media-query breakpoint (Tailwind `md:`), совпадает с iPad portrait width. _Cons:_ iPad portrait получает desktop (cramped sidebar).
+2. `< 1024px` = mobile, `>= 1024px` = desktop. _Pros:_ iPad portrait/landscape получает mobile. _Cons:_ tablet-пользователи не видят sidebar и таблицы; mobile UI oversized на 768-1024.
+3. `< 640px` = mobile, `>= 640px` = desktop. _Pros:_ только реально маленькие экраны получают mobile. _Cons:_ узкие телефоны (414px landscape) могут получить desktop.
+
+**Proposal:** вариант 1 (`< 768px`). Стандартный, предсказуемый, совпадает с дизайн-canvas 402px (iPhone Pro Max). Tablet получает desktop — это функциональнее для data-heavy admin tool.
+
+**Status:** resolved. **Decision:** вариант **2** — `< 1024px` mobile, `>= 1024px` desktop. Эффективно выбрано через M2 (tablet=mobile). Это Tailwind `lg:` брейкпоинт. (2026-05-24)
+
+### M2 — Tablet (768-1024px) — desktop или mobile shell? · resolved (2026-05-24)
+
+**Контекст:** тесно связан с M1. iPad 768px portrait — sidebar занимает ~240px, оставляя ~528px для контента. DataTable с 6+ колонками cramped, но работает (горизонтальный скролл). Mobile shell на 768px — карточки чрезмерно крупные, много wasted space.
+
+**Варианты:**
+
+1. Desktop shell на tablet (>= 768px). _Pros:_ полная функциональность, горизонтальный скролл таблиц; admin tool = data density важнее. _Cons:_ cramped sidebar, мелкие кнопки.
+2. Mobile shell на tablet (< 1024px). _Pros:_ визуально крупнее, touch-friendly. _Cons:_ карточный layout wasteful на 768px; теряются таблицы/sidebar.
+3. Отдельный tablet-breakpoint (768-1024: collapsed sidebar + table-layout). _Pros:_ best of both. _Cons:_ 3-я вёрстка, тройная поддержка.
+
+**Proposal:** вариант 1 (desktop на tablet). Admin — data-heavy tool, функциональность важнее visual comfort. Collapsed sidebar на tablet (auto-collapse < 1024px) смягчает cramped layout. Третью вёрстку не оправдать на MVP.
+
+**Status:** resolved. **Decision:** вариант **2** — Mobile shell на tablet (< 1024px). User-выбор: touch-friendly UI важнее data density на tablet. Mobile-вёрстка покрывает диапазон 320-1023px. (2026-05-24)
+
+### M3 — Tariff plans + Tariff assignments merged on mobile · resolved (2026-05-24)
+
+**Контекст:** desktop имеет 2 отдельных route'а (`/billing/tariff-plans`, `/billing/tariff-assignments`). Mobile-дизайн (ScreenTariffs, `mobile-screens-2.jsx` L698-739) объединяет их в один экран с segmented control «Планы / Назначения». Нужно подтвердить UX и routing.
+
+**Варианты:**
+
+1. На mobile оба route'а рендерят один и тот же компонент с segmented control; deep-link `/billing/tariff-plans` открывает tab «Планы», `/billing/tariff-assignments` — tab «Назначения». _Pros:_ сохраняет URL-совместимость, deep-links работают. _Cons:_ два route'а рендерят одно и то же.
+2. Единый mobile-route `/billing/tariffs` с query-param `?tab=plans|assignments`. _Pros:_ чище. _Cons:_ новый route, не совпадает с desktop sitemap §28.
+3. Adaptive: на mobile оба desktop route'а показывают segmented; начальный tab определяется по pathname. _Pros:_ zero new routes, backward-compatible. _Cons:_ чуть больше логики.
+
+**Proposal:** вариант 3. Adaptive component, zero new routes. Desktop рендерит раздельно, mobile — один UI с начальным tab по route.
+
+**Status:** resolved. **Decision:** вариант **3** — оба desktop-route'а остаются, на mobile рендерят общий adaptive-компонент с segmented control; начальный tab определяется по pathname. (2026-05-24)
+
+### M4 — i18n стратегия для mobile · resolved (2026-05-24)
+
+**Контекст:** mobile-экраны используют те же строки что и desktop (заголовки, бейджи, кнопки), плюс несколько mobile-specific строк (tab labels «Главная/Дети/Заявки/Счета/Ещё», drawer section headers, quick action labels). Блокирует: B17 (i18n sweep).
+
+**Варианты:**
+
+1. Отдельный namespace `mobile.*` (`ru/mobile.json`, `kk/mobile.json`). _Pros:_ чёткое разделение, можно lazy-load только на mobile. _Cons:_ дублирование общих строк; при изменении desktop-строки забудешь mobile.
+2. Extend существующих namespaces (добавить ключи `common.mobile_tab_home`, `common.mobile_tab_children` и т.д. в `common.json`). _Pros:_ DRY, один источник; общие строки не дублируются. _Cons:_ namespaces растут; нельзя lazy-load mobile-only строки.
+
+**Proposal:** вариант 2 (extend). Mobile-specific строк немного (~20-30), дублирование хуже чем чуть-больший JSON. Ключи с prefix `mobile_` для однозначности.
+
+**Status:** resolved. **Decision:** вариант **2** — extend существующих namespaces, без отдельного `mobile.*`; mobile-specific ключи держать с префиксом `mobile_`. (2026-05-24)
+
+### M5 — Mobile-only routes vs adaptive components · resolved (2026-05-24)
+
+**Контекст:** как реализовать mobile layout — отдельные `/m/...` route'ы или адаптивные компоненты на тех же routes? Блокирует: B11 (Mobile foundation).
+
+**Варианты:**
+
+1. Отдельные `/m/...` route'ы. _Pros:_ полная изоляция, можно lazy-load. _Cons:_ дублирование логики (hooks, data-fetching), 2x route'ов, мёртвый desktop-код на mobile и наоборот, shared links ломаются.
+2. Adaptive components на тех же routes с `useBreakpoint` хуком. _Pros:_ DRY (одна data-fetch логика, один route), shared links работают, resize корректен. _Cons:_ оба layouts загружаются (решается React.lazy + breakpoint), компонент сложнее.
+
+**Proposal:** вариант 2. Adaptive components с `useBreakpoint` хуком (CSS `window.matchMedia`). Desktop и mobile renders — conditional branches внутри page component (или `<DesktopLayout>`/`<MobileLayout>` wrappers). Hooks и data-fetching — общие.
+
+**Status:** resolved. **Decision:** вариант **2** — adaptive components на тех же routes через `useBreakpoint`; без `/m/...` route-дублей. (2026-05-24)
+
+### M6 — Discount Wizard на mobile — тот же 4-step или упрощённый? · resolved (2026-05-24)
+
+**Контекст:** mobile-дизайн (ScreenDiscountWizard, `mobile-screens-2.jsx` L845-905) показывает 4-step wizard с progress bar, условиями, превью. Desktop Discount Wizard (B10) — тот же 4-step. Вопрос: mobile state machine идентичен desktop?
+
+**Варианты:**
+
+1. Полный 4-step wizard, адаптивный layout (sticky bottom nav вместо inline buttons). _Pros:_ feature parity, один state machine. _Cons:_ на маленьком экране конструктор условий И/ИЛИ может быть сложен.
+2. Упрощённый wizard (убрать nested all_of/any_of, только flat conditions). _Pros:_ мобильнее. _Cons:_ feature gap, два state machine.
+
+**Proposal:** вариант 1. Дизайн уже показывает полный wizard (step indicator, conditions, preview). Конструктор условий на mobile — vertical-stack вместо nested grid. Сложные скидки создаются на desktop, но mobile должен уметь тоже.
+
+**Status:** resolved. **Decision:** вариант **1** — полный 4-step wizard, общий state machine с desktop; mobile меняет только layout и sticky navigation. (2026-05-24)
+
+### M7 — Date-picker на mobile — native vs library? · resolved (2026-05-24)
+
+**Контекст:** desktop использует `react-day-picker` (consistency с shadcn). На mobile native `<input type="date">` даёт OS-native UX (iOS date wheel, Android Material picker). Блокирует: B12 (Mobile forms infra).
+
+**Варианты:**
+
+1. Native `<input type="date">` / `<input type="time">` на mobile. _Pros:_ OS-native UX, zero bundle. _Cons:_ стилизация невозможна, не совпадает с design tokens.
+2. `react-day-picker` с mobile-friendly стилями (full-width, enlarged touch targets). _Pros:_ consistent design, controlled. _Cons:_ larger bundle, custom mobile styling needed.
+3. Hybrid: simple date fields (filters, forms) — native; complex (period picker, multi-day selection) — `react-day-picker`. _Pros:_ best of both. _Cons:_ inconsistency.
+
+**Proposal:** вариант 2 (library). Consistency с design tokens важнее чем native feel. Touch targets увеличиваем. Calendar popover на mobile — bottom-sheet, не floating.
+
+**Status:** resolved. **Decision:** вариант **2** — `react-day-picker` с mobile-friendly стилями и bottom-sheet presentation на mobile. (2026-05-24)
+
+### M8 — Mobile-detection hook — CSS media-query vs user-agent? · resolved (2026-05-24)
+
+**Контекст:** `useBreakpoint` хук — как определять mobile? Блокирует: B11 (Mobile foundation).
+
+**Варианты:**
+
+1. `window.matchMedia('(max-width: 1023px)')` + `resize` listener. _Pros:_ responsive (resize корректен, DevTools responsive mode работает), CSS-first, standard. _Cons:_ SSR considerations (нет window), layout shift на первый рендер (решается CSS media query для initial hide).
+2. User-agent detection (`navigator.userAgent`). _Pros:_ no layout shift. _Cons:_ ненадёжно (iPad fakes desktop UA), не реагирует на resize, нарушает responsive принцип.
+3. CSS-only (Tailwind `md:` breakpoint). _Pros:_ zero JS, no layout shift. _Cons:_ нельзя conditionally render components (оба загружаются).
+
+**Proposal:** вариант 1. CSS `matchMedia` responsive — стандартный подход. Initial render — SSR не используем (Vite SPA), layout shift минимален (можно CSS `@media` для instant hide). `useBreakpoint` хук + `isMobile` boolean.
+
+**Status:** resolved. **Decision:** вариант **1** — `matchMedia`/CSS-first detection, effective query `(max-width: 1023px)` per M1/M2. (2026-05-24)
+
+### M9 — Bottom-sheet primitive — Radix Sheet `side="bottom"` или отдельный компонент? · resolved (2026-05-24)
+
+**Контекст:** mobile дизайн использует bottom-sheet паттерн для фильтров (вместо sidebar filter panel) и full-screen модалов. shadcn/ui уже имеет `Sheet` (Radix Dialog) с `side` prop. Блокирует: B12 (Mobile DataTable + forms infra).
+
+**Варианты:**
+
+1. `Sheet` с `side="bottom"` + custom height/rounded corners. _Pros:_ zero new deps, already in codebase. _Cons:_ no drag-to-dismiss (Radix Sheet — чистый slide, не gestured), no snap points.
+2. Dedicated bottom-sheet component (e.g., `vaul` by Emil Kowalski — Radix-compatible). _Pros:_ drag-to-dismiss, snap points, gesture-native. _Cons:_ new dependency.
+3. `Sheet side="bottom"` for now, migrate to vaul later if needed. _Pros:_ MVP-fast, no new deps. _Cons:_ may need rewrite.
+
+**Proposal:** вариант 3. Start with `Sheet side="bottom"`, add vaul later if gesture UX is critical after user QA. Mobile MVP — functionality over polish.
+
+**Status:** resolved. **Decision:** вариант **3** — стартовать с shadcn/Radix `Sheet side="bottom"`; миграция на `vaul` только если gesture UX станет критичным после QA. (2026-05-24)
+
+### M10 — Notifications — full-screen route или slide-up sheet на mobile? · resolved (2026-05-24)
+
+**Контекст:** desktop: notifications = popover/panel from bell icon (Topbar). Mobile дизайн (ScreenNotifications, `mobile-screens.jsx` L907-972) показывает **full-screen** с back-button, segmented (Все/Непрочитанные), grouped by day. Это фактически отдельный route. Блокирует: B13 (Mobile core screens).
+
+**Варианты:**
+
+1. Full-screen route `/notifications` (mobile-only; desktop — popover как раньше). _Pros:_ matches design exactly, separate URL, browser back works naturally. _Cons:_ route exists only on mobile, desktop redirect needed.
+2. Slide-up sheet (full height) triggered from bell icon. _Pros:_ no new route, matches desktop pattern. _Cons:_ back button behavior unclear, doesn't match design (design shows full bar with back).
+3. Route `/notifications` on both — on desktop renders as page too (eventually). _Pros:_ future-proof. _Cons:_ desktop doesn't need it now.
+
+**Proposal:** вариант 1. Mobile — route `/notifications` (full-screen, back to previous). Desktop — popover (existing B14 plan). Bell icon on mobile navigates to `/notifications` instead of opening popover.
+
+**Status:** resolved. **Decision:** вариант **1** — mobile full-screen route `/notifications`; desktop сохраняет popover-поведение. (2026-05-24)
 
 ---
 
