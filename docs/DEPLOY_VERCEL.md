@@ -4,7 +4,7 @@ SPA на Vite. Деплой — прямо из GitHub-репозитория, �
 
 ## Что уже настроено в репо
 
-- **`vercel.json`** — build (`pnpm build` = `tsc -b && vite build`), output `dist`, и **reverse-proxy `/api/*` → `http://13.60.189.214:3000`** (точная копия dev-прокси из `vite.config.ts`). Поэтому фронт в проде ходит на относительный `/api/v1/...` — без CORS и без mixed-content (прокси на стороне Vercel, сервер-сервер).
+- **`vercel.json`** — build (`pnpm build` = `tsc -b && vite build`), output `dist`, и **reverse-proxy `/api/*` → `http://194.32.140.219:5678`** (точная копия dev-прокси из `vite.config.ts`). Поэтому фронт в проде ходит на относительный `/api/v1/...` — без CORS и без mixed-content (прокси на стороне Vercel, сервер-сервер).
 - **`.github/workflows/ci.yml`** — на каждый push/PR в `main` гоняет `typecheck → lint → test → build` (гейт CLAUDE §7). Деплой Vercel и CI независимы.
 
 ## Шаги: подключить GitHub-репо к Vercel
@@ -37,7 +37,7 @@ SPA на Vite. Деплой — прямо из GitHub-репозитория, �
 
 1. Открыть `https://<project>.vercel.app` → логин по телефону+OTP должен пройти (значит `/api/*` проксируется).
 2. Hard-reload на `/` и `/children` → имя в топбаре и название садика на дашборде восстанавливаются (reload-fix).
-3. Если API не отвечает: Vercel → Deployment → **Functions/Logs**, проверить `vercel.json` rewrite и что бэкенд `13.60.189.214:3000` доступен.
+3. Если API не отвечает: Vercel → Deployment → **Functions/Logs**, проверить `vercel.json` rewrite и что бэкенд `194.32.140.219:5678` доступен.
 
 ## Ограничения / на будущее
 

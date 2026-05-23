@@ -8,7 +8,7 @@ Onboarding for every Claude Code session in this repo. **Read top to bottom befo
 
 **Shyraq Admin Web** — веб-кабинет управления **одним садиком** для сотрудника с ролью `admin` (заведующая/управляющий). Операционный, насыщенный данными инструмент ежедневного использования. Desktop-first (1280–1920, корректно на 1366×768), RU + KK.
 
-**1 из 4 клиентов одного backend:** SuperAdmin (`../frontend_superadmin/`), **Admin (этот репо)**, Staff App, Parent App. Backend один: `http://13.60.189.214:3000`.
+**1 из 4 клиентов одного backend:** SuperAdmin (`../frontend_superadmin/`), **Admin (этот репо)**, Staff App, Parent App. Backend один: `http://194.32.140.219:5678`.
 
 **Первичны наши docs + готовый дизайн** (HANDOFF / DESIGN / `docs/design/handoff/`) и этот `CLAUDE.md` + `docs/IMPLEMENTATION_PLAN.md`. Стек и конвенции — наше решение, зафиксировано в плане (§Foundations). `../frontend_superadmin/` — соседний сервис на похожем стеке: заглядывать туда как в **пример**, только если возник открытый вопрос по архитектуре/тулингу и ответа нет в наших docs. Не «эталон», не копировать вслепую.
 
@@ -27,7 +27,7 @@ Onboarding for every Claude Code session in this repo. **Read top to bottom befo
 | Backend-нехватки для полноты данных (каталог)             | [`docs/BACKEND_NEEDINGS_HANDOFF.md`](docs/BACKEND_NEEDINGS_HANDOFF.md)                                                                                                                 |
 | Визуальный handoff (HTML/JSX прототип всех 28 экранов)    | [`docs/design/handoff/shyraq-admin/project/`](docs/design/handoff/shyraq-admin/project/)                                                                                               |
 | Дизайн-токены / темы / Tweaks-панель                      | [`docs/design/handoff/shyraq-admin/project/styles.css`](docs/design/handoff/shyraq-admin/project/styles.css), [`app.jsx`](docs/design/handoff/shyraq-admin/project/app.jsx) (`THEMES`) |
-| Backend OpenAPI (live)                                    | `http://13.60.189.214:3000/docs-json` · Swagger `…/docs`                                                                                                                               |
+| Backend OpenAPI (live)                                    | `http://194.32.140.219:5678/docs-json` · Swagger `…/docs`                                                                                                                              |
 
 **Backend code** (`../backend_shyraq_v2/`) — читать **только** при критической неопределённости или подозрении на расхождение с handoff. После расхождения — обновить наши docs.
 
@@ -45,7 +45,7 @@ Onboarding for every Claude Code session in this repo. **Read top to bottom befo
 
 API base — `/api/v1`. Полный путь endpoint'а — `/api/v1/<route>`. Swagger живёт на корне домена, **не** под `/api/v1`.
 
-- **Dev:** Vite proxy `'/api' → http://13.60.189.214:3000` (`vite.config.ts`) — пишем `fetch('/api/v1/...')`, CORS не нужен. Хост никогда не хардкодим — через `env.ts` (`VITE_API_BASE_URL=/api/v1`).
+- **Dev:** Vite proxy `'/api' → http://194.32.140.219:5678` (`vite.config.ts`) — пишем `fetch('/api/v1/...')`, CORS не нужен. Хост никогда не хардкодим — через `env.ts` (`VITE_API_BASE_URL=/api/v1`).
 - **Типы:** `pnpm gen:api` генерит `src/api/types/openapi.d.ts` из live `/docs-json`. Артефакт коммитим. Backend изменился → `gen:api` + `pnpm typecheck` зелёный.
 - **Auth:** телефон + OTP. Access JWT (15m) — **in-memory**. Refresh opaque hex 64 (30d) — **localStorage** (Admin публичен, не за VPN; принято на MVP, cookie-flow — future). Silent single-flight refresh на `401 invalid_token|token_revoked`; провал → разлогин на `/login`. `pending_role_select` → экран выбора садика.
 - **i18n данные:** JSONB приходит `{ru, kz}` (ключ `kz`!), а DTO-enum локали — `kk`. Резолв через `lib/jsonb-i18n.ts`. Заголовок `x-custom-lang: ru|kk` (никогда `en`) из текущей локали.

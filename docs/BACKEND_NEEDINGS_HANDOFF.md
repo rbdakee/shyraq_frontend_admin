@@ -1,6 +1,6 @@
 # Backend Needings Handoff — Shyraq Admin Web
 
-Каталог того, что фронту **не хватает от backend** для полноты данных на уже построенных/ближайших экранах. Производный документ: первоисточники — [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) (§B/§C), [`ADMIN_FRONTEND_HANDOFF.md`](ADMIN_FRONTEND_HANDOFF.md), live OpenAPI `http://13.60.189.214:3000/docs-json`.
+Каталог того, что фронту **не хватает от backend** для полноты данных на уже построенных/ближайших экранах. Производный документ: первоисточники — [`OPEN_QUESTIONS.md`](OPEN_QUESTIONS.md) (§B/§C), [`ADMIN_FRONTEND_HANDOFF.md`](ADMIN_FRONTEND_HANDOFF.md), live OpenAPI `http://194.32.140.219:5678/docs-json`.
 
 **Назначение.** Один список для backend-команды: чего ждёт фронт, что сейчас отдаёт live-бэкенд, на какие экраны это влияет, и предлагаемый контракт. Фронт **ничего не выдумывает** (CLAUDE §2): где backend не готов — деградируем честно, баг не «чиним» подгонкой, фичу делаем когда backend выкатит контракт.
 

@@ -2,7 +2,7 @@
 
 Безопасный поэтапный план разработки фронтенда админки. **16 батчей (B0–B15)**, каждый ≈ одна Claude Code сессия, заканчивается рабочим коммитом с зелёным acceptance. Стек и конвенции — наше решение (§Foundations). Готовый дизайн `docs/design/handoff/shyraq-admin/*` — строим 1:1 по нему. `../frontend_superadmin/` — соседний сервис на похожем стеке: только пример при открытом архитектурном вопросе, не эталон.
 
-**Source of truth контрактов** — [`ADMIN_FRONTEND_HANDOFF.md`](ADMIN_FRONTEND_HANDOFF.md) (далее **HANDOFF §X**). UI-спека — [`ADMIN_DESIGN_SPEC.md`](ADMIN_DESIGN_SPEC.md) (далее **DESIGN §X**). Визуал — `docs/design/handoff/shyraq-admin/project/` (далее **VIS**). Этот план **не дублирует** контракты — ссылается на § handoff/design. Backend live: `http://13.60.189.214:3000`.
+**Source of truth контрактов** — [`ADMIN_FRONTEND_HANDOFF.md`](ADMIN_FRONTEND_HANDOFF.md) (далее **HANDOFF §X**). UI-спека — [`ADMIN_DESIGN_SPEC.md`](ADMIN_DESIGN_SPEC.md) (далее **DESIGN §X**). Визуал — `docs/design/handoff/shyraq-admin/project/` (далее **VIS**). Этот план **не дублирует** контракты — ссылается на § handoff/design. Backend live: `http://194.32.140.219:5678`.
 
 ---
 
@@ -37,10 +37,10 @@ Refs: docs/IMPLEMENTATION_PLAN.md §B<N>
 
 | Что                        | Значение                                                                                              |
 | -------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Backend base               | `http://13.60.189.214:3000`                                                                           |
+| Backend base               | `http://194.32.140.219:5678`                                                                          |
 | API prefix (все endpoints) | `/api/v1/`                                                                                            |
 | Swagger UI / JSON          | `…/docs` · `…/docs-json` (на корне, **не** под `/api/v1`)                                             |
-| Vite dev proxy             | `server.proxy['/api'] → http://13.60.189.214:3000`, `changeOrigin:true`                               |
+| Vite dev proxy             | `server.proxy['/api'] → http://194.32.140.219:5678`, `changeOrigin:true`                              |
 | `.env.local`               | `VITE_API_BASE_URL=/api/v1` · `VITE_APP_VERSION=0.1.0`                                                |
 | Auth                       | phone+OTP; access JWT 15m (in-memory); refresh hex64 30d (localStorage); silent single-flight refresh |
 | Backend Phase              | A закрыта (всё на Mock-адаптерах). Контракты Phase B/C **не изменятся**. См. HANDOFF §29              |

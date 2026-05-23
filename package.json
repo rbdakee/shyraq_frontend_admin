@@ -15,7 +15,7 @@
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
     "test": "vitest run --passWithNoTests",
-    "gen:api": "openapi-typescript http://13.60.189.214:3000/docs-json -o src/api/types/openapi.d.ts",
+    "gen:api": "openapi-typescript http://194.32.140.219:5678/docs-json -o src/api/types/openapi.d.ts",
     "prepare": "husky"
   },
   "lint-staged": {
