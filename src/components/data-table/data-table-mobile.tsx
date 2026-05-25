@@ -14,7 +14,6 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/cn';
-import { DataTableToolbar } from './data-table-toolbar';
 import type { DataTableProps, PaginationConfig } from './types';
 
 const DEFAULT_SKELETON_ROWS = 5;
@@ -23,39 +22,24 @@ const SORTED_ROW_MODEL = getSortedRowModel();
 // See note in `data-table.tsx` — referentially stable empty sorting state.
 const EMPTY_SORTING: SortingState = [];
 
-// Generic fallback when no `renderMobileRow` is provided: render the first
-// visible cell as title, the second as sub, and the remaining visible cells
-// space-separated as meta. Good enough for B17 infra so existing routes
-// keep working on mobile; B18+ screens supply their own `.m-list-row`.
+// Generic fallback when no `renderMobileRow` is provided: stack every visible
+// cell vertically in a single content column and put a chevron on the right.
+// We deliberately do NOT assume cells[0] is an avatar / cells[1] is a sub —
+// columns vary per route, and guessing makes the layout look broken (e.g.
+// rendering an Avatar cell as a "title" text line). Routes that want the
+// canonical 3-column `.m-list-row` look pass `renderMobileRow` (B18+).
 function GenericMobileRow<T>({ row }: { row: Row<T> }) {
   const cells = row.getVisibleCells();
-  const titleCell = cells[0];
-  const subCell = cells[1];
-  const metaCells = cells.slice(2);
-
   return (
-    <div className="m-list-row">
-      <div />
-      <div className="min-w-0">
-        {titleCell && (
-          <div className="m-row-title overflow-hidden text-ellipsis whitespace-nowrap">
-            {flexRender(titleCell.column.columnDef.cell, titleCell.getContext())}
-          </div>
-        )}
-        {subCell && (
-          <div className="m-row-sub overflow-hidden text-ellipsis whitespace-nowrap">
-            {flexRender(subCell.column.columnDef.cell, subCell.getContext())}
-          </div>
-        )}
-      </div>
-      <div className="m-row-meta">
-        {metaCells.map((cell) => (
-          <span key={cell.id} className="text-[12px] text-[color:var(--text-3)]">
+    <div className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-[var(--line)] bg-[var(--bg-elev)] px-3.5 py-3 last:border-b-0">
+      <div className="flex min-w-0 flex-col gap-0.5 text-[13px] text-[color:var(--text-1)]">
+        {cells.map((cell) => (
+          <div key={cell.id} className="min-w-0 overflow-hidden">
             {flexRender(cell.column.columnDef.cell, cell.getContext())}
-          </span>
+          </div>
         ))}
-        <ChevronRightIcon className="m-row-chev size-4" />
       </div>
+      <ChevronRightIcon className="m-row-chev size-4" />
     </div>
   );
 }
@@ -142,11 +126,17 @@ export function DataTableMobile<T>({
   filteredEmptyDescription,
   onRowClick,
   rowClassName,
-  toolbar,
+  // `toolbar` is intentionally ignored on mobile — the desktop toolbar
+  // (search / select / export side-by-side) cannot fit a 390px viewport
+  // and squishes into a horizontal scroll. Routes targeting mobile should
+  // render `.m-search` + `.m-chips` (and/or FilterBottomSheet) as siblings
+  // of the DataTable, per DESIGN_SPEC §10.6.2.
+  toolbar: _toolbar,
   skeletonRowCount = DEFAULT_SKELETON_ROWS,
   renderMobileRow,
   mobileListAriaLabel,
 }: DataTableProps<T>) {
+  void _toolbar;
   const { t } = useTranslation('datatable');
 
   const tableData = useMemo(() => data, [data]);
@@ -257,7 +247,6 @@ export function DataTableMobile<T>({
 
   return (
     <div className="flex flex-col gap-2">
-      {toolbar && <DataTableToolbar>{toolbar}</DataTableToolbar>}
       {body}
       {pagination && !isLoading && !isError && rows.length > 0 && (
         <MobilePaginationFooter pagination={pagination} />
