@@ -61,4 +61,13 @@ export interface DataTableProps<T> {
   toolbar?: ReactNode;
 
   skeletonRowCount?: number;
+
+  // Mobile-only: custom card row renderer. When omitted, the mobile DataTable
+  // falls back to a generic two-line row (title from first column, sub from
+  // the second). Recommended: pass a renderer that uses `.m-list-row` markup
+  // (avatar / title+sub / meta) per DESIGN_SPEC §10.6.1.
+  renderMobileRow?: (row: T, ctx: { index: number }) => ReactNode;
+
+  // Mobile-only: optional aria-label for the card list element (e.g. "Children list").
+  mobileListAriaLabel?: string;
 }

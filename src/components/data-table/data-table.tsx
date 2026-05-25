@@ -14,7 +14,9 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { cn } from '@/lib/cn';
+import { DataTableMobile } from './data-table-mobile';
 import { DataTablePagination } from './data-table-pagination';
 import { DataTableRowActions } from './data-table-row-actions';
 import { DataTableToolbar } from './data-table-toolbar';
@@ -31,7 +33,15 @@ const SORTED_ROW_MODEL = getSortedRowModel();
 // no error. The `state` object must be referentially stable.
 const EMPTY_SORTING: SortingState = [];
 
-export function DataTable<T>({
+export function DataTable<T>(props: DataTableProps<T>) {
+  const { isMobile } = useBreakpoint();
+  if (isMobile) {
+    return <DataTableMobile<T> {...props} />;
+  }
+  return <DataTableDesktop<T> {...props} />;
+}
+
+function DataTableDesktop<T>({
   columns,
   data,
   pagination,

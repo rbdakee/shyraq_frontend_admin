@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render, screen, fireEvent } from '@testing-library/react';
 import type { ColumnDef } from '@tanstack/react-table';
 
@@ -280,6 +280,54 @@ describe('DataTable — error state', () => {
     fireEvent.click(retryBtn);
     expect(onRetry).toHaveBeenCalledTimes(1);
 
+    unmount();
+  });
+});
+
+describe('DataTable — adaptive (desktop vs mobile)', () => {
+  let originalMatchMedia: typeof window.matchMedia | undefined;
+
+  beforeEach(() => {
+    originalMatchMedia = window.matchMedia;
+  });
+
+  afterEach(() => {
+    if (originalMatchMedia) {
+      window.matchMedia = originalMatchMedia;
+    } else {
+      Reflect.deleteProperty(window, 'matchMedia');
+    }
+  });
+
+  function stubMatchMedia(matches: boolean): void {
+    window.matchMedia = vi.fn(() => ({
+      matches,
+      media: '(max-width: 1023px)',
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })) as unknown as typeof window.matchMedia;
+  }
+
+  it('renders the <table> body on desktop', () => {
+    stubMatchMedia(false);
+    const { unmount, container } = render(<DataTable columns={columns} data={sampleData} />);
+    expect(container.querySelector('table')).not.toBeNull();
+    expect(container.querySelector('[role="list"]')).toBeNull();
+    unmount();
+  });
+
+  it('renders the card-list (.m-card.flush) on mobile — no <table>', () => {
+    stubMatchMedia(true);
+    const { unmount, container } = render(
+      <DataTable columns={columns} data={sampleData} mobileListAriaLabel="rows" />,
+    );
+    expect(container.querySelector('table')).toBeNull();
+    expect(container.querySelector('.m-card.flush')).not.toBeNull();
+    expect(screen.getByRole('list', { name: 'rows' })).toBeDefined();
     unmount();
   });
 });
