@@ -87,5 +87,11 @@
     "session_expired_body": "Жұмысты жалғастыру үшін қайта кіріңіз.",
     "go_home": "Басты бетке",
     "login_again": "Қайта кіру"
-  }
+  },
+  "mobile_tab_home": "Басты",
+  "mobile_tab_children": "Балалар",
+  "mobile_tab_requests": "Өтініштер",
+  "mobile_tab_invoices": "Шоттар",
+  "mobile_tab_more": "Тағы",
+  "mobile_more_description": "Қосымшаның барлық бөлімдері"
 }

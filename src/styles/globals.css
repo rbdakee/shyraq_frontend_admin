@@ -280,3 +280,213 @@
     min-height: 100vh;
   }
 }
+
+/* === Shyraq Mobile shell — foundation primitives (source: docs/design/handoff-with-mobile mobile.css) === */
+/* B16 covers: .m-shell, .m-bar (+ flat), .m-iconbtn, .m-scroll, .m-tabbar, .m-tab, .m-fab, .m-btn.
+   Component-level styles (.m-card, .m-list-row, .m-chips, .m-kv, etc.) land in B17. */
+.m-shell {
+  width: 100%;
+  height: 100%;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  color: var(--text-1);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.m-bar {
+  flex-shrink: 0;
+  padding: 56px 16px 10px;
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 96px;
+}
+.m-bar.flat {
+  background: transparent;
+  border-bottom: 0;
+}
+.m-bar .m-bar-title {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  flex: 1;
+  min-width: 0;
+}
+.m-bar .m-bar-sub {
+  font-size: 11.5px;
+  color: var(--text-3);
+  font-weight: 500;
+  margin-top: 1px;
+}
+
+.m-iconbtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 0;
+  background: var(--bg-sunken);
+  color: var(--text-1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  position: relative;
+}
+.m-iconbtn.ghost {
+  background: transparent;
+}
+.m-iconbtn.primary {
+  background: var(--primary);
+  color: white;
+}
+.m-iconbtn .m-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  border: 2px solid var(--bg-elev);
+}
+.m-iconbtn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.m-scroll {
+  flex: 1;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 16px 16px 110px;
+}
+.m-scroll.no-bar {
+  padding-top: 16px;
+}
+
+.m-tabbar {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: 22px;
+  height: 60px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow:
+    0 8px 24px rgba(20, 20, 18, 0.1),
+    0 2px 6px rgba(20, 20, 18, 0.05);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+  z-index: 5;
+}
+.m-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-3);
+  cursor: pointer;
+  border: 0;
+  background: transparent;
+  padding: 6px 4px;
+  position: relative;
+}
+.m-tab svg {
+  width: 22px;
+  height: 22px;
+}
+.m-tab.active {
+  color: var(--primary);
+}
+.m-tab .m-tab-badge {
+  position: absolute;
+  top: 4px;
+  right: 50%;
+  transform: translateX(18px);
+  background: var(--danger);
+  color: white;
+  font-size: 9px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.m-fab {
+  position: absolute;
+  bottom: 96px;
+  right: 18px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  border: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 6px 16px rgba(14, 124, 102, 0.35),
+    0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 4;
+  cursor: pointer;
+}
+.m-fab svg {
+  width: 24px;
+  height: 24px;
+}
+
+.m-btn {
+  height: 44px;
+  border-radius: 12px;
+  padding: 0 16px;
+  font-size: 14.5px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: var(--bg-elev);
+  color: var(--text-1);
+  border-color: var(--border);
+  font-family: inherit;
+  cursor: pointer;
+  width: 100%;
+}
+.m-btn.primary {
+  background: var(--primary);
+  color: white;
+  border-color: transparent;
+}
+.m-btn.ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--primary);
+}
+.m-btn.danger-ghost {
+  background: transparent;
+  color: var(--danger);
+  border-color: transparent;
+}
+.m-btn svg {
+  width: 16px;
+  height: 16px;
+}

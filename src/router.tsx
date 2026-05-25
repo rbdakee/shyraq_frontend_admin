@@ -216,6 +216,13 @@ export const router = createBrowserRouter([
               return { Component };
             },
           },
+          {
+            path: 'notifications',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/notifications');
+              return { Component };
+            },
+          },
           { path: 'attendance', lazy: lazyStub },
           { path: 'attendance/daily-status', lazy: lazyStub },
           { path: 'diagnostics/templates', lazy: lazyStub },

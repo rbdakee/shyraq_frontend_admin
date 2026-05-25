@@ -1,13 +1,20 @@
 import { Outlet } from 'react-router-dom';
 import { useUiStore } from '@/stores/ui-store';
 import { useSessionBootstrap } from '@/hooks/use-session';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { cn } from '@/lib/cn';
 import Sidebar from '@/components/layout/sidebar';
 import Topbar from '@/components/layout/topbar';
+import MobileShell from '@/components/layout/mobile-shell';
 
 export default function App() {
   const collapsed = useUiStore((s) => s.sidebarCollapsed);
+  const { isMobile } = useBreakpoint();
   useSessionBootstrap();
+
+  if (isMobile) {
+    return <MobileShell />;
+  }
 
   return (
     <div

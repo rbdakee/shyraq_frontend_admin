@@ -87,5 +87,11 @@
     "session_expired_body": "Войдите снова для продолжения работы.",
     "go_home": "На главную",
     "login_again": "Войти снова"
-  }
+  },
+  "mobile_tab_home": "Главная",
+  "mobile_tab_children": "Дети",
+  "mobile_tab_requests": "Заявки",
+  "mobile_tab_invoices": "Счета",
+  "mobile_tab_more": "Ещё",
+  "mobile_more_description": "Все разделы приложения"
 }

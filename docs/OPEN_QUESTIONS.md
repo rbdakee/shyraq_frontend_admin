@@ -265,7 +265,7 @@ HANDOFF §16+§18 обновлены под факт в wave-коммите B10.
 **Варианты:**
 
 1. Полный 4-step wizard, адаптивный layout (sticky bottom nav вместо inline buttons). _Pros:_ feature parity, один state machine. _Cons:_ на маленьком экране конструктор условий И/ИЛИ может быть сложен.
-2. Упрощённый wizard (убрать nested all_of/any_of, только flat conditions). _Pros:_ мобильнее. _Cons:_ feature gap, два state machine.
+2. Упрощённый wizard (убрать nested all*of/any_of, только flat conditions). \_Pros:* мобильнее. _Cons:_ feature gap, два state machine.
 
 **Proposal:** вариант 1. Дизайн уже показывает полный wizard (step indicator, conditions, preview). Конструктор условий на mobile — vertical-stack вместо nested grid. Сложные скидки создаются на desktop, но mobile должен уметь тоже.
 
@@ -326,6 +326,19 @@ HANDOFF §16+§18 обновлены под факт в wave-коммите B10.
 **Proposal:** вариант 1. Mobile — route `/notifications` (full-screen, back to previous). Desktop — popover (existing B14 plan). Bell icon on mobile navigates to `/notifications` instead of opening popover.
 
 **Status:** resolved. **Decision:** вариант **1** — mobile full-screen route `/notifications`; desktop сохраняет popover-поведение. (2026-05-24)
+
+### M11 — Mobile shell glassmorphism + FAB tint vs dark theme · open (2026-05-25)
+
+**Контекст:** B16 ported `.m-tabbar` (`background: rgba(255,255,255,0.85)` + backdrop-blur) и `.m-fab` (box-shadow tint `rgba(14,124,102,0.35)` — teal-primary) verbatim из `docs/design/handoff-with-mobile/shyraq-admin/project/mobile.css`. CLAUDE.md §6 требует preserve var() refs (что мы и сделали), но эти hardcoded rgba — не token refs. На теме `dark` (где `--bg` тёмный) белый glassmorphism будет выглядеть как яркая полоса; tint FAB-shadow не соответствует non-teal темам (orange/blue/mono/forestMint/oceanBlue).
+
+**Варианты:**
+
+1. Оставить verbatim (текущее B16). _Pros:_ design-fidelity 1:1, B17/B18 владельцы экранов могут уточнить per-screen. _Cons:_ на dark theme tabbar/FAB-shadow выглядят off; пользователь увидит при QA.
+2. Заменить hardcoded rgba на token-based значения: `.m-tabbar { background: color-mix(in oklab, var(--bg-elev) 85%, transparent) }`, `.m-fab { box-shadow: 0 6px 16px color-mix(in oklab, var(--primary) 35%, transparent), ... }`. _Pros:_ themes work. _Cons:_ отклонение от source mobile.css (но preserves design intent).
+
+**Proposal:** вариант **2** — заменить на token-based значения в B17 (или раньше при QA dark-темы). Это сохраняет визуальный intent дизайна (glass + primary-shadow) и делает темы работающими. Не блокирует B16 foundation. Обновить mobile.css source-of-truth tоже когда применим.
+
+**Status:** open. Решить когда пользователь QA-нит mobile shell на dark/orange/blue темах.
 
 ---
 
