@@ -364,18 +364,35 @@ src/
 
 ## B11 — Расписание + Меню · P1
 
-**Inputs:** HANDOFF §10 (schedule templates/slots/week-snapshots/activity-events, slot_time_conflict), §11 (meal-plans/items, copy-week, already_exists); DESIGN §6.7–§6.8; VIS `screens-ops.jsx` (Schedule/Meals).
+**Inputs:** HANDOFF §10 (schedule templates/slots/week-snapshots/activity-events admin CRUD, slot_time_conflict), §11 (meal-plans/items, copy-week, already_exists, MultiLangText `kk`); DESIGN §6.7–§6.8; VIS `screens-ops.jsx` (Schedule/Meals); OPEN_QUESTIONS **§A18 (casing per-module: schedule camelCase, meal-plans snake_case; copy DTO `{fromMonday}`; source enum `manual|cron|copied`; notes i18n)**, **§A19 (MultiLangText ключ `kk`)**, **§B1 (per-group copy — backend ask, на B11 — глобальный CTA)**, **§B2 (activity-events admin CRUD UI — минимальный на primitives)**.
+
+**Backend status (live-verified 2026-05-26):** все endpoints HANDOFF §10/§11 существуют. Расхождения handoff↔live зафиксированы в §A18 (правка handoff — pre-B11 docs fixup, коммит до B11). `POST /admin/schedule/week-rollout/run` существует, но в Admin UI **не выставляется** (SuperAdmin scope).
 
 **Tasks:**
 
-- `api/schedule.ts`,`api/meal-plans.ts` + hooks.
-- `routes/schedule/templates` (список + create) + `templates/$id` (недельная сетка Пн–Вс, слоты CRUD, конфликт времени inline 409), `schedule/weeks` (week-snapshots, copy идемпотентно, activity-events read-only календарь/список, статусы scheduled/in_progress/completed/cancelled).
-- `routes/meal-plans` (весь садик/группа, неделя/месяц, редактор дня 5 приёмов, блюдо PairedI18nField + аллергены/калории/фото, copy-week, флаг publish, источник manual/auto).
+- `api/schedule.ts` (camelCase DTO!) + `api/meal-plans.ts` (snake_case DTO!) + `hooks/use-schedule.ts` + `hooks/use-meal-plans.ts` (query-keys, list/get/create/patch/delete + copy-week mutations).
+- `routes/schedule/templates/index.tsx` — список шаблонов по группам, create-форма (`groupId?`, `name`, `validFrom`, `validUntil?`, `isActive`).
+- `routes/schedule/templates/$id.tsx` — недельная сетка Пн–Вс × time, CRUD слотов (`dayOfWeek`, `startTime`, `endTime`, `activityName`, `locationId?`, `description?`), конфликт времени → inline 409 `slot_time_conflict`. **Заменяет существующий mobile-stub** (TODO-`wire useSchedule`).
+- `routes/schedule/weeks.tsx` — список week-snapshots (фильтр `groupId`, `weekStartDateFrom/To`), глобальный CTA «Скопировать неделю садика» (POST `/week-snapshots/copy` с `{fromMonday}`) + summary toast `{copiedGroups, skippedGroups, totalEvents}`. Календарь/список activity-events по диапазону дат (`groupId`, `dateFrom/To`, `status`-фильтр).
+- **Activity events admin CRUD** (per §B2): кнопка «Добавить событие» → модал RHF (`groupId`, `activityName`, `startsAt`, `endsAt?`, `locationId?`, `notes?`); row-actions Редактировать/Удалить (`DestructiveConfirm`). Минимальный UI на токенах/primitives, без новых лекал.
+- `routes/meal-plans/index.tsx` — выбор группы/«весь садик», переключатель неделя/месяц, день-редактор: 5 `meal_type` (`breakfast/snack_am/lunch/snack_pm/dinner`), для каждого — список блюд с `dish_name` (PairedI18nField → `{ru, kk}` через `MultiLangTextDto`), `description?`, `allergens?[]`, `calories?`, `photo_url?`, `position`. Создание плана дня (`{date, group_id?}` → 409 `meal_plan_already_exists`). PATCH `is_published`/`notes` (notes — i18n PairedI18nField). Кнопка «Скопировать неделю» (`fromMonday`) → summary `{plans_created, plans_skipped}`. Бейдж `source` (`manual`/`cron`/`copied`). **Заменяет существующий mobile-stub** (TODO-`wire useMealPlans`).
+- i18n `schedule` + `meal-plans` namespaces (RU + KK).
+- Перед стартом — проверить `lib/jsonb-i18n.ts` юнит-тестами: резолв и `{ru, kk}` (MultiLangText), и `{ru, kz}` (legacy JSONB). Если не покрыт — добавить кейс.
+
+**Что НЕ делаем в B11:**
+
+- `POST /admin/schedule/week-rollout/run` — НЕ выставляем в UI (SuperAdmin scope).
+- Per-group week copy — заблокировано §B1; ждём backend, на B11 только глобальный CTA.
+- Дизайн-апдейт VIS для activity-events admin CRUD — это design-task post-MVP §B2.
 
 **Acceptance:**
 
-- [ ] Редактор слотов; дубль (template,day,start_time) → inline 409.
-- [ ] Меню день-редактор RU/KK; copy-week идемпотентен (повтор → сообщение). Gate exit 0.
+- [ ] Список шаблонов + create; редактор слотов (camelCase!) с conflict-инлайном 409 `slot_time_conflict`.
+- [ ] Week-snapshots: глобальный copy CTA → toast c summary; activity-events календарь/список с фильтрами; admin может create/edit/delete события (минимальный CRUD).
+- [ ] Меню день-редактор RU/KK (через `MultiLangTextDto`, ключ `kk`); copy-week идемпотентен (повтор → `plans_skipped > 0` → информативный toast); `is_published`/`notes` (i18n) save.
+- [ ] Mobile-stubs `routes/schedule/templates/$id.tsx`, `routes/meal-plans/index.tsx` переподключены к реальным хукам; TODO-строки `wire useSchedule`/`wire useMealPlans` удалены из `IMPLEMENTATION_PLAN.md` backlog.
+- [ ] `jsonb-i18n.ts` юнит-тесты покрывают обе формы (`kk` + `kz`).
+- [ ] Gate exit 0: `pnpm typecheck && pnpm lint --max-warnings=0 && pnpm test`.
 
 ---
 
@@ -830,13 +847,13 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 | B13  | Посещаемость + Диагностика                  | P1        | [ ]    |
 | B14  | Структура + Профиль/Уведомления/WS          | P1        | [ ]    |
 | B15  | Праздники/Фискальные/DLQ/Настройки/Face     | P2        | [ ]    |
-| B16  | Mobile foundation (shell)                   | mobile    | [ ]    |
-| B17  | Mobile DataTable + forms infra              | mobile    | [ ]    |
-| B18  | Mobile core screens (8 экранов)             | mobile    | [ ]    |
-| B19  | Mobile ops screens (2 экрана)               | mobile    | [ ]    |
-| B20  | Mobile billing screens (10 экранов)         | mobile    | [ ]    |
-| B21  | Mobile secondary screens (8 экранов)        | mobile    | [ ]    |
-| B22  | Mobile system + i18n + QA (5 экранов)       | mobile    | [ ]    |
+| B16  | Mobile foundation (shell)                   | mobile    | [x]    |
+| B17  | Mobile DataTable + forms infra              | mobile    | [x]    |
+| B18  | Mobile core screens (8 экранов)             | mobile    | [x]    |
+| B19  | Mobile ops screens (2 экрана)               | mobile    | [x]    |
+| B20  | Mobile billing screens (10 экранов)         | mobile    | [x]    |
+| B21  | Mobile secondary screens (8 экранов)        | mobile    | [x]    |
+| B22  | Mobile system + i18n + QA (5 экранов)       | mobile    | [x]    |
 
 ---
 

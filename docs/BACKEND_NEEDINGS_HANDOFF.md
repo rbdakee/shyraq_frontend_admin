@@ -14,16 +14,17 @@
 
 ## Сводка
 
-| ID  | Тема                                                                          | Статус              | Затронутые экраны                                                |
-| --- | ----------------------------------------------------------------------------- | ------------------- | ---------------------------------------------------------------- |
-| N1  | Дашборд: `summary` + `payments-overview` отсутствуют                          | `blocked`           | `/` (Дашборд) — KPI, Финансы, Обзор оплат                        |
-| N2  | `GuardianDto` без ФИО/телефона пользователя                                   | `degraded`          | `/children/:id` → вкладка «Опекуны»                              |
-| N3  | Storage `child_photo` не реализован                                           | `blocked` (подфича) | `/children/new`, `/children/:id` → фото                          |
-| N4  | `GET /users/me` без `roles[]`/`kindergartens[]`; нет session-restore с ролями | `forward-looking`   | Восстановление сессии после hard-reload (роли для будущего RBAC) |
-| N5  | Enrollments DTO без поля пола ребёнка                                         | `forward-looking`   | `/enrollments` → child после `card_created` с пустым `gender`    |
-| N6  | `InvoiceResponseDto` без массивов payments/refunds/fiscal_receipts            | `degraded`          | `/billing/invoices/:id` → секции Оплаты/Возвраты/Фискальные      |
-| N7  | Parent-request DTO без отображаемых имён автора/заявителя                     | `degraded`          | `/parent-requests`, `/parent-requests/:id` → тред, шапка, список |
-| N8  | `StaffMemberDto` без user display-полей (`full_name`/`phone` null)            | `degraded`          | `/staff` → колонки ФИО, телефон, аватар-инициалы                 |
+| ID  | Тема                                                                           | Статус              | Затронутые экраны                                                |
+| --- | ------------------------------------------------------------------------------ | ------------------- | ---------------------------------------------------------------- |
+| N1  | Дашборд: `summary` + `payments-overview` отсутствуют                           | `blocked`           | `/` (Дашборд) — KPI, Финансы, Обзор оплат                        |
+| N2  | `GuardianDto` без ФИО/телефона пользователя                                    | `degraded`          | `/children/:id` → вкладка «Опекуны»                              |
+| N3  | Storage `child_photo` не реализован                                            | `blocked` (подфича) | `/children/new`, `/children/:id` → фото                          |
+| N4  | `GET /users/me` без `roles[]`/`kindergartens[]`; нет session-restore с ролями  | `forward-looking`   | Восстановление сессии после hard-reload (роли для будущего RBAC) |
+| N5  | Enrollments DTO без поля пола ребёнка                                          | `forward-looking`   | `/enrollments` → child после `card_created` с пустым `gender`    |
+| N6  | `InvoiceResponseDto` без массивов payments/refunds/fiscal_receipts             | `degraded`          | `/billing/invoices/:id` → секции Оплаты/Возвраты/Фискальные      |
+| N7  | Parent-request DTO без отображаемых имён автора/заявителя                      | `degraded`          | `/parent-requests`, `/parent-requests/:id` → тред, шапка, список |
+| N8  | `StaffMemberDto` без user display-полей (`full_name`/`phone` null)             | `degraded`          | `/staff` → колонки ФИО, телефон, аватар-инициалы                 |
+| N9  | Schedule week-snapshots copy без per-group фильтра (только глобально на садик) | `degraded`          | `/schedule/weeks` → CTA «Скопировать неделю» только глобальный   |
 
 ---
 
@@ -147,6 +148,20 @@
 3. **Дать users-lookup** (`GET /users?ids=<uuid,uuid>` → `[{id, full_name, phone}]`) — единое решение для N2/N7/N8, фронт сам резолвит.
 
 **Источник.** OPEN_QUESTIONS §C16 (W6/B9 ручной QA). Один шаблон с N2 (Guardians) и N7 (Parent-requests). **Действие.** Пересмотреть когда backend закроет один из вариантов → отрендерить ФИО/телефон по факту, обновить HANDOFF §8 (first-document). Не блокирует B6/B9.
+
+---
+
+## N9 — Schedule week-snapshots copy без per-group фильтра (только глобально на садик) · `degraded`
+
+**Нужно фронту.** Страница `/schedule/weeks` (B11) по дизайну VIS (`screens-ops.jsx` Schedule) и DESIGN §6.7 предполагает кнопку «Скопировать неделю» как операцию **по группе** — администратор смотрит конкретную группу, нажимает «скопировать её расписание на следующую неделю». Это совпадает с handoff §10 в его исходной (до правки) редакции.
+
+**Live backend (проверено 2026-05-26).** `POST /api/v1/admin/schedule/week-snapshots/copy` принимает `CopyWeekDto = {fromMonday*}` (ISO date понедельника) — **только один параметр**, нет `groupId`. Бэкенд копирует расписание **всех групп садика** с указанной недели на следующую (`fromMonday + 7`), идемпотентно (если для целевой недели уже есть snapshot — группа skipped). Response: `WeekCopySummaryDto = {copiedGroups, skippedGroups, totalEvents}`.
+
+**Влияние.** `/schedule/weeks`: на B11 фронт выставляет **один глобальный CTA** «Скопировать неделю садика» с дисклеймером «копирует расписания всех групп». Per-group action (`/schedule/weeks/$groupId` или action в строке группы) на B11 не делаем — UX неполный, но честный. Это решение владельца (2026-05-26).
+
+**Предлагаемый контракт.** Добавить **опциональный** `groupId` в `CopyWeekDto`: при наличии копировать только указанную группу. `WeekCopySummaryDto` остаётся как есть (`copiedGroups ∈ {0, 1}`). Альтернатива: новый отдельный endpoint `POST /admin/schedule/week-snapshots/copy-group {groupId, fromMonday}`. Первый вариант предпочтительнее — меньше DTO/контрактов.
+
+**Источник.** OPEN_QUESTIONS §B1 (2026-05-26, B11 pre-flight). **Действие.** Сделать когда backend расширит `CopyWeekDto` → добавить per-group action в строке группы на `/schedule/weeks`, обновить HANDOFF §10 + DESIGN §6.7 (first-document). Не блокирует B11.
 
 ---
 

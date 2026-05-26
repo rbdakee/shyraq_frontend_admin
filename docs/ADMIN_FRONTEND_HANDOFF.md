@@ -369,29 +369,40 @@
 
 **Назначение:** недельные шаблоны расписания групп + конкретные события. BP §9.3.
 
-**Модель:** `schedule_templates` (недельный паттерн группы, `valid_from/until`, `recurrence=weekly`) → `schedule_template_slots` (день недели × время × активность) → проекция в `activity_events` (dated). `schedule_week_snapshots` — флаг наличия недели.
+**Модель:** `schedule_templates` (недельный паттерн группы, `validFrom/validUntil`, `recurrence=weekly`) → `schedule_template_slots` (день недели × время × активность) → проекция в `activity_events` (dated). `schedule_week_snapshots` — флаг наличия недели.
 
-| Метод  | Путь                                          | Назначение                                                                                               |
-| ------ | --------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| GET    | `/admin/schedule/templates`                   | `?group_id=&is_active=`. `[{id,name,group_id,recurrence,is_active,valid_from,valid_until,slots_count}]`. |
-| POST   | `/admin/schedule/templates`                   | `{group_id?, name, recurrence='weekly', valid_from, valid_until?}`.                                      |
-| PATCH  | `/admin/schedule/templates/:id`               | `name?, is_active?, valid_until?`.                                                                       |
-| GET    | `/admin/schedule/templates/:id/slots`         | Слоты (сорт. day_of_week, start_time).                                                                   |
-| POST   | `/admin/schedule/templates/:id/slots`         | `{day_of_week(mon..sun), start_time, end_time, activity_name, location_id?, description?}`.              |
-| PATCH  | `/admin/schedule/templates/:id/slots/:slotId` | Обновить слот.                                                                                           |
-| DELETE | `/admin/schedule/templates/:id/slots/:slotId` | Удалить слот.                                                                                            |
-| GET    | `/admin/schedule/week-snapshots`              | `?group_id=&week_start_date_from=&week_start_date_to=`.                                                  |
-| POST   | `/admin/schedule/week-snapshots/copy`         | `{group_id, source_week_start_date}` — копия расписания на следующую неделю. Идемпотентно.               |
-| GET    | `/admin/schedule/activity-events`             | `?group_id=&date_from=&date_to=&status=`.                                                                |
-| POST   | `/admin/schedule/week-rollout/run`            | Ручной общий rollout (super_admin scope в реале; админ видит результат).                                 |
+**Casing:** **camelCase** для всех request/response DTO этого модуля (см. OPEN_QUESTIONS §A18, прецедент §A11). Не путать с `/admin/meal-plans/*` (§11) — там snake_case.
 
-Ошибки: `schedule_template_not_found`(404), `slot_not_found`(404), `slot_time_conflict`(409, дубль `(template,day,start_time)`), `source_week_snapshot_not_found`(404), `invalid_date_range`(400), `group_not_found`(404), `location_not_found`(404).
+| Метод  | Путь                                          | Назначение                                                                                                                                                                                                                                       |
+| ------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/admin/schedule/templates`                   | `?groupId=&isActive=`. `ScheduleTemplateResponseDto[]` = `{id, kindergartenId, groupId?, name, recurrence, isActive, validFrom, validUntil?, createdAt, slots: ScheduleTemplateSlotResponseDto[]}`.                                              |
+| POST   | `/admin/schedule/templates`                   | `CreateScheduleTemplateDto = {groupId?, name*, recurrence?='weekly', validFrom*, validUntil?, isActive?}`.                                                                                                                                       |
+| PATCH  | `/admin/schedule/templates/:id`               | `UpdateScheduleTemplateDto = {name?, isActive?, validUntil?}`.                                                                                                                                                                                   |
+| GET    | `/admin/schedule/templates/:id/slots`         | `ScheduleTemplateSlotResponseDto[]` = `{id, dayOfWeek, startTime, endTime, activityName, locationId?, description?}` (сорт. dayOfWeek, startTime).                                                                                               |
+| POST   | `/admin/schedule/templates/:id/slots`         | `CreateSlotDto = {dayOfWeek*(mon..sun), startTime*, endTime*, activityName*, locationId?, description?}`.                                                                                                                                        |
+| PATCH  | `/admin/schedule/templates/:id/slots/:slotId` | `UpdateSlotDto = {dayOfWeek?, startTime?, endTime?, activityName?, locationId?(nullable), description?(nullable)}`.                                                                                                                              |
+| DELETE | `/admin/schedule/templates/:id/slots/:slotId` | Удалить слот.                                                                                                                                                                                                                                    |
+| GET    | `/admin/schedule/week-snapshots`              | `?groupId=&weekStartDateFrom=&weekStartDateTo=`. `ScheduleWeekSnapshotResponseDto[]` = `{id, kindergartenId, groupId, weekStartDate, source('manual'\|'cron'), copiedFrom?, createdAt}`.                                                         |
+| POST   | `/admin/schedule/week-snapshots/copy`         | `CopyWeekDto = {fromMonday*}` — копия расписания **всех групп садика** с указанной недели на следующую (целевой Monday = `fromMonday + 7`). Идемпотентно. Response: `WeekCopySummaryDto = {copiedGroups, skippedGroups, totalEvents}`. См. §A18. |
+| GET    | `/admin/schedule/activity-events`             | `?groupId=&dateFrom=&dateTo=&status=`. `ActivityEventResponseDto[]`.                                                                                                                                                                             |
+| GET    | `/admin/schedule/activity-events/:id`         | Карточка события.                                                                                                                                                                                                                                |
+| POST   | `/admin/schedule/activity-events`             | `CreateActivityEventDto = {groupId*, activityName*, locationId?, startsAt*, endsAt?, notes?}` — ad-hoc событие. См. §B2.                                                                                                                         |
+| PATCH  | `/admin/schedule/activity-events/:id`         | `UpdateActivityEventDto = {activityName?, locationId?, startsAt?, endsAt?, notes?}`.                                                                                                                                                             |
+| DELETE | `/admin/schedule/activity-events/:id`         | Удалить событие.                                                                                                                                                                                                                                 |
+
+`ActivityEventResponseDto` = `{id, kindergartenId, groupId, templateSlotId?, activityName, locationId?, startsAt, endsAt?, status('scheduled'\|'in_progress'\|'completed'\|'cancelled'), createdBy?, notes?, createdAt, updatedAt}`.
+
+**НЕ в Admin UI:**
+
+- `POST /admin/schedule/week-rollout/run` — существует на backend, но scope SuperAdmin (автоматический cron). В Admin Web **не выставляется** (решение владельца, B11-prep). Если позже понадобится — будет видимая disabled-заглушка «Phase B» по паттерну Fiscal/Face.
+
+Ошибки: `schedule_template_not_found`(404), `slot_not_found`(404), `slot_time_conflict`(409, дубль `(template, dayOfWeek, startTime)`), `source_week_snapshot_not_found`(404), `invalid_date_range`(400), `group_not_found`(404), `location_not_found`(404). При live-расхождении 422-vs-400 — см. §2.3.
 
 **Страницы:**
 
 - **Шаблоны расписания** — список по группам, создание шаблона.
 - **Редактор шаблона** — недельная сетка (пн–вс × время), добавление/редактирование слотов (время начала/конца, активность, локация, описание). Конфликт времени → inline-ошибка.
-- **Недельный обзор** — какие недели имеют расписание (week-snapshots), кнопка «Скопировать на следующую неделю». Просмотр `activity_events` по диапазону дат (календарь/список, статусы scheduled/in_progress/completed/cancelled — read-only для админа; переключают статусы менторы в Staff App).
+- **Недельный обзор** — какие недели имеют расписание (week-snapshots), кнопка «Скопировать неделю **садика** на следующую» (глобально, не per-group; per-group copy — backend-ask §B1 / BACKEND_NEEDINGS N9). Просмотр `activity_events` по диапазону дат (календарь/список, статусы scheduled/in_progress/completed/cancelled). **Admin может создавать/редактировать/удалять ad-hoc события** (мини-CRUD поверх primitives — статусы переключают менторы в Staff App; дизайн-спека UI — пост-MVP, см. §B2).
 
 ---
 
@@ -399,22 +410,30 @@
 
 **Назначение:** структурированное меню по дням. BP §9.2.
 
-**Модель:** `meal_plans` (один день, опц. группа; уникальность `(kg,date,group_id)`, `group_id=NULL` = общесадиковое) → `meal_items` (`meal_type`: breakfast/snack_am/lunch/snack_pm/dinner; `dish_name {ru,kz}`, `description`, `allergens[]`, `calories`, `photo_url`).
+**Модель:** `meal_plans` (один день, опц. группа; уникальность `(kg, date, group_id)`, `group_id=NULL` = общесадиковое) → `meal_items` (`meal_type`: breakfast/snack_am/lunch/snack_pm/dinner; `dish_name {ru, kk, en?}`, `description`, `allergens[]`, `calories`, `photo_url`).
 
-| Метод  | Путь                                  | Назначение                                                                                    |
-| ------ | ------------------------------------- | --------------------------------------------------------------------------------------------- |
-| GET    | `/admin/meal-plans`                   | `?date_from=&date_to=&group_id=`. С `items[]` вложенно.                                       |
-| POST   | `/admin/meal-plans`                   | `{date, group_id?}`. 409 `meal_plan_already_exists`.                                          |
-| PATCH  | `/admin/meal-plans/:id`               | `is_published?, notes?`.                                                                      |
-| DELETE | `/admin/meal-plans/:id`               | Каскадно удаляет items.                                                                       |
-| POST   | `/admin/meal-plans/:id/items`         | `{meal_type, dish_name:{ru,kz}, description?, allergens?, calories?, photo_url?, position?}`. |
-| PATCH  | `/admin/meal-plans/:id/items/:itemId` | Обновить блюдо.                                                                               |
-| DELETE | `/admin/meal-plans/:id/items/:itemId` | Удалить блюдо.                                                                                |
-| POST   | `/admin/meal-plans/copy-week`         | `{source_week_start_date}` — копия ПН–ПТ на следующую неделю. Идемпотентно.                   |
+**Casing:** **snake_case** для всех request/response DTO этого модуля (см. OPEN_QUESTIONS §A18). Не путать с `/admin/schedule/*` (§10) — там camelCase.
+
+**i18n ключ:** для `dish_name`, `description`, `notes` используется `MultiLangTextDto = {ru*, kk?, en?}` — ключ **`kk`** (BCP 47), НЕ `kz` (см. §A19, §A17.5; прецедент: `kz` остаётся только в legacy JSONB children/content).
+
+| Метод  | Путь                                  | Назначение                                                                                                                                                                            |
+| ------ | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/admin/meal-plans`                   | `?date_from=&date_to=&group_id=`. `MealPlanResponseDto[]` с `items[]` вложенно.                                                                                                       |
+| POST   | `/admin/meal-plans`                   | `CreateMealPlanDto = {date*, group_id?, is_published?, notes?(MultiLangTextDto), items?[]}`. 409 `meal_plan_already_exists`.                                                          |
+| PATCH  | `/admin/meal-plans/:id`               | `UpdateMealPlanDto = {is_published?, notes?(MultiLangTextDto)}` — **notes локализованы** (PairedI18nField в UI).                                                                      |
+| DELETE | `/admin/meal-plans/:id`               | Каскадно удаляет items.                                                                                                                                                               |
+| POST   | `/admin/meal-plans/:id/items`         | `CreateMealItemDto = {meal_type*, dish_name*(MultiLangTextDto), description?(MultiLangTextDto), allergens?[], photo_url?, calories?, position?}`.                                     |
+| PATCH  | `/admin/meal-plans/:id/items/:itemId` | `UpdateMealItemDto` — те же поля опц.                                                                                                                                                 |
+| DELETE | `/admin/meal-plans/:id/items/:itemId` | Удалить блюдо.                                                                                                                                                                        |
+| POST   | `/admin/meal-plans/copy-week`         | `CopyWeekDto = {fromMonday*}` (camelCase, общий с §10!) — копия ПН–ПТ с указанной недели на следующую. Идемпотентно. Response: `CopyWeekSummaryDto = {plans_created, plans_skipped}`. |
+
+`MealPlanResponseDto` = `{id, date, group_id?, is_published, notes?(MultiLangTextDto), source('manual'\|'cron'\|'copied'), copied_from?, items: MealItemResponseDto[], created_at, updated_at}`.
+
+`MealItemResponseDto` = `{id, meal_type, dish_name(MultiLangTextDto), description?(MultiLangTextDto), allergens?[], photo_url?, calories?, position}`.
 
 Ошибки: `meal_plan_not_found`(404), `meal_plan_already_exists`(409), `meal_item_not_found`(404), `invalid_meal_type`(400), `group_not_found`(404).
 
-**Страницы:** недельный/месячный вид меню (выбор группы или «весь садик»), редактор дня (5 приёмов пищи, для каждого — список блюд с ru/kz названиями, аллергенами, калориями, фото), кнопка «Скопировать неделю», флаг публикации. Авто-копирование на след. неделю делает cron — UI показывает источник `manual`/`auto_copied_from_previous_week`.
+**Страницы:** недельный/месячный вид меню (выбор группы или «весь садик»), редактор дня (5 приёмов пищи, для каждого — список блюд с ru/kk названиями, аллергенами, калориями, фото), кнопка «Скопировать неделю», флаг публикации. Авто-копирование на след. неделю делает cron — UI показывает источник через `source` enum (`manual` / `cron` / `copied`).
 
 ---
 

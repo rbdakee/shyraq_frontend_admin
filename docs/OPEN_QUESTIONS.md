@@ -161,6 +161,36 @@ HANDOFF §13+§14 обновлены под факт в wave-коммите B9. 
 
 HANDOFF §16+§18 обновлены под факт в wave-коммите B10. Код B10 conform к live с defensive Zod.
 
+### A18 — Schedule & Meal-Plans: mixed casing per-module (schedule camelCase, meal-plans snake_case), global copy-week DTO · resolved (2026-05-26)
+
+Контекст: при подготовке к B11 (Schedule + Meal Plans) сверка live `/docs-json` выявила расхождения HANDOFF §10/§11 ↔ факт. Решение: прецедент §A7/§A8/§A11/§A14/§A16/§A17 — live = факт. Зафиксированные расхождения (HANDOFF §10+§11 правлены под факт в pre-B11 docs-fixup — first-document):
+
+1. **Casing mixed per-module:**
+   - `/admin/schedule/*` — **camelCase** (request + response): `groupId, validFrom, validUntil, isActive, dayOfWeek, startTime, endTime, activityName, locationId, weekStartDate, createdAt, copiedFrom, kindergartenId, startsAt, endsAt, templateSlotId, createdBy`. Совпадает с паттерном §A11 (enrollments).
+   - `/admin/meal-plans/*` — **snake_case** (request + response): `meal_type, dish_name, group_id, is_published, copied_from, items, created_at, photo_url, plans_created, plans_skipped`. Совпадает с паттерном §A14/§A16 (invoices/payments/tariffs).
+   - НЕ экстраполировать на соседние модули. В одной фиче (B11) два API-клиента с разным стилем — это норма для этого backend.
+2. **Copy-week DTO общий между §10 и §11:** `CopyWeekDto = {fromMonday*}` (camelCase, единый schema!), хотя соседние DTO модулей разные. ISO date YYYY-MM-DD, обязан быть понедельником. Target Monday = `fromMonday + 7`.
+3. **Copy-week scope глобальный:** `POST /admin/schedule/week-snapshots/copy` принимает только `fromMonday` — копирует **все группы садика**, нет фильтра `groupId`. HANDOFF §10 ранее обещал per-group `{group_id, source_week_start_date}` — переписан под факт. Per-group вариант — backend-ask §B1 / BACKEND_NEEDINGS N9. Response: `WeekCopySummaryDto = {copiedGroups, skippedGroups, totalEvents}`.
+4. **Meal-plans copy-week response asymmetric:** `CopyWeekSummaryDto = {plans_created, plans_skipped}` (snake_case, без `totalItems`-аналога). Не путать с `WeekCopySummaryDto` (schedule).
+5. **`MealPlanResponseDto.source` enum live:** `manual | cron | copied`. HANDOFF §11 ранее писал `manual | auto_copied_from_previous_week` — переписан под факт.
+6. **`UpdateMealPlanDto.notes` — i18n (MultiLangTextDto), не plain string.** HANDOFF §11 переписан → в UI используется PairedI18nField.
+7. **Activity events admin-CRUD доступен на backend:** `POST/PATCH/DELETE /admin/schedule/activity-events[/:id]` + `CreateActivityEventDto/UpdateActivityEventDto` существуют. HANDOFF §10 ранее обещал read-only → переписан. UI-дизайн VIS этого CRUD не описывает → §B2 (design ask). На B11 строим минимальный CRUD на существующих primitives (см. §B2).
+8. **`week-rollout/run` не выставляется в Admin UI:** существует на backend, scope SuperAdmin / cron. HANDOFF §10 переписан с явной пометкой. UI кнопки нет — решение владельца B11-prep.
+
+HANDOFF §10+§11 обновлены под факт в pre-B11 docs-fixup. Код B11 пишется conform к live с defensive Zod (`z.array(Schema)` для list-эндпоинтов на случай bare-array).
+
+### A19 — `MultiLangTextDto` ключ `kk` vs JSONB ключ `kz` (закрепление per-module) · resolved (2026-05-26)
+
+Контекст: при подготовке к B11 (meal-plans) обнаружено, что `dish_name` / `notes` используют `MultiLangTextDto = {ru*, kk?, en?}` — ключ **`kk`**. Это **противоречит CLAUDE.md §3** «JSONB ключ `kz`!». Сверка показала, что `kz` — legacy-формат JSONB старых модулей (children, content), а `kk` (BCP 47) — новый формат DTO для свежих эндпоинтов (discounts §A17.5, meal-plans).
+
+Решение: оба формата сосуществуют **per-module**. Не «фикситъ» на одну сторону — обновлять CLAUDE.md/HANDOFF чтобы фронт корректно резолвил оба.
+
+1. **`kk` (BCP 47, новые DTO):** custom-discounts (`I18nFieldDto`, §A17.5), meal-plans (`MultiLangTextDto` для `dish_name`/`description`/`notes`). Используется и в **request**, и в **response**.
+2. **`kz` (legacy JSONB):** children (`first_name_i18n`, `last_name_i18n`), content (`title`/`body` JSONB), tariff-plans `description` (§A16.3). Только **response** (хранение в БД).
+3. **`lib/jsonb-i18n.ts`:** должен резолвить обе формы — приоритет ключа по текущей локали (`kk` или `kz`, оба значат «казахский»), fallback `ru`. Уже работает по факту (B10 discounts проходит) — проверяем unit-тестами при B11.
+4. **`PairedI18nField`:** при отправке формы под meal-plans/discounts шлёт `{ru, kk}`; для children/content (если будут редактироваться позже) — формат определяется backend-контрактом этого модуля. Per-module map в коде, не глобальный enum.
+5. **CLAUDE.md §3 не противоречит факту:** утверждение «JSONB ключ `kz`» относится к старым JSONB-полям; новые `MultiLangTextDto`/`I18nFieldDto` — отдельный класс контрактов. Возможно стоит уточнить формулировку при следующем CLAUDE.md sweep (не блокер).
+
 ### A15 — Parent-requests: list `/admin/*` vs detail/actions `/staff/*`, `type` filter, snake_case, cursor · resolved (2026-05-19)
 
 Контекст: при B8 (parent-requests data+UI) сверка live `/docs-json` выявила существенное расхождение HANDOFF §19 ↔ факт. Решение: прецедент §A7/§A8 — live = факт. Зафиксировано (HANDOFF §19 правлен под факт в wave-коммите B7+B8 — first-document):
@@ -183,6 +213,36 @@ HANDOFF §16+§18 обновлены под факт в wave-коммите B10.
 Контекст: <что обнаружено, где>. Блокирует: <батч/слайс>.
 Нужно решение: <вопрос владельцу/backend>. Гипотеза: <если есть>.
 ```
+
+### B1 — Per-group week-snapshots copy · open (2026-05-26, backend-ask)
+
+**Контекст:** при подготовке B11 (Schedule) обнаружено: `POST /admin/schedule/week-snapshots/copy` принимает только `{fromMonday}` и копирует **все группы садика** на следующую неделю — нет фильтра по `groupId`. UX-следствие: на странице «Недельный обзор» нельзя сделать «Скопировать неделю этой группы» — только глобально на весь садик. **НЕ блокирует** B11 (фронт делает глобальный CTA), но снижает гранулярность операции.
+
+**Блокирует:** ничего (degraded UX). Влияет: `/schedule/weeks` (B11).
+
+**Нужно решение от backend:** добавить опц. `groupId` в `CopyWeekDto` → при наличии копировать только указанную группу. Симметрично `CopyWeekSummaryDto` останется как есть (просто `copiedGroups ∈ {0, 1}`). Альтернатива: новый отдельный endpoint `POST /admin/schedule/week-snapshots/copy-group {groupId, fromMonday}`.
+
+**Гипотеза:** до резолва — глобальный CTA «Скопировать неделю садика» (B11). После резолва — добавить per-group action в строке группы на странице weeks.
+
+**Связано с:** BACKEND_NEEDINGS N9.
+
+### B2 — Activity events admin CRUD UI spec · open (2026-05-26, design-ask)
+
+**Контекст:** backend `/admin/schedule/activity-events` имеет полный CRUD (`POST/PATCH/DELETE`), HANDOFF §10 переписан под факт (§A18.7). Владелец (2026-05-26) принял решение «Admin может править/добавлять разовые события». Но **дизайн VIS `screens-ops.jsx` Schedule этого не описывает** — там только календарь/список read-only. CLAUDE §6 запрещает молчаливое отклонение от готового дизайна.
+
+**Блокирует:** ничего (на B11 строим минимальный CRUD на существующих primitives). Влияет: `/schedule/weeks` UI слой (часть activity-events).
+
+**Принятое compromise-решение (2026-05-26):**
+
+- B11 строит **минимальный CRUD** на токенах + существующих primitives:
+  - Кнопка «Добавить событие» рядом с переключателем дат → модал на `<Dialog>` (`forms/full-screen-sheet.tsx` на mobile).
+  - Форма RHF (`groupId`, `activityName`, `startsAt`, `endsAt`, `locationId`, `notes`).
+  - Row-actions «Редактировать» / «Удалить» (через `DestructiveConfirm`) на каждом событии в календаре/списке.
+- Без новых визуальных лекал — только токены, иконки, paddings из дизайн-системы.
+
+**Нужно решение (post-MVP):** дизайн-апдейт VIS для activity-events admin CRUD (модал, форма, row-actions, мобильная вёрстка). После апдейта — пересмотреть слой и привести 1:1 к новому дизайну.
+
+**Связано с:** §A18.7.
 
 ---
 
