@@ -5,7 +5,7 @@ import { ChevronLeftIcon } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
 interface MobileTopBarProps {
-  title: string;
+  title?: string;
   sub?: string;
   back?: boolean;
   onBack?: () => void;
@@ -38,7 +38,9 @@ export default function MobileTopBar({
         </button>
       )}
       <div className="min-w-0 flex-1">
-        <div className="m-bar-title overflow-hidden text-ellipsis whitespace-nowrap">{title}</div>
+        {title && (
+          <div className="m-bar-title overflow-hidden text-ellipsis whitespace-nowrap">{title}</div>
+        )}
         {sub && <div className="m-bar-sub">{sub}</div>}
       </div>
       {action}

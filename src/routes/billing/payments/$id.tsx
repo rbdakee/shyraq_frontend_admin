@@ -88,7 +88,7 @@ export default function PaymentDetailPage() {
 
   if (isMobile) {
     return (
-      <div className="m-shell">
+      <>
         <MobileTopBar
           title={payment.id.slice(0, 8)}
           sub={`${t('payments.detail.breadcrumb')} · ${t(PROVIDER_I18N_KEYS[payment.provider])}`}
@@ -99,7 +99,7 @@ export default function PaymentDetailPage() {
             </button>
           }
         />
-        <div className="m-scroll">
+        <>
           <div className="m-card" style={{ padding: 20, marginBottom: 14, textAlign: 'center' }}>
             <div
               style={{
@@ -190,8 +190,8 @@ export default function PaymentDetailPage() {
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      </>
     );
   }
 

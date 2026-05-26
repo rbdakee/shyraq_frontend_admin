@@ -311,7 +311,7 @@ export default function RefundsListPage() {
     });
 
     return (
-      <div className="m-shell">
+      <>
         <MobileTopBar
           title={t('refunds.title')}
           sub={t('mobile.refunds_sub', { count: pendingCount })}
@@ -321,7 +321,7 @@ export default function RefundsListPage() {
             </button>
           }
         />
-        <div className="m-scroll">
+        <>
           <div
             style={{
               padding: 14,
@@ -437,8 +437,8 @@ export default function RefundsListPage() {
               );
             })}
           </div>
-        </div>
-      </div>
+        </>
+      </>
     );
   }
 

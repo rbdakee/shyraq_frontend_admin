@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/data-table/data-table';
 import type { OffsetPagination } from '@/components/data-table/types';
+import MobileTopBar from '@/components/layout/mobile-top-bar';
 import { useChildrenList } from '@/hooks/use-children';
 import { useGroups } from '@/hooks/use-groups';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
@@ -320,80 +321,77 @@ export default function ChildrenListPage() {
     ];
 
     return (
-      <div className="flex flex-col gap-3">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h1 className="text-[22px] font-bold leading-tight text-[color:var(--text-1)]">
-              {t('title')}
-            </h1>
-            <div className="mt-0.5 truncate text-[13px] text-[color:var(--text-3)]">
-              {t('subtitle', {
-                active: String(activeCount),
-                archived: String(archivedCount),
-              })}
-            </div>
+      <>
+        <MobileTopBar
+          title={t('title')}
+          sub={t('subtitle', {
+            active: String(activeCount),
+            archived: String(archivedCount),
+          })}
+          action={
+            <button
+              type="button"
+              className="m-iconbtn primary"
+              onClick={() => navigate('/children/new')}
+              aria-label={t('create_button')}
+            >
+              <PlusIcon />
+            </button>
+          }
+        />
+        <div className="flex flex-col gap-3">
+          <div className="m-search">
+            <SearchIcon />
+            <input
+              value={searchInput}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder={t('search_placeholder')}
+            />
           </div>
-          <button
-            type="button"
-            className="m-iconbtn primary"
-            onClick={() => navigate('/children/new')}
-            aria-label={t('create_button')}
-          >
-            <PlusIcon />
-          </button>
-        </div>
 
-        <div className="m-search">
-          <SearchIcon />
-          <input
-            value={searchInput}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder={t('search_placeholder')}
+          <div className="m-chips">
+            {statusChips.map((chip) => (
+              <button
+                key={chip.value}
+                type="button"
+                className={cn('m-chip', statusFilter === chip.value && 'active')}
+                onClick={() => {
+                  setStatusFilter(chip.value);
+                  setPage(1);
+                }}
+              >
+                {chip.label}
+                {chip.count !== undefined && <span className="m-chip-count">{chip.count}</span>}
+              </button>
+            ))}
+          </div>
+
+          <DataTable<Child>
+            columns={columns}
+            data={data}
+            pagination={pagination}
+            isLoading={childrenQuery.isPending}
+            isError={childrenQuery.isError}
+            onRetry={() => void childrenQuery.refetch()}
+            isFiltered={isFiltered}
+            onResetFilters={resetFilters}
+            emptyTitle={t('empty_title')}
+            emptyDescription={t('empty_description')}
+            emptyAction={
+              <Button size="sm" onClick={() => navigate('/children/new')}>
+                <PlusIcon className="size-4" />
+                {t('create_button')}
+              </Button>
+            }
+            filteredEmptyTitle={t('filtered_empty_title')}
+            filteredEmptyDescription={t('filtered_empty_description')}
+            onRowClick={(row) => navigate(`/children/${row.id}`)}
+            rowClassName={(row) => (row.status === 'archived' ? 'opacity-60' : undefined)}
+            renderMobileRow={renderMobileRow}
+            mobileListAriaLabel={t('title')}
           />
         </div>
-
-        <div className="m-chips">
-          {statusChips.map((chip) => (
-            <button
-              key={chip.value}
-              type="button"
-              className={cn('m-chip', statusFilter === chip.value && 'active')}
-              onClick={() => {
-                setStatusFilter(chip.value);
-                setPage(1);
-              }}
-            >
-              {chip.label}
-              {chip.count !== undefined && <span className="m-chip-count">{chip.count}</span>}
-            </button>
-          ))}
-        </div>
-
-        <DataTable<Child>
-          columns={columns}
-          data={data}
-          pagination={pagination}
-          isLoading={childrenQuery.isPending}
-          isError={childrenQuery.isError}
-          onRetry={() => void childrenQuery.refetch()}
-          isFiltered={isFiltered}
-          onResetFilters={resetFilters}
-          emptyTitle={t('empty_title')}
-          emptyDescription={t('empty_description')}
-          emptyAction={
-            <Button size="sm" onClick={() => navigate('/children/new')}>
-              <PlusIcon className="size-4" />
-              {t('create_button')}
-            </Button>
-          }
-          filteredEmptyTitle={t('filtered_empty_title')}
-          filteredEmptyDescription={t('filtered_empty_description')}
-          onRowClick={(row) => navigate(`/children/${row.id}`)}
-          rowClassName={(row) => (row.status === 'archived' ? 'opacity-60' : undefined)}
-          renderMobileRow={renderMobileRow}
-          mobileListAriaLabel={t('title')}
-        />
-      </div>
+      </>
     );
   }
 

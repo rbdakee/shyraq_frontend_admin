@@ -166,7 +166,7 @@ export default function InvoiceDetailPage() {
 
   if (isMobile) {
     return (
-      <div className="m-shell">
+      <>
         <MobileTopBar
           title={invoice.id.slice(0, 8)}
           sub={t(`invoices.type.${invoice.invoice_type}`)}
@@ -177,7 +177,7 @@ export default function InvoiceDetailPage() {
             </button>
           }
         />
-        <div className="m-scroll" style={{ paddingBottom: 170 }}>
+        <div style={{ paddingBottom: 60 }}>
           <div
             className="m-card"
             style={{
@@ -304,7 +304,7 @@ export default function InvoiceDetailPage() {
             {t('mobile.invoice_detail_send')}
           </button>
         </StickyBottomBar>
-      </div>
+      </>
     );
   }
 

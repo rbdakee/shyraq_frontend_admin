@@ -66,7 +66,7 @@ export default function HolidaysPage() {
   }
 
   return (
-    <div className="m-shell">
+    <>
       <MobileTopBar
         title={t('mobile.holidays_title')}
         sub={t('mobile.holidays_sub', { year })}
@@ -76,7 +76,7 @@ export default function HolidaysPage() {
           </button>
         }
       />
-      <div className="m-scroll">
+      <>
         {/* Month nav */}
         <div
           className="m-card"
@@ -200,7 +200,7 @@ export default function HolidaysPage() {
             </div>
           ))}
         </div>
-      </div>
-    </div>
+      </>
+    </>
   );
 }

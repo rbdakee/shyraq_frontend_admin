@@ -232,101 +232,97 @@ export default function ChildDetailPage() {
 
     return (
       <TransferModalContext.Provider value={transferModalCtx}>
-        <div className="flex flex-col">
-          <MobileTopBar
-            back
-            flat
-            title=""
-            action={
-              <button type="button" className="m-iconbtn ghost">
-                <EllipsisIcon />
-              </button>
-            }
-          />
+        <MobileTopBar
+          back
+          flat
+          action={
+            <button type="button" className="m-iconbtn ghost">
+              <EllipsisIcon />
+            </button>
+          }
+        />
+        <>
+          {/* Profile head */}
+          <div className="m-profile-head">
+            <div className="m-avatar child lg" style={{ width: 80, height: 80, fontSize: 28 }}>
+              {initials(child.full_name)}
+            </div>
+            <div className="name">{child.full_name}</div>
+            <div className="meta">
+              {ageYears} {t('age_years')} ·{' '}
+              {groupName ? `${t('columns.group')} «${groupName}»` : ''}
+            </div>
+            <Badge variant={childStatusVariant(child.status)} dot style={{ marginTop: 6 }}>
+              {t(`status.${child.status}`)}
+            </Badge>
+          </div>
 
-          <div className="m-scroll no-bar" style={{ paddingTop: 0 }}>
-            {/* Profile head */}
-            <div className="m-profile-head">
-              <div className="m-avatar child lg" style={{ width: 80, height: 80, fontSize: 28 }}>
-                {initials(child.full_name)}
-              </div>
-              <div className="name">{child.full_name}</div>
-              <div className="meta">
-                {ageYears} {t('age_years')} ·{' '}
-                {groupName ? `${t('columns.group')} «${groupName}»` : ''}
-              </div>
-              <Badge variant={childStatusVariant(child.status)} dot style={{ marginTop: 6 }}>
-                {t(`status.${child.status}`)}
-              </Badge>
+          {/* Quick actions row */}
+          <div className="m-qa-row" style={{ margin: '18px 0 0' }}>
+            <div className="m-qa">
+              <PhoneIcon />
+              <span>{t('mobile_call', { defaultValue: 'Позвонить' })}</span>
             </div>
-
-            {/* Quick actions row */}
-            <div className="m-qa-row" style={{ margin: '18px 0 0' }}>
-              <div className="m-qa">
-                <PhoneIcon />
-                <span>{t('mobile_call', { defaultValue: 'Позвонить' })}</span>
-              </div>
-              <div className="m-qa">
-                <MailIcon />
-                <span>{t('mobile_message', { defaultValue: 'Написать' })}</span>
-              </div>
-              <div className="m-qa">
-                <QrCodeIcon />
-                <span>{t('mobile_qr', { defaultValue: 'QR-код' })}</span>
-              </div>
-              <div className="m-qa">
-                <ReceiptIcon />
-                <span>{t('mobile_invoice', { defaultValue: 'Счёт' })}</span>
-              </div>
+            <div className="m-qa">
+              <MailIcon />
+              <span>{t('mobile_message', { defaultValue: 'Написать' })}</span>
             </div>
-
-            {/* Guardians section */}
-            <div className="m-section-h">
-              <div className="m-section-title">{t('detail.tabs.guardians')}</div>
+            <div className="m-qa">
+              <QrCodeIcon />
+              <span>{t('mobile_qr', { defaultValue: 'QR-код' })}</span>
             </div>
-            <div className="m-card flush">
-              {guardians.length === 0 ? (
-                <div className="p-4 text-center text-[13px] text-text-3">
-                  {t('no_data', { defaultValue: '—' })}
-                </div>
-              ) : (
-                guardians.map((g) => (
-                  <div key={g.id} className="m-list-row">
-                    <div className="m-avatar guardian">
-                      {g.role === 'primary' ? 'P' : g.role === 'secondary' ? 'S' : 'N'}
-                    </div>
-                    <div>
-                      <div className="m-row-title">
-                        {t(`detail.guardian_role.${g.role}`, { defaultValue: g.role })}
-                      </div>
-                      <div className="m-row-sub">
-                        {t(`detail.guardian_status.${g.status}`, { defaultValue: g.status })}
-                      </div>
-                    </div>
-                    <ChevronRightIcon className="m-row-chev size-4" />
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Billing section */}
-            <div className="m-section-h">
-              <div className="m-section-title">{t('detail.tabs.payments')}</div>
-            </div>
-            <div className="m-card flush">
-              <div className="m-kv">
-                <span className="k">{t('mobile_group', { defaultValue: 'Группа' })}</span>
-                <span className="v">{groupName ?? '—'}</span>
-              </div>
-              <div className="m-kv">
-                <span className="k">{t('detail.profile.enrollment_date')}</span>
-                <span className="v">
-                  {child.enrollment_date ? formatDate(child.enrollment_date, tz) : '—'}
-                </span>
-              </div>
+            <div className="m-qa">
+              <ReceiptIcon />
+              <span>{t('mobile_invoice', { defaultValue: 'Счёт' })}</span>
             </div>
           </div>
-        </div>
+
+          {/* Guardians section */}
+          <div className="m-section-h">
+            <div className="m-section-title">{t('detail.tabs.guardians')}</div>
+          </div>
+          <div className="m-card flush">
+            {guardians.length === 0 ? (
+              <div className="p-4 text-center text-[13px] text-text-3">
+                {t('no_data', { defaultValue: '—' })}
+              </div>
+            ) : (
+              guardians.map((g) => (
+                <div key={g.id} className="m-list-row">
+                  <div className="m-avatar guardian">
+                    {g.role === 'primary' ? 'P' : g.role === 'secondary' ? 'S' : 'N'}
+                  </div>
+                  <div>
+                    <div className="m-row-title">
+                      {t(`detail.guardian_role.${g.role}`, { defaultValue: g.role })}
+                    </div>
+                    <div className="m-row-sub">
+                      {t(`detail.guardian_status.${g.status}`, { defaultValue: g.status })}
+                    </div>
+                  </div>
+                  <ChevronRightIcon className="m-row-chev size-4" />
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Billing section */}
+          <div className="m-section-h">
+            <div className="m-section-title">{t('detail.tabs.payments')}</div>
+          </div>
+          <div className="m-card flush">
+            <div className="m-kv">
+              <span className="k">{t('mobile_group', { defaultValue: 'Группа' })}</span>
+              <span className="v">{groupName ?? '—'}</span>
+            </div>
+            <div className="m-kv">
+              <span className="k">{t('detail.profile.enrollment_date')}</span>
+              <span className="v">
+                {child.enrollment_date ? formatDate(child.enrollment_date, tz) : '—'}
+              </span>
+            </div>
+          </div>
+        </>
 
         {/* Modals (shared with desktop) */}
         <DestructiveConfirm

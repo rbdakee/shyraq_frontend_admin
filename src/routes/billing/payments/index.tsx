@@ -181,7 +181,7 @@ export default function PaymentsListPage() {
     const successRate = data.length > 0 ? Math.round((completedCount / data.length) * 100) : 0;
 
     return (
-      <div className="m-shell">
+      <>
         <MobileTopBar
           title={t('payments.title')}
           sub={t('payments.subtitle', { count: data.length })}
@@ -191,7 +191,7 @@ export default function PaymentsListPage() {
             </button>
           }
         />
-        <div className="m-scroll">
+        <>
           <div
             className="m-kpi-row"
             style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 12 }}
@@ -305,8 +305,8 @@ export default function PaymentsListPage() {
               );
             })}
           </div>
-        </div>
-      </div>
+        </>
+      </>
     );
   }
 

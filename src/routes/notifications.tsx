@@ -75,84 +75,80 @@ export default function NotificationsRoute() {
           </button>
         }
       />
-      <div className="m-scroll">
-        <div className="m-segmented" style={{ marginBottom: 14 }}>
-          <button
-            type="button"
-            className={cn(filter === 'all' && 'on')}
-            onClick={() => setFilter('all')}
-          >
-            {t('mobile_notif_all', { defaultValue: 'Все' })}
-          </button>
-          <button
-            type="button"
-            className={cn(filter === 'unread' && 'on')}
-            onClick={() => setFilter('unread')}
-          >
-            {t('mobile_notif_unread', { defaultValue: 'Непрочитанные' })}
-            {totalUnread > 0 && (
-              <span className="ml-1.5 rounded-full bg-primary px-1.5 py-px text-[10px] font-bold text-white">
-                {totalUnread}
-              </span>
-            )}
-          </button>
-        </div>
+      <div className="m-segmented" style={{ marginBottom: 14 }}>
+        <button
+          type="button"
+          className={cn(filter === 'all' && 'on')}
+          onClick={() => setFilter('all')}
+        >
+          {t('mobile_notif_all', { defaultValue: 'Все' })}
+        </button>
+        <button
+          type="button"
+          className={cn(filter === 'unread' && 'on')}
+          onClick={() => setFilter('unread')}
+        >
+          {t('mobile_notif_unread', { defaultValue: 'Непрочитанные' })}
+          {totalUnread > 0 && (
+            <span className="ml-1.5 rounded-full bg-primary px-1.5 py-px text-[10px] font-bold text-white">
+              {totalUnread}
+            </span>
+          )}
+        </button>
+      </div>
 
-        {groups.length === 0 && (
-          <div className="flex flex-col items-center py-12 text-center text-text-3">
-            <InboxIcon className="mb-3 size-10 opacity-40" />
-            <div className="text-[14px] font-medium">
-              {t('mobile_notif_empty', { defaultValue: 'Нет уведомлений' })}
+      {groups.length === 0 && (
+        <div className="flex flex-col items-center py-12 text-center text-text-3">
+          <InboxIcon className="mb-3 size-10 opacity-40" />
+          <div className="text-[14px] font-medium">
+            {t('mobile_notif_empty', { defaultValue: 'Нет уведомлений' })}
+          </div>
+        </div>
+      )}
+
+      {groups.map((g) => {
+        const items = filter === 'unread' ? g.items.filter((n) => n.unread) : g.items;
+        if (items.length === 0) return null;
+        return (
+          <div key={g.label}>
+            <div className="m-section-h">
+              <div className="m-section-title">{g.label}</div>
+            </div>
+            <div className="flex flex-col gap-2">
+              {items.map((n) => {
+                const Icon = n.icon;
+                return (
+                  <div
+                    key={n.id}
+                    className="flex gap-3 rounded-[14px] border p-3.5"
+                    style={{
+                      background: n.unread ? 'var(--primary-soft)' : 'var(--bg-elev)',
+                      borderColor: n.unread
+                        ? 'color-mix(in oklab, var(--primary) 22%, transparent)'
+                        : 'var(--line)',
+                    }}
+                  >
+                    <div
+                      className="flex size-9 shrink-0 items-center justify-center rounded-[10px]"
+                      style={{ background: TONE_BG[n.tone], color: TONE_FG[n.tone] }}
+                    >
+                      <Icon className="size-[18px]" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-[13.5px] font-semibold leading-tight">{n.title}</div>
+                      <div className="mt-0.5 text-[12.5px] leading-snug text-text-2">{n.body}</div>
+                      <div className="mt-1 text-[11px] text-text-4">{n.ts}</div>
+                    </div>
+                    {n.unread && (
+                      <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
-        )}
-
-        {groups.map((g) => {
-          const items = filter === 'unread' ? g.items.filter((n) => n.unread) : g.items;
-          if (items.length === 0) return null;
-          return (
-            <div key={g.label}>
-              <div className="m-section-h">
-                <div className="m-section-title">{g.label}</div>
-              </div>
-              <div className="flex flex-col gap-2">
-                {items.map((n) => {
-                  const Icon = n.icon;
-                  return (
-                    <div
-                      key={n.id}
-                      className="flex gap-3 rounded-[14px] border p-3.5"
-                      style={{
-                        background: n.unread ? 'var(--primary-soft)' : 'var(--bg-elev)',
-                        borderColor: n.unread
-                          ? 'color-mix(in oklab, var(--primary) 22%, transparent)'
-                          : 'var(--line)',
-                      }}
-                    >
-                      <div
-                        className="flex size-9 shrink-0 items-center justify-center rounded-[10px]"
-                        style={{ background: TONE_BG[n.tone], color: TONE_FG[n.tone] }}
-                      >
-                        <Icon className="size-[18px]" />
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-[13.5px] font-semibold leading-tight">{n.title}</div>
-                        <div className="mt-0.5 text-[12.5px] leading-snug text-text-2">
-                          {n.body}
-                        </div>
-                        <div className="mt-1 text-[11px] text-text-4">{n.ts}</div>
-                      </div>
-                      {n.unread && (
-                        <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary" />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+        );
+      })}
     </>
   );
 }

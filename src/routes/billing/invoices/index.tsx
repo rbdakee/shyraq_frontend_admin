@@ -280,7 +280,7 @@ export default function InvoicesListPage() {
       statusFilter === 'all' ? data : data.filter((inv) => inv.status === statusFilter);
 
     return (
-      <div className="m-shell">
+      <>
         <MobileTopBar
           title={t('invoices.title')}
           sub={t('invoices.subtitle')}
@@ -290,7 +290,7 @@ export default function InvoicesListPage() {
             </button>
           }
         />
-        <div className="m-scroll">
+        <>
           <div className="m-kpi-row" style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
             <div className="m-kpi" style={{ padding: '10px 12px' }}>
               <div className="m-kpi-label" style={{ fontSize: '9.5px' }}>
@@ -392,11 +392,11 @@ export default function InvoicesListPage() {
               );
             })}
           </div>
-        </div>
+        </>
         <Fab onClick={() => setCreateOpen(true)}>
           <PlusIcon className="size-6" />
         </Fab>
-      </div>
+      </>
     );
   }
 

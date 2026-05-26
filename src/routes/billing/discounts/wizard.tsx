@@ -525,7 +525,7 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
     }
 
     return (
-      <div className="m-shell">
+      <>
         <MobileTopBar
           title={t('discounts.wizard.title_new')}
           sub={t('mobile.discount_wizard_step_of', { step, total: MOBILE_TOTAL_STEPS })}
@@ -541,7 +541,7 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
             </button>
           }
         />
-        <div className="m-scroll" style={{ paddingBottom: 170 }}>
+        <div style={{ paddingBottom: 60 }}>
           {/* Stepper progress bar */}
           <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
             {Array.from({ length: MOBILE_TOTAL_STEPS }, (_, i) => (
@@ -722,7 +722,7 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
               : t('discounts.wizard.save_draft')}
           </button>
         </StickyBottomBar>
-      </div>
+      </>
     );
   }
 

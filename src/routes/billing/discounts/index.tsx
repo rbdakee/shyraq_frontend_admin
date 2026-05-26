@@ -198,7 +198,7 @@ export default function DiscountsListPage() {
     const totalUsed = allRows.reduce((s, d) => s + d.used_count, 0);
 
     return (
-      <div className="m-shell">
+      <>
         <MobileTopBar
           title={t('discounts.title')}
           sub={t('mobile.discounts_sub', { active: activeCount, uses: totalUsed })}
@@ -213,7 +213,7 @@ export default function DiscountsListPage() {
             </button>
           }
         />
-        <div className="m-scroll">
+        <>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {data.map((d) => {
               const name = resolveJsonbI18n(d.name as JsonbI18n, locale);
@@ -310,8 +310,8 @@ export default function DiscountsListPage() {
               );
             })}
           </div>
-        </div>
-      </div>
+        </>
+      </>
     );
   }
 

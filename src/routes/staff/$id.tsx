@@ -46,6 +46,7 @@ import { useStaff, useUpdateStaff, useDeactivateStaff, useActivateStaff } from '
 import { useGroups, useAssignGroupMentor } from '@/hooks/use-groups';
 import { useRevokeAllUserQr } from '@/hooks/use-children';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
+import MobileTopBar from '@/components/layout/mobile-top-bar';
 import { mapValidationErrors } from '@/components/forms/map-validation-errors';
 import { formatDate, formatPhone, getInitials } from '@/lib/format';
 import { toI18nKey } from '@/lib/error-map';
@@ -261,115 +262,116 @@ export default function StaffDetailPage() {
 
   if (isMobile) {
     return (
-      <div className="flex flex-col gap-3">
-        <div className="m-bar flat">
-          <button type="button" className="m-iconbtn ghost" onClick={() => window.history.back()}>
-            <ChevronRightIcon className="rotate-180" />
-          </button>
-          <div className="flex-1" />
-          <button type="button" className="m-iconbtn ghost" aria-label={t('actions.edit')}>
-            <EllipsisIcon />
-          </button>
-        </div>
-
-        <div className="m-profile-head">
-          <div className="m-avatar staff lg" style={{ width: 80, height: 80, fontSize: 28 }}>
-            {getInitials(staff.full_name)}
-          </div>
-          <div className="name">{staff.full_name ?? '—'}</div>
-          <div className="meta">{t(`role.${staff.role}`)} · —</div>
-          <Badge variant={statusVariant(isActive)} dot style={{ marginTop: 6 }}>
-            {t(`status.${isActive ? 'active' : 'inactive'}`)}
-          </Badge>
-        </div>
-
-        <div className="m-qa-row" style={{ margin: '18px 0 0' }}>
-          <div className="m-qa">
-            <PhoneIcon />
-            <span>{t('mobile.call')}</span>
-          </div>
-          <div className="m-qa">
-            <MailIcon />
-            <span>{t('mobile.sms')}</span>
-          </div>
-          <div className="m-qa">
-            <QrCodeIcon />
-            <span>{t('mobile.qr')}</span>
-          </div>
-          <div className="m-qa">
-            <CalendarIcon />
-            <span>{t('mobile.shifts')}</span>
-          </div>
-        </div>
-
-        <div className="m-section-h">
-          <div className="m-section-title">{t('mobile.contacts')}</div>
-        </div>
-        <div className="m-card flush">
-          <div className="m-kv">
-            <span className="k">{t('detail.profile.phone')}</span>
-            <span className="v">{staff.phone ? formatPhone(staff.phone) : '—'}</span>
-          </div>
-          <div className="m-kv">
-            <span className="k">Email</span>
-            <span className="v" style={{ fontSize: 12 }}>
-              —
-            </span>
-          </div>
-          <div className="m-kv">
-            <span className="k">ИИН</span>
-            <span className="v" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}>
-              —
-            </span>
-          </div>
-        </div>
-
-        <div className="m-section-h">
-          <div className="m-section-title">{t('mobile.employment')}</div>
-        </div>
-        <div className="m-card flush">
-          <div className="m-kv">
-            <span className="k">{t('detail.profile.role')}</span>
-            <span className="v">{t(`role.${staff.role}`)}</span>
-          </div>
-          <div className="m-kv">
-            <span className="k">{t('detail.groups.columns.group')}</span>
-            <span className="v">—</span>
-          </div>
-          <div className="m-kv">
-            <span className="k">{t('detail.profile.hired_at')}</span>
-            <span className="v">{staff.hired_at ? formatDate(staff.hired_at, tz) : '—'}</span>
-          </div>
-        </div>
-
-        <div className="m-section-h">
-          <div className="m-section-title">{t('mobile.documents')}</div>
-          <div className="m-section-link">{t('mobile.add_document')}</div>
-        </div>
-        <div className="m-card flush">
-          <div className="m-list-row">
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: 10,
-                background: 'var(--success-soft)',
-                color: 'var(--success-fg)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <CheckIcon style={{ width: 18, height: 18 }} />
+      <>
+        <MobileTopBar
+          back
+          flat
+          action={
+            <button type="button" className="m-iconbtn ghost" aria-label={t('actions.edit')}>
+              <EllipsisIcon />
+            </button>
+          }
+        />
+        <div className="flex flex-col gap-3">
+          <div className="m-profile-head">
+            <div className="m-avatar staff lg" style={{ width: 80, height: 80, fontSize: 28 }}>
+              {getInitials(staff.full_name)}
             </div>
-            <div>
-              <div className="m-row-title">—</div>
-              <div className="m-row-sub">—</div>
+            <div className="name">{staff.full_name ?? '—'}</div>
+            <div className="meta">{t(`role.${staff.role}`)} · —</div>
+            <Badge variant={statusVariant(isActive)} dot style={{ marginTop: 6 }}>
+              {t(`status.${isActive ? 'active' : 'inactive'}`)}
+            </Badge>
+          </div>
+
+          <div className="m-qa-row" style={{ margin: '18px 0 0' }}>
+            <div className="m-qa">
+              <PhoneIcon />
+              <span>{t('mobile.call')}</span>
             </div>
-            <ChevronRightIcon className="m-row-chev" style={{ width: 16, height: 16 }} />
+            <div className="m-qa">
+              <MailIcon />
+              <span>{t('mobile.sms')}</span>
+            </div>
+            <div className="m-qa">
+              <QrCodeIcon />
+              <span>{t('mobile.qr')}</span>
+            </div>
+            <div className="m-qa">
+              <CalendarIcon />
+              <span>{t('mobile.shifts')}</span>
+            </div>
+          </div>
+
+          <div className="m-section-h">
+            <div className="m-section-title">{t('mobile.contacts')}</div>
+          </div>
+          <div className="m-card flush">
+            <div className="m-kv">
+              <span className="k">{t('detail.profile.phone')}</span>
+              <span className="v">{staff.phone ? formatPhone(staff.phone) : '—'}</span>
+            </div>
+            <div className="m-kv">
+              <span className="k">Email</span>
+              <span className="v" style={{ fontSize: 12 }}>
+                —
+              </span>
+            </div>
+            <div className="m-kv">
+              <span className="k">ИИН</span>
+              <span className="v" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}>
+                —
+              </span>
+            </div>
+          </div>
+
+          <div className="m-section-h">
+            <div className="m-section-title">{t('mobile.employment')}</div>
+          </div>
+          <div className="m-card flush">
+            <div className="m-kv">
+              <span className="k">{t('detail.profile.role')}</span>
+              <span className="v">{t(`role.${staff.role}`)}</span>
+            </div>
+            <div className="m-kv">
+              <span className="k">{t('detail.groups.columns.group')}</span>
+              <span className="v">—</span>
+            </div>
+            <div className="m-kv">
+              <span className="k">{t('detail.profile.hired_at')}</span>
+              <span className="v">{staff.hired_at ? formatDate(staff.hired_at, tz) : '—'}</span>
+            </div>
+          </div>
+
+          <div className="m-section-h">
+            <div className="m-section-title">{t('mobile.documents')}</div>
+            <div className="m-section-link">{t('mobile.add_document')}</div>
+          </div>
+          <div className="m-card flush">
+            <div className="m-list-row">
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 10,
+                  background: 'var(--success-soft)',
+                  color: 'var(--success-fg)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <CheckIcon style={{ width: 18, height: 18 }} />
+              </div>
+              <div>
+                <div className="m-row-title">—</div>
+                <div className="m-row-sub">—</div>
+              </div>
+              <ChevronRightIcon className="m-row-chev" style={{ width: 16, height: 16 }} />
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
   }
 

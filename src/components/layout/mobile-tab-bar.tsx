@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -10,14 +9,6 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/cn';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-} from '@/components/ui/sheet';
-import MobileMoreMenu from './mobile-more-menu';
 import {
   useOverdueInvoicesBadge,
   usePendingRequestsBadge,
@@ -31,7 +22,7 @@ interface TabDef {
   id: TabId;
   labelKey: string;
   icon: LucideIcon;
-  route: string | null;
+  route: string;
 }
 
 const TABS: TabDef[] = [
@@ -49,7 +40,7 @@ const TABS: TabDef[] = [
     icon: ReceiptIcon,
     route: '/billing/invoices',
   },
-  { id: 'more', labelKey: 'mobile_tab_more', icon: MenuIcon, route: null },
+  { id: 'more', labelKey: 'mobile_tab_more', icon: MenuIcon, route: '/more' },
 ];
 
 function formatBadge(badge: BadgeCount): string {
@@ -69,7 +60,6 @@ export default function MobileTabBar() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const [moreOpen, setMoreOpen] = useState(false);
   const active = getActiveTab(location.pathname);
 
   const invoicesBadge = useOverdueInvoicesBadge();
@@ -81,48 +71,26 @@ export default function MobileTabBar() {
     return null;
   };
 
-  const handleTabClick = (tab: TabDef): void => {
-    if (tab.id === 'more') {
-      setMoreOpen(true);
-      return;
-    }
-    if (tab.route) navigate(tab.route);
-  };
-
   return (
-    <>
-      <div className="m-tabbar">
-        {TABS.map((tab) => {
-          const Icon = tab.icon;
-          const badge = badgeForTab(tab.id);
-          const showBadge = badge !== null && (badge.count > 0 || badge.hasMore);
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              className={cn('m-tab', active === tab.id && 'active')}
-              onClick={() => handleTabClick(tab)}
-              aria-current={active === tab.id ? 'page' : undefined}
-            >
-              <Icon />
-              <span>{t(tab.labelKey)}</span>
-              {showBadge && <span className="m-tab-badge">{formatBadge(badge)}</span>}
-            </button>
-          );
-        })}
-      </div>
-
-      <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
-        <SheetContent side="right" className="w-[88vw] max-w-sm overflow-y-auto p-0">
-          <SheetHeader className="border-b border-line">
-            <SheetTitle>{t('mobile_tab_more')}</SheetTitle>
-            <SheetDescription className="sr-only">{t('mobile_more_description')}</SheetDescription>
-          </SheetHeader>
-          <div className="px-2 py-3" onClick={() => setMoreOpen(false)}>
-            <MobileMoreMenu />
-          </div>
-        </SheetContent>
-      </Sheet>
-    </>
+    <div className="m-tabbar">
+      {TABS.map((tab) => {
+        const Icon = tab.icon;
+        const badge = badgeForTab(tab.id);
+        const showBadge = badge !== null && (badge.count > 0 || badge.hasMore);
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            className={cn('m-tab', active === tab.id && 'active')}
+            onClick={() => navigate(tab.route)}
+            aria-current={active === tab.id ? 'page' : undefined}
+          >
+            <Icon />
+            <span>{t(tab.labelKey)}</span>
+            {showBadge && <span className="m-tab-badge">{formatBadge(badge)}</span>}
+          </button>
+        );
+      })}
+    </div>
   );
 }

@@ -45,7 +45,7 @@ export default function TariffMobile() {
   }
 
   return (
-    <div className="m-shell">
+    <>
       <MobileTopBar
         title={t('mobile.tariffs_title')}
         sub={t('mobile.tariffs_sub', {
@@ -63,7 +63,7 @@ export default function TariffMobile() {
         }
       />
 
-      <div className="m-scroll">
+      <>
         <div className="m-segmented" style={{ marginBottom: 14 }}>
           <button
             type="button"
@@ -112,8 +112,8 @@ export default function TariffMobile() {
             ))}
           </div>
         )}
-      </div>
-    </div>
+      </>
+    </>
   );
 }
 

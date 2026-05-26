@@ -88,7 +88,7 @@ export default function FiscalReceiptsPage() {
   };
 
   return (
-    <div className="m-shell">
+    <>
       <MobileTopBar
         title={t('mobile.fiscal_title')}
         sub={t('mobile.fiscal_sub', { count: items.length })}
@@ -98,7 +98,7 @@ export default function FiscalReceiptsPage() {
           </button>
         }
       />
-      <div className="m-scroll">
+      <>
         {/* Phase A info banner */}
         <div
           style={{
@@ -221,7 +221,7 @@ export default function FiscalReceiptsPage() {
             );
           })}
         </div>
-      </div>
-    </div>
+      </>
+    </>
   );
 }
