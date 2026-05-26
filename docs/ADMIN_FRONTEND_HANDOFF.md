@@ -439,35 +439,89 @@
 
 ## 12. Контент (Content) — `/admin/content/*` + Qundylyq
 
-**Назначение:** новости, Qundylyq, поздравления, публикации меню/расписания. BP §9.
+**Назначение:** новости, Qundylyq, поздравления, публикации меню/расписания, истории (stories с expiry). BP §9.
 
-**ENUM:** `content_type`: `news|menu|schedule_pub|qundylyq|birthday`; `content_target_type`: `all|group|child`; `content_status`: `draft|scheduled|published`.
-**Инвариант таргетинга:** `child`→`target_child_id` обязателен; `group`→`target_group_id` обязателен; `all`→оба null.
-**State machine:** `draft → scheduled → published` (только вперёд; published терминальный; удаление только из draft; PATCH только из draft/scheduled).
+**Casing:** **snake_case** для request + response.
 
-| Метод  | Путь                          | Назначение                                               |
-| ------ | ----------------------------- | -------------------------------------------------------- |
-| POST   | `/admin/content`              | Создать черновик. `multipart/form-data` (см. поля ниже). |
-| GET    | `/admin/content`              | Список + фильтры + cursor-пагинация.                     |
-| GET    | `/admin/content/:id`          | Детали.                                                  |
-| PATCH  | `/admin/content/:id`          | Обновить (draft/scheduled). multipart.                   |
-| DELETE | `/admin/content/:id`          | Удалить (только draft).                                  |
-| POST   | `/admin/content/:id/publish`  | Немедленная публикация (draft/scheduled → published).    |
-| POST   | `/admin/content/:id/schedule` | `{scheduled_for}` (draft → scheduled).                   |
-| GET    | `/admin/qundylyq/current`     | Текущий активный Qundylyq (или null).                    |
+**i18n ключ:** `kk` (canonical, BCP 47). Backend нормализует legacy `kz` → `kk` через shim (удаляется в backend B23, см. CLAUDE §3, OPEN_QUESTIONS §A19). Фронт **шлёт и читает только `kk`**.
 
-**POST /admin/content (multipart):** `content_type*`, `target_type*`, `target_group_id?`, `target_child_id?`, `title_i18n?` (JSON-строка `{ru,kz}`), `body_i18n?`, `scheduled_for?` (ISO), `metadata?` (JSON-строка), `file?` (image/video).
+**ENUM:**
 
-**GET /admin/content query:** `content_type, status, target_type, target_group_id, target_child_id, scheduled_from/to, published_from/to, cursor, limit(≤100, def 20)`.
+- `content_type`: `news | menu | schedule_pub | qundylyq | birthday`.
+- `target_type`: `all | group | child`.
+- `status`: `draft | scheduled | published`.
 
-**Ошибки:** `file_upload_error`(400), `media_type_invalid`(400, не image/video), `content_post_not_found`(404), `content_post_status_invalid`(409), `content_target_invalid`(422), 422 validation.
+**Инвариант таргетинга:** `child`→`target_child_id` обязателен; `group`→`target_group_id` обязателен; `all`→оба null. 422 `content_target_invalid` при нарушении.
 
-**Страницы:**
+**State machine:** `draft → scheduled → published` (только вперёд; `published` терминальный — ни текст, ни media НЕЛЬЗЯ редактировать). `DELETE` — только из `draft` (scheduled удалить нельзя — сначала отзыв/PATCH). `PATCH` — из draft/scheduled (на published → 409 `content_already_published`).
 
-- **Лента контента** — таблица/карточки: тип, заголовок (по локали), таргет, статус-бейдж (draft/scheduled/published), дата публикации/планирования. Фильтры. Cursor-пагинация.
-- **Редактор поста** — выбор типа, таргет (all/группа/ребёнок — динамические селекты), title/body на ru+kz, медиа (загрузка файла), кнопки: Сохранить черновик / Запланировать (datepicker → schedule) / Опубликовать сейчас. Удаление только для draft.
-- **Qundylyq** — отдельный экран «тема месяца» (создаётся как content_type=qundylyq), показывает текущий активный.
-- День рождения — посты `birthday` авто-генерируются cron'ом; админ видит список и может опубликовать заранее запланированный.
+| Метод  | Путь                          | Назначение                                                                                                                                                                                               |
+| ------ | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/admin/content`              | Создать пост (draft по умолчанию; scheduled если `scheduled_for`). multipart **или** JSON.                                                                                                               |
+| GET    | `/admin/content`              | Список с фильтрами + cursor-пагинация.                                                                                                                                                                   |
+| GET    | `/admin/content/:id`          | Карточка.                                                                                                                                                                                                |
+| PATCH  | `/admin/content/:id`          | Обновить (только draft/scheduled). multipart **или** JSON. PATCH media → **полный replace**.                                                                                                             |
+| DELETE | `/admin/content/:id`          | Удалить (только draft → 409 `content_cannot_delete_published` если scheduled/published).                                                                                                                 |
+| POST   | `/admin/content/:id/publish`  | Немедленная публикация (draft/scheduled → published). 409 `content_already_published` если уже опубликован.                                                                                              |
+| POST   | `/admin/content/:id/schedule` | `{scheduled_for}` (draft → scheduled). 422 `content_scheduled_for_in_past` если дата в прошлом.                                                                                                          |
+| POST   | `/admin/content/upload-media` | Standalone media upload (single `file` field) → `{url, key, bytes}`. **В нормальном flow не нужен** — POST/PATCH /admin/content сами заливают через `files`. Использовать только если URL нужен заранее. |
+
+**Нет отдельного Qundylyq endpoint.** Admin UI делает отдельный экран с фильтром `?content_type=qundylyq` на общий `GET /admin/content`. Для qundylyq поста в `metadata` хранится `{month: 'YYYY-MM', theme: 'string'}` — соглашение, не enforce.
+
+### Multipart-контракт (POST + PATCH /admin/content)
+
+`Content-Type: multipart/form-data` **ИЛИ** `application/json` (без файлов — JSON-only). Поле для файлов — **`files`** (множественное число), **max 5** на запрос. OpenAPI на момент B12-prep это поле может не показывать — контракт подтверждён backend-кодом и dev'ом.
+
+**Лимиты:**
+
+- `image/*` ≤ **10 MB** на файл.
+- `video/*` ≤ **100 MB** на файл.
+- Иные MIME-типы → 400 `media_type_invalid`.
+
+**В multipart объектные поля JSON-stringified:** `title_i18n`, `body_i18n`, `metadata` идут как `JSON.stringify({ru:'…', kk:'…'})` form-field'ом. Скалярные поля (`content_type`, `target_type`, etc.) — обычные form-fields. ISO date — строкой.
+
+**`CreateContentDto` поля:** `content_type*`, `target_type*`, `target_group_id?`, `target_child_id?`, `title?`, `body?`, `title_i18n?({ru, kk})`, `body_i18n?`, `metadata?(JSONB)`, `scheduled_for?(ISO)`, `expires_at?(ISO)`. + `files?[]` (max 5, в multipart). `title`/`body` — legacy single-locale, фронт **всегда** шлёт `title_i18n`/`body_i18n` (опц. `title` для денормализованного fallback).
+
+**`UpdateContentDto` поля:** все опц., **без `media_urls`**. Изменить медиа можно только через перезалив `files[]` в multipart-PATCH → **полный replace** всего массива (старые URL'ы стираются из ряда; физические файлы остаются в storage — best-effort cleanup только при DELETE поста). Selective delete/append **не поддерживается** — UX «один блок: перезалить весь набор файлов».
+
+### PATCH media-семантика (final, B12-prep)
+
+- `PATCH` **без `files`** на draft/scheduled → `media_urls` не трогается, патчатся только текст/таргет/etc.
+- `PATCH` **с `files` (1+)** на draft/scheduled → `media_urls` **полностью заменяется** загруженным набором. Если хочешь оставить старые — заливай их вместе с новыми (полный набор).
+- `PATCH` любой формы на published → 409 `content_already_published` (read-only).
+
+**UI-рекомендация:** в редакторе один блок «Загрузить/перезагрузить медиа (max 5)», без per-file delete-кнопок. На published — превью всего поста read-only.
+
+### List query
+
+`GET /admin/content?content_type=&status=&target_type=&target_group_id=&target_child_id=&scheduled_from=&scheduled_to=&published_from=&published_to=&cursor=&limit=` (limit ≤100, default 20).
+
+Cursor: `{items, next_cursor: string|null}` на момент текущего backend repo возвращает `next_cursor: null` (cursor-pagination end-to-end ещё не закончен) — но клиент готовит код под cursor по контракту.
+
+### Response shape
+
+`ContentPostResponseDto = {id, kindergarten_id, content_type, target_type, target_group_id?, target_child_id?, title?, body?, title_i18n?({ru,kk}), body_i18n?, media_urls?[], metadata?, scheduled_for?, published_at?, expires_at?, status, created_by?, created_at, updated_at}`. Все nullable-поля nullable явно. `title` — резолв per-locale (если фронт пишет только `title_i18n`, backend подставляет на чтении); `media_urls` — array of public URLs (nullable).
+
+### Ошибки (мап в `error-map.ts`)
+
+- `file_required`(400) — multipart без файла на `/upload-media`.
+- `file_upload_error`(400) — пустой файл / не поддерживается.
+- `file_too_large`(400, details `image_over_10mb` / `video_over_100mb`).
+- `media_type_invalid`(400) — не image/_ и не video/_.
+- `content_post_not_found`(404).
+- `content_post_status_invalid`(409) — edit/delete на published.
+- `content_cannot_delete_published`(409) — DELETE на scheduled/published.
+- `content_already_published`(409) — publish на published.
+- `content_target_invalid`(422) — target_type ↔ target_id рассинхрон.
+- `content_scheduled_for_in_past`(422) — schedule с прошедшей датой.
+- `group_not_found`(404), `child_not_found`(404) — таргет на несуществующую сущность.
+
+### Страницы
+
+- **Лента контента (`/content`)** — DataTable cursor-пагинация: тип-бейдж, заголовок (`title_i18n[locale] || title`), таргет (бейдж + имя), статус-бейдж (`draft`/`scheduled`/`published`), даты (`scheduled_for`/`published_at`). Фильтры: `content_type`, `status`, `target_type`, диапазоны дат.
+- **Редактор поста (`/content/new`, `/content/:id`)** — для draft/scheduled: выбор `content_type`, таргет (`all`/группа/ребёнок — динамика + EntityCombobox), title/body на ru+kk (PairedI18nField), опц. `expires_at` (datetime), media-блок (drop-zone до 5 файлов, image≤10MB, video≤100MB, full-replace UX). Кнопки: Сохранить draft / Запланировать (datepicker → POST `/schedule`) / Опубликовать (POST `/publish`). Удалить — только draft. **На published** — превью read-only.
+- **Qundylyq (`/content/qundylyq`)** — отдельный экран, фильтрует `/content?content_type=qundylyq`, подсвечивает latest `published`. Создание qundylyq — через общий редактор с `content_type=qundylyq` + опц. `metadata.{month, theme}`. Backend нотификации `content.qundylyq_new` уходят автоматически на publish.
+- **Birthday** — посты `birthday` авто-генерируются cron'ом `/saas/content/birthday-run` (SuperAdmin scope); Admin видит их в общей ленте и может publish заранее запланированный или отредактировать draft. Кнопки запуска cron в Admin UI **нет**.
 
 ---
 

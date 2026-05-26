@@ -398,18 +398,43 @@ src/
 
 ## B12 — Контент + Qundylyq · P1
 
-**Inputs:** HANDOFF §12 (content multipart, ENUM, инвариант таргета, state machine draft→scheduled→published, cursor); DESIGN §6.9; VIS `screens-ops.jsx` (ContentFeed).
+**Inputs:** HANDOFF §12 (content multipart `files` field, ENUM, инвариант таргета, state machine draft→scheduled→published, cursor, full-replace PATCH media, `kk` canonical, errors); DESIGN §6.9; VIS `screens-ops.jsx` (ContentFeed); OPEN_QUESTIONS **§A19 (kk canonical везде, kz — backend B22b legacy shim до B23)**, **§A20 (media PATCH full-replace draft/scheduled, immutable published)**, **§A18 (per-module casing — content snake_case)**.
+
+**Backend status (live-verified 2026-05-27 via code + dev clarification):** все endpoints HANDOFF §12 существуют. Multipart contract `files` (плюрализ, max 5) подтверждён dev'ом и кодом контроллера; OpenAPI `/docs-json` на момент prep может не показывать `files` field (Multer+Swagger limitation, backend дев работает над `@ApiBody` фиксом). Qundylyq dedicated endpoint **отсутствует** — Admin делает экран через filter `content_type=qundylyq`.
 
 **Tasks:**
 
-- `api/content.ts` + hooks (list cursor+filters, get, create/patch **multipart**, delete draft-only, publish, schedule, qundylyq/current).
-- `routes/content/index.tsx` (DataTable cursor, тип/статус/таргет бейджи, фильтры), редактор поста (тип, таргет all/group/child динамика + EntityCombobox, title/body RU/KK, медиа upload image/video, Сохранить draft/Запланировать/Опубликовать; delete только draft; published read-only).
-- `routes/content/qundylyq.tsx` (тема месяца). i18n `content`. Ошибки `media_type_invalid`/`content_target_invalid`(422)/`content_post_status_invalid`(409).
+- `api/content.ts` (snake_case DTO!) + `hooks/use-content.ts`: list (cursor+filters), get, **multipart-aware** create/patch (FormData с `files[]` + JSON-stringified `title_i18n`/`body_i18n`/`metadata`), delete (draft-only), publish, schedule, `uploadMedia` (standalone, на случай отдельного flow). Query-keys, optimistic refetch на publish.
+- `lib/jsonb-i18n.ts` — verify: резолв `kk` + fallback на `kz` (legacy непромигрированные записи). Unit-тест на оба ключа.
+- `routes/content/index.tsx` — DataTable cursor-пагинация: тип-бейдж, заголовок (`title_i18n[locale] || title`), таргет (бейдж + имя), статус-бейдж, даты. Фильтры: `content_type`, `status`, `target_type`, диапазоны `scheduled_*`/`published_*`. 1:1 по VIS `screens-ops.jsx` (ContentFeed).
+- `routes/content/new.tsx` + `routes/content/$id.tsx` — редактор поста:
+  - `content_type` select (5 enum).
+  - `target_type` select + динамические `EntityCombobox` для group/child; инвариант валидируется на клиенте (Zod refine + сервер 422 `content_target_invalid` → field-level error).
+  - `title`/`title_i18n`/`body_i18n` — `PairedI18nField {ru, kk}` (только эти ключи!). `title` (legacy single-locale) можно оставить пустым — фронт всегда заполняет `title_i18n`.
+  - `expires_at` — опц. datetime под advanced toggle.
+  - `metadata` — для qundylyq формы дополнительно `{month: 'YYYY-MM', theme}` (соглашение, не enforce). Для других типов — JSON-textarea опц. (только advanced toggle).
+  - Media-блок: drop-zone до 5 файлов, image≤10MB, video≤100MB. UI копирайт «новая загрузка заменит все файлы» (per §A20). Без per-file delete-кнопок. Превью existing `media_urls` сверху (read-only thumbnails с link на файл).
+  - Кнопки: Сохранить draft (POST/PATCH без publish) / Запланировать (datepicker → POST `/schedule`) / Опубликовать сейчас (POST `/publish`). Удалить — только в draft (DestructiveConfirm).
+  - **На published** — весь редактор read-only превью (заголовок, body, media-thumbnails, метаданные). Кнопки скрыты кроме «вернуться к ленте».
+- `routes/content/qundylyq.tsx` — отдельный экран с фильтром `content_type=qundylyq`, подсветка latest `published` + `metadata.month/theme` badge. Кнопка «Создать тему месяца» → редактор с pre-filled `content_type=qundylyq`.
+- i18n `content` namespace (RU + KK), error keys для §12 ошибок (`file_too_large`, `media_type_invalid`, `content_target_invalid`, `content_post_status_invalid`, `content_already_published`, `content_cannot_delete_published`, `content_scheduled_for_in_past`).
+
+**Что НЕ делаем в B12:**
+
+- Birthday cron triggers (SuperAdmin scope `/saas/content/birthday-run` — не в UI).
+- Selective media delete/replace (per §A20 backend не поддерживает).
+- Append-mode для PATCH media (full-replace only).
+- Per-file edit/reorder в media-блоке (UX — один replace-операция).
 
 **Acceptance:**
 
-- [ ] Лента cursor-пагинируется; редактор multipart-загружает медиа; state machine соблюдён (published read-only, delete draft-only).
-- [ ] Инвариант таргета валидируется; Qundylyq current. Gate exit 0.
+- [ ] Лента cursor-пагинируется (UI готов к `next_cursor`, даже если backend пока null отдаёт); фильтры работают; статус/тип/таргет бейджи отрисованы.
+- [ ] Редактор multipart-загружает медиа через FormData `files[]` (max 5, image≤10MB/video≤100MB enforcement на клиенте + сервер 400); `title_i18n`/`body_i18n`/`metadata` JSON-stringified в multipart-fields.
+- [ ] State machine соблюдён: published — read-only превью; delete — только draft; PATCH с files на draft/scheduled — full-replace; PATCH на published → 409 с правильным toast.
+- [ ] Инвариант таргета валидируется клиентом (Zod) и backend (422 → field error).
+- [ ] Qundylyq экран — filter работает, создание через общий редактор; latest published подсвечен.
+- [ ] `lib/jsonb-i18n.ts` unit-тесты покрывают `kk` (canonical) + `kz` (legacy fallback).
+- [ ] Gate: `pnpm typecheck && pnpm lint --max-warnings=0 && pnpm test` exit 0.
 
 ---
 

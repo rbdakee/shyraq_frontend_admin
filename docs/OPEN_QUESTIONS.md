@@ -179,17 +179,42 @@ HANDOFF §16+§18 обновлены под факт в wave-коммите B10.
 
 HANDOFF §10+§11 обновлены под факт в pre-B11 docs-fixup. Код B11 пишется conform к live с defensive Zod (`z.array(Schema)` для list-эндпоинтов на случай bare-array).
 
-### A19 — `MultiLangTextDto` ключ `kk` vs JSONB ключ `kz` (закрепление per-module) · resolved (2026-05-26)
+### A19 — i18n key унифицирован на `kk` (B22b backend sweep); `kz` — backward-compat shim до B23 · resolved (2026-05-27)
 
-Контекст: при подготовке к B11 (meal-plans) обнаружено, что `dish_name` / `notes` используют `MultiLangTextDto = {ru*, kk?, en?}` — ключ **`kk`**. Это **противоречит CLAUDE.md §3** «JSONB ключ `kz`!». Сверка показала, что `kz` — legacy-формат JSONB старых модулей (children, content), а `kk` (BCP 47) — новый формат DTO для свежих эндпоинтов (discounts §A17.5, meal-plans).
+Контекст: при подготовке к B12 (content) чтение backend-кода (`../backend_shyraq_v2/src/shared-kernel/utils/i18n-locale-normalizer.ts`) выявило финальную правду — **backend уже стандартизовал на `kk` everywhere** через sweep B22b T1:
 
-Решение: оба формата сосуществуют **per-module**. Не «фикситъ» на одну сторону — обновлять CLAUDE.md/HANDOFF чтобы фронт корректно резолвил оба.
+> _«B22b standardises on `kk` everywhere, but for one release we still accept inbound payloads that carry only `kz`. … The fallback is scheduled to be removed in B23; the same shape is applied at the DB layer by the `B22I18nKzToKk` data migration.»_
 
-1. **`kk` (BCP 47, новые DTO):** custom-discounts (`I18nFieldDto`, §A17.5), meal-plans (`MultiLangTextDto` для `dish_name`/`description`/`notes`). Используется и в **request**, и в **response**.
-2. **`kz` (legacy JSONB):** children (`first_name_i18n`, `last_name_i18n`), content (`title`/`body` JSONB), tariff-plans `description` (§A16.3). Только **response** (хранение в БД).
-3. **`lib/jsonb-i18n.ts`:** должен резолвить обе формы — приоритет ключа по текущей локали (`kk` или `kz`, оба значат «казахский»), fallback `ru`. Уже работает по факту (B10 discounts проходит) — проверяем unit-тестами при B11.
-4. **`PairedI18nField`:** при отправке формы под meal-plans/discounts шлёт `{ru, kk}`; для children/content (если будут редактироваться позже) — формат определяется backend-контрактом этого модуля. Per-module map в коде, не глобальный enum.
-5. **CLAUDE.md §3 не противоречит факту:** утверждение «JSONB ключ `kz`» относится к старым JSONB-полям; новые `MultiLangTextDto`/`I18nFieldDto` — отдельный класс контрактов. Возможно стоит уточнить формулировку при следующем CLAUDE.md sweep (не блокер).
+Это **переворачивает** ранний вывод §A19 (от 2026-05-26) о «per-module сосуществовании»: на самом деле `kz` — это legacy, который мигрирует в `kk` через одно-релизный shim. **Решение для фронта:**
+
+1. **Фронт шлёт только `kk`** во всех модулях (content, meal-plans, custom-discounts, holidays — и т.д.). `kz` НЕ генерируется при создании/редактировании.
+2. **Фронт читает только `kk`** в новых ответах. Backend нормализует на input (`normalizeLegacyKzLocale` @Transform на `title_i18n`/`body_i18n`/etc.) и применяет DB-миграцию `B22I18nKzToKk` к существующим записям.
+3. **`lib/jsonb-i18n.ts` сохраняет fallback на `kz`** для **чтения** старых, ещё не промигрированных записей (на случай, если кому-то прилетит до завершения миграции). Резолв: `obj[locale === 'kk' ? 'kk' : locale] ?? obj.kz ?? obj.ru ?? ''`. Уже работает (B10 discounts, B11 meals) — добавить unit-тест на `kk` + fallback `kz` при B12.
+4. **`PairedI18nField`** во всех формах шлёт **только `{ru, kk}`** — без `kz`. Per-module enum / map не нужен.
+5. **`CLAUDE.md §3` обновлён** под канон: «канонический ключ — `kk` (BCP 47); legacy `kz` принимается на input один релиз (backend нормализует), удаляется в backend B23».
+6. **Заголовок `x-custom-lang`:** значения `ru | kk`, никогда `kz`/`en`.
+7. **Backend B23 удалит shim** — фронт уже совместим (не зависит от `kz` на input, читает с fallback). Когда backend выкатит B23 — снести fallback на `kz` в `jsonb-i18n.ts` (мелкий cleanup, не блокер).
+
+Предыдущая редакция §A19 (от 2026-05-26) о «per-module coexistence» **аннулирована** — это был промежуточный compromise. Финальный канон — `kk` everywhere.
+
+### A20 — Content media PATCH-семантика: full-replace на draft/scheduled, immutable на published · resolved (2026-05-27, backend dev confirmation)
+
+Контекст: при B12 prep обнаружено, что `UpdateContentDto` **не содержит `media_urls`** — нет способа manually очистить/изменить массив URLs. Backend dev (2026-05-27) подтвердил финальный контракт:
+
+1. **`PATCH /admin/content/:id` без `files`** на draft/scheduled → `media_urls` не трогается, обновляются только text/target/etc.
+2. **`PATCH` с `files` (1+)** на draft/scheduled → `media_urls` **полностью заменяется** загруженным набором (старые URLs стираются из ряда; физические файлы остаются в storage — best-effort cleanup только при DELETE поста).
+3. **`PATCH` на published** → 409 `content_already_published`. Опубликованный пост — терминальное состояние, ни текст, ни media не редактируются.
+4. **Selective delete / append отдельных media — не поддерживается** и backend дев'ом подтверждено «не будем добавлять».
+
+**UI-следствие для B12:**
+
+- Редактор поста (draft/scheduled): один media-блок «Загрузить/перезагрузить (max 5)», без per-file delete-кнопок. UX-подсказка «новая загрузка заменит все файлы». Если admin хочет оставить часть старых + добавить новые — он должен скачать старые (доступны по URL) и перезалить весь набор.
+- Редактор поста (published): весь контент + media — read-only превью.
+- Не сохранять `files` в form-state если пользователь его не трогал — иначе случайная перезагрузка пустого набора стерёт media. Лучше: media-блок имеет отдельный «загрузить новый набор» CTA, который явно даёт понять, что это replace.
+
+Multipart-контракт **`files`** (множественное число), max 5 на запрос, image≤10MB / video≤100MB, MIMEs только `image/*` или `video/*`. OpenAPI на момент B12-prep это поле может не показывать — контракт подтверждён backend-кодом (`FilesInterceptor('files', 5, {...})` в `admin-content.controller.ts`) и dev-confirmation. HANDOFF §12 переписан pre-B12 fixup под факт.
+
+Объектные form-поля (`title_i18n`, `body_i18n`, `metadata`) в multipart — JSON-stringified.
 
 ### A15 — Parent-requests: list `/admin/*` vs detail/actions `/staff/*`, `type` filter, snake_case, cursor · resolved (2026-05-19)
 
