@@ -167,6 +167,7 @@
     "info_location": "Локация",
     "info_age": "Возраст",
     "info_tariff": "Тариф по умолч.",
-    "status_full": "Полная"
+    "status_full": "Полная",
+    "months_unit": "мес."
   }
 }

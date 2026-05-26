@@ -318,7 +318,7 @@ export default function StaffDetailPage() {
               </span>
             </div>
             <div className="m-kv">
-              <span className="k">ИИН</span>
+              <span className="k">{t('mobile.iin')}</span>
               <span className="v" style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}>
                 —
               </span>

@@ -167,6 +167,7 @@
     "info_location": "Орналасу",
     "info_age": "Жас",
     "info_tariff": "Тариф",
-    "status_full": "Толық"
+    "status_full": "Толық",
+    "months_unit": "ай"
   }
 }

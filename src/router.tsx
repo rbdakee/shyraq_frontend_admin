@@ -286,10 +286,35 @@ export const router = createBrowserRouter([
               return { Component };
             },
           },
-          { path: 'diagnostics/templates', lazy: lazyStub },
-          { path: 'face', lazy: lazyStub },
-          { path: 'operations/lifecycle-dlq', lazy: lazyStub },
-          { path: 'settings', lazy: lazyStub },
+          {
+            path: 'diagnostics/templates',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/diagnostics/templates/index');
+              return { Component };
+            },
+          },
+          {
+            path: 'face',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/face/index');
+              return { Component };
+            },
+          },
+          {
+            path: 'operations/lifecycle-dlq',
+            lazy: async () => {
+              const { default: Component } =
+                await import('@/routes/operations/lifecycle-dlq/index');
+              return { Component };
+            },
+          },
+          {
+            path: 'settings',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/settings/index');
+              return { Component };
+            },
+          },
           { path: 'profile', lazy: lazyStub },
           { path: '_403', lazy: lazy403 },
           { path: '_500', lazy: lazy500 },

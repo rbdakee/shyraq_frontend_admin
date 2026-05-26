@@ -119,7 +119,7 @@ export default function GroupDetailPage() {
           title={group.name}
           sub={
             group.age_range_min !== null && group.age_range_max !== null
-              ? `${group.age_range_min}–${group.age_range_max} мес.`
+              ? `${group.age_range_min}–${group.age_range_max} ${t('mobile.months_unit')}`
               : undefined
           }
           back
@@ -169,7 +169,7 @@ export default function GroupDetailPage() {
           <div className="m-kv">
             <span className="k">{t('mobile.info_age')}</span>
             <span className="v">
-              {group.age_range_min ?? '—'}–{group.age_range_max ?? '—'} мес.
+              {group.age_range_min ?? '—'}–{group.age_range_max ?? '—'} {t('mobile.months_unit')}
             </span>
           </div>
         </div>
