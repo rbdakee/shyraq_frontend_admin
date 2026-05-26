@@ -135,7 +135,13 @@ export const router = createBrowserRouter([
               return { Component };
             },
           },
-          { path: 'schedule/templates', lazy: lazyStub },
+          {
+            path: 'schedule/templates',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/schedule/templates/index');
+              return { Component };
+            },
+          },
           {
             path: 'schedule/templates/:id',
             lazy: async () => {
@@ -143,7 +149,13 @@ export const router = createBrowserRouter([
               return { Component };
             },
           },
-          { path: 'schedule/weeks', lazy: lazyStub },
+          {
+            path: 'schedule/weeks',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/schedule/weeks');
+              return { Component };
+            },
+          },
           {
             path: 'meal-plans',
             lazy: async () => {

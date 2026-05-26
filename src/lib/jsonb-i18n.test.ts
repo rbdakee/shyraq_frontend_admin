@@ -61,10 +61,37 @@ describe('resolveJsonbI18n', () => {
     });
   });
 
+  describe('locale kk → reads kk key (new MultiLangTextDto)', () => {
+    it('returns kk value when kk is present', () => {
+      expect(resolveJsonbI18n({ ru: 'Привет', kk: 'Сәлем' }, 'kk')).toBe('Сәлем');
+    });
+
+    it('falls through to kz when kk is empty', () => {
+      expect(resolveJsonbI18n({ ru: 'Привет', kk: '', kz: 'Сәлем-kz' }, 'kk')).toBe('Сәлем-kz');
+    });
+
+    it('kk wins over kz when both present (BCP 47 canonical for new DTOs)', () => {
+      expect(resolveJsonbI18n({ ru: 'Привет', kk: 'Сәлем-kk', kz: 'Сәлем-kz' }, 'kk')).toBe(
+        'Сәлем-kk',
+      );
+    });
+
+    it('falls back to kz when kk is missing', () => {
+      expect(resolveJsonbI18n({ ru: 'Привет', kz: 'Сәлем-kz' }, 'kk')).toBe('Сәлем-kz');
+    });
+
+    it('locale ru ignores kk even if present', () => {
+      expect(resolveJsonbI18n({ ru: 'Привет', kk: 'Сәлем-kk' }, 'ru')).toBe('Привет');
+    });
+  });
+
   describe('extra keys ignored', () => {
     it('ignores unknown extra keys on the object', () => {
-      // extra key not in JsonbI18n type — cast via spread with unknown extra
-      const value = { ru: 'Привет', kz: 'Сәлем', en: 'Hello' } as { ru: string; kz: string };
+      const value = { ru: 'Привет', kz: 'Сәлем', en: 'Hello' } as {
+        ru: string;
+        kz: string;
+        kk?: string;
+      };
       expect(resolveJsonbI18n(value, 'ru')).toBe('Привет');
       expect(resolveJsonbI18n(value, 'kk')).toBe('Сәлем');
     });

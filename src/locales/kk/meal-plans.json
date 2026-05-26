@@ -1,0 +1,129 @@
+{
+  "title": "Мәзір",
+  "sub_kg_wide": "Бүкіл балабақша",
+  "week_range": "Апта {{from}} — {{to}}",
+  "view": {
+    "week": "Апта",
+    "month": "Ай"
+  },
+  "nav": {
+    "prev": "Алдыңғы",
+    "next": "Келесі"
+  },
+  "group_filter": {
+    "all": "Бүкіл балабақша"
+  },
+  "today_badge": "Бүгін",
+  "copy_button": "Келесі аптаға көшіру",
+  "copy_dialog": {
+    "title": "Апта мәзірін көшіру керек пе?",
+    "description": "Көрсетілген аптаның мәзірі келесі аптаға көшіріледі. Бар күндер өткізіледі.",
+    "from_monday": "Бастапқы апта дүйсенбісі",
+    "submit": "Көшіру",
+    "cancel": "Болдырмау"
+  },
+  "copy": {
+    "success": "{{created}} жоспар көшірілді, {{skipped}} өткізілді"
+  },
+  "add_dish_button": "Тағам қосу",
+  "is_published": {
+    "true": "Жарияланды",
+    "false": "Жоба"
+  },
+  "source": {
+    "manual": "Қолмен",
+    "cron": "Авто-көшірме",
+    "copied": "Көшірілді"
+  },
+  "meal_type": {
+    "breakfast": "Таңғы ас",
+    "snack_am": "Жеңіл тамақ",
+    "lunch": "Түскі ас",
+    "snack_pm": "Шай",
+    "dinner": "Кешкі ас"
+  },
+  "meal_type_kk": {
+    "breakfast": "Таңғы ас",
+    "snack_am": "Жеңіл тамақ",
+    "lunch": "Түскі ас",
+    "snack_pm": "Шай",
+    "dinner": "Кешкі ас"
+  },
+  "create_plan": {
+    "button": "Осы күнге мәзір жасау",
+    "confirm_title": "Мәзір жасау керек пе?",
+    "confirm_description": "{{date}} күніне мәзір жоспары жасалады.",
+    "submit": "Жасау",
+    "cancel": "Болдырмау"
+  },
+  "day_dialog": {
+    "title": "{{date}} мәзірі",
+    "notes": "Жазбалар",
+    "is_published_label": "Жарияланды",
+    "close": "Жабу",
+    "delete_plan": "Мәзірді жою"
+  },
+  "plan_delete_confirm": {
+    "title": "Күн мәзірін жою?",
+    "description": "Бұл күннің мәзірі мен барлық тағамдары жойылады. Бұл әрекетті қайтару мүмкін емес.",
+    "confirm": "Жою",
+    "success": "Мәзір жойылды"
+  },
+  "item_form": {
+    "create_title": "Жаңа тағам",
+    "edit_title": "Тағамды өңдеу",
+    "meal_type": "Тамақтану түрі",
+    "dish_name": "Тағам атауы",
+    "description": "Сипаттама",
+    "allergens": "Аллергендер",
+    "calories": "Калория",
+    "photo_url": "Фото (URL)",
+    "position": "Реттілік",
+    "submit_create": "Қосу",
+    "submit_edit": "Сақтау",
+    "cancel": "Болдырмау"
+  },
+  "item_delete_confirm": {
+    "title": "Тағамды жою керек пе?",
+    "description": "Бұл әрекетті қайтару мүмкін емес.",
+    "confirm": "Жою"
+  },
+  "allergens": {
+    "title": "Аллергендер мен калориялар",
+    "label": {
+      "dairy": "Сүт өнімдері",
+      "gluten": "Глютен",
+      "eggs": "Жұмыртқа",
+      "fish": "Балық",
+      "honey": "Бал",
+      "nuts": "Жаңғақ"
+    },
+    "emoji": {
+      "dairy": "🥛",
+      "gluten": "🌾",
+      "eggs": "🥚",
+      "fish": "🐟",
+      "honey": "🍯",
+      "nuts": "🥜"
+    },
+    "unknown": "{{code}}",
+    "with_count": "{{label}} · {{count}}"
+  },
+  "calories": {
+    "per_day": "Күніне калория",
+    "unit": "ккал"
+  },
+  "empty": {
+    "week": "Бұл аптада мәзір жоқ",
+    "day": "Тағамдар қосылмаған",
+    "filtered": "Сүзгілер бойынша ештеңе табылмады",
+    "meal_type_placeholder": "—"
+  },
+  "days": {
+    "mon": "Дс",
+    "tue": "Сс",
+    "wed": "Ср",
+    "thu": "Бс",
+    "fri": "Жм"
+  }
+}

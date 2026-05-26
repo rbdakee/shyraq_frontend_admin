@@ -1,0 +1,170 @@
+{
+  "title": "Кесте",
+  "sub": "Топтар үшін үлгілер мен оқиғалар",
+  "tabs": {
+    "templates": "Үлгілер",
+    "weeks": "Апталар мен оқиғалар"
+  },
+  "templates": {
+    "list_empty": "Үлгілер әзірге жоқ",
+    "list_filtered_empty": "Сүзгілер бойынша ештеңе табылмады",
+    "create_button": "Үлгі жасау",
+    "first_template": "Алғашқы үлгіні жасау",
+    "filter_group": "Топ",
+    "filter_all_groups": "Барлық топтар",
+    "filter_kg_wide": "Бүкіл бақша",
+    "filter_active": "Тек белсенділер",
+    "active_badge": "Белсенді",
+    "inactive_badge": "Белсенді емес",
+    "slots_count": "{{count}} слот",
+    "valid_from": "{{date}} бастап қолданылады",
+    "valid_until": "{{date}} дейін",
+    "valid_indefinite": "мерзімсіз",
+    "detail_sub": "{{from}} бастап {{until}} · аптасына {{count}} слот",
+    "detail_until": "{{date}} дейін",
+    "detail_indefinite": "· мерзімсіз",
+    "create_dialog": {
+      "title": "Жаңа үлгі",
+      "group": "Топ (міндетті емес)",
+      "name": "Атауы",
+      "valid_from": "Бастап қолданылады",
+      "valid_until": "Дейін (міндетті емес)",
+      "is_active": "Белсенді",
+      "submit": "Жасау",
+      "cancel": "Бас тарту"
+    },
+    "edit_dialog": {
+      "title": "Үлгіні өңдеу",
+      "name": "Атауы",
+      "is_active": "Белсенді",
+      "valid_until": "Дейін қолданылады",
+      "submit": "Сақтау"
+    },
+    "create_success": "Үлгі жасалды",
+    "update_success": "Үлгі жаңартылды"
+  },
+  "slots": {
+    "add_button": "Слот қосу",
+    "create_dialog": {
+      "title": "Жаңа слот",
+      "day": "Апта күні",
+      "start_time": "Басталуы",
+      "end_time": "Аяқталуы",
+      "activity": "Белсенділік",
+      "location": "Орын (міндетті емес)",
+      "description": "Сипаттама (міндетті емес)",
+      "submit": "Қосу",
+      "cancel": "Бас тарту"
+    },
+    "edit_dialog": {
+      "title": "Слот",
+      "delete": "Жою",
+      "submit": "Сақтау",
+      "delete_confirm": {
+        "title": "Слотты жою?",
+        "description": "Бұл әрекетті кері қайтару мүмкін емес.",
+        "confirm": "Жою"
+      }
+    },
+    "create_success": "Слот қосылды",
+    "update_success": "Слот жаңартылды",
+    "delete_success": "Слот жойылды",
+    "days": {
+      "mon": "Дс",
+      "tue": "Сс",
+      "wed": "Ср",
+      "thu": "Бс",
+      "fri": "Жм",
+      "sat": "Сн",
+      "sun": "Жс"
+    },
+    "days_full": {
+      "mon": "Дүйсенбі",
+      "tue": "Сейсенбі",
+      "wed": "Сәрсенбі",
+      "thu": "Бейсенбі",
+      "fri": "Жұма",
+      "sat": "Сенбі",
+      "sun": "Жексенбі"
+    },
+    "legend": {
+      "title": "Шартты белгілер",
+      "lesson": "Сабақ",
+      "lesson_sub": "кәдімгі сабақ",
+      "meal": "Тамақ",
+      "meal_sub": "тамақтану",
+      "walk": "Серуен",
+      "walk_sub": "серуен / қабылдау"
+    }
+  },
+  "weeks": {
+    "title": "Апталар мен оқиғалар",
+    "filter_week_from": "Аптадан",
+    "filter_week_to": "Аптаға дейін",
+    "copy_button": "Бақша аптасын көшіру",
+    "copy_confirm": {
+      "title": "Аптаны көшіру?",
+      "description": "Көрсетілген аптадан келесіге БАРЛЫҚ топтардың кестесі көшіріледі. Жеке топ бойынша көшіру кейінірек қосылады.",
+      "from_monday": "Бастапқы апта дүйсенбісі",
+      "submit": "Көшіру",
+      "cancel": "Бас тарту",
+      "must_be_monday": "Күн дүйсенбі болуы керек"
+    },
+    "snapshots": {
+      "title": "Белсенді апталар",
+      "table": {
+        "group": "Топ",
+        "week": "Апта",
+        "source": "Дерек көзі",
+        "events": "Оқиғалар"
+      },
+      "source": {
+        "manual": "Қолмен",
+        "cron": "Авто-көшірме"
+      },
+      "empty": "Апта суреттері әзірге жоқ",
+      "filtered_empty": "Сүзгілер бойынша суреттер табылмады"
+    },
+    "events": {
+      "title": "Оқиғалар",
+      "add_button": "Оқиға қосу",
+      "status_header": "Күйі",
+      "status": {
+        "scheduled": "Жоспарланған",
+        "in_progress": "Орындалуда",
+        "completed": "Аяқталды",
+        "cancelled": "Бас тартылды"
+      },
+      "edit": "Өңдеу",
+      "delete": "Жою",
+      "create_dialog": {
+        "title": "Жаңа оқиға",
+        "group": "Топ",
+        "activity": "Белсенділік",
+        "starts_at": "Басталуы",
+        "ends_at": "Аяқталуы (міндетті емес)",
+        "location": "Орын (міндетті емес)",
+        "notes": "Ескертпе (міндетті емес)",
+        "submit": "Жасау",
+        "cancel": "Бас тарту"
+      },
+      "edit_dialog": {
+        "title": "Оқиға",
+        "submit": "Сақтау"
+      },
+      "delete_confirm": {
+        "title": "Оқиғаны жою?",
+        "description": "Бұл әрекетті кері қайтару мүмкін емес.",
+        "confirm": "Жою"
+      },
+      "create_success": "Оқиға жасалды",
+      "update_success": "Оқиға жаңартылды",
+      "delete_success": "Оқиға жойылды",
+      "empty": "Оқиғалар әзірге жоқ",
+      "filtered_empty": "Сүзгілер бойынша оқиғалар табылмады"
+    }
+  },
+  "copy": {
+    "success": "Көшірілді: {{copied}} топ, {{skipped}} өткізілді, барлығы {{events}} оқиға"
+  }
+}

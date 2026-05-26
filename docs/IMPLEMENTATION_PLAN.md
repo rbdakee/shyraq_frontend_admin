@@ -387,12 +387,12 @@ src/
 
 **Acceptance:**
 
-- [ ] Список шаблонов + create; редактор слотов (camelCase!) с conflict-инлайном 409 `slot_time_conflict`.
-- [ ] Week-snapshots: глобальный copy CTA → toast c summary; activity-events календарь/список с фильтрами; admin может create/edit/delete события (минимальный CRUD).
-- [ ] Меню день-редактор RU/KK (через `MultiLangTextDto`, ключ `kk`); copy-week идемпотентен (повтор → `plans_skipped > 0` → информативный toast); `is_published`/`notes` (i18n) save.
-- [ ] Mobile-stubs `routes/schedule/templates/$id.tsx`, `routes/meal-plans/index.tsx` переподключены к реальным хукам; TODO-строки `wire useSchedule`/`wire useMealPlans` удалены из `IMPLEMENTATION_PLAN.md` backlog.
-- [ ] `jsonb-i18n.ts` юнит-тесты покрывают обе формы (`kk` + `kz`).
-- [ ] Gate exit 0: `pnpm typecheck && pnpm lint --max-warnings=0 && pnpm test`.
+- [x] Список шаблонов + create; редактор слотов (camelCase!) с conflict-инлайном 409 `slot_time_conflict`.
+- [x] Week-snapshots: глобальный copy CTA → toast c summary; activity-events календарь/список с фильтрами; admin может create/edit/delete события (минимальный CRUD).
+- [x] Меню день-редактор RU/KK (через `MultiLangTextDto`, ключ `kk`); copy-week идемпотентен (повтор → `plans_skipped > 0` → информативный toast); `is_published`/`notes` (i18n) save.
+- [x] Mobile-stubs `routes/schedule/templates/$id.tsx`, `routes/meal-plans/index.tsx` переподключены к реальным хукам; TODO-строки `wire useSchedule`/`wire useMealPlans` удалены из `IMPLEMENTATION_PLAN.md` backlog.
+- [x] `jsonb-i18n.ts` юнит-тесты покрывают обе формы (`kk` + `kz`).
+- [x] Gate exit 0: `pnpm typecheck && pnpm lint --max-warnings=0 && pnpm test` (325 tests).
 
 ---
 
@@ -842,7 +842,7 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 | B8   | Заявки родителей                            | P0        | [x]    |
 | B9   | Оплаты + Тарифы + Назначения                | P1        | [x]    |
 | B10  | Возвраты + Скидки                           | P1        | [x]    |
-| B11  | Расписание + Меню                           | P1        | [ ]    |
+| B11  | Расписание + Меню                           | P1        | [x]    |
 | B12  | Контент + Qundylyq                          | P1        | [ ]    |
 | B13  | Посещаемость + Диагностика                  | P1        | [ ]    |
 | B14  | Структура + Профиль/Уведомления/WS          | P1        | [ ]    |
@@ -870,8 +870,8 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 | wire useAttendance hook to backend GET /api/v1/attendance/daily-status when B13 desktop batch runs                                       | `src/routes/attendance/daily-status.tsx:1`        | B13   | open   |
 | wire useStructure hook when B14 (Structure desktop) is built                                                                             | `src/routes/structure/locations/index.tsx:1`      | B14   | open   |
 | wire useStructure hook when B14 (Structure desktop) is built                                                                             | `src/routes/structure/cameras/index.tsx:1`        | B14   | open   |
-| wire useSchedule hook when B11 (Schedule desktop) is built                                                                               | `src/routes/schedule/templates/$id.tsx:1`         | B11   | open   |
-| wire useMealPlans hook when B11 (Schedule + Meals desktop) is built                                                                      | `src/routes/meal-plans/index.tsx:1`               | B11   | open   |
+| ~~wire useSchedule hook when B11 (Schedule desktop) is built~~                                                                           | ~~`src/routes/schedule/templates/$id.tsx:1`~~     | B11   | done   |
+| ~~wire useMealPlans hook when B11 (Schedule + Meals desktop) is built~~                                                                  | ~~`src/routes/meal-plans/index.tsx:1`~~           | B11   | done   |
 | wire useContent hook when B12 (Content desktop) is built                                                                                 | `src/routes/content/index.tsx:1`                  | B12   | open   |
 | wire useHolidays hook when holidays API + desktop page is built                                                                          | `src/routes/billing/holidays/index.tsx:1`         | B15   | open   |
 | wire useFiscalReceipts hook when fiscal API + desktop page is built                                                                      | `src/routes/billing/fiscal-receipts/index.tsx:1`  | B15   | open   |

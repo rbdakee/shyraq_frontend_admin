@@ -15,6 +15,8 @@ import ruStaff from '@/locales/ru/staff.json';
 import ruBilling from '@/locales/ru/billing.json';
 import ruParentRequests from '@/locales/ru/parent-requests.json';
 import ruAttendance from '@/locales/ru/attendance.json';
+import ruSchedule from '@/locales/ru/schedule.json';
+import ruMealPlans from '@/locales/ru/meal-plans.json';
 import kkCommon from '@/locales/kk/common.json';
 import kkErrors from '@/locales/kk/errors.json';
 import kkAuth from '@/locales/kk/auth.json';
@@ -29,6 +31,8 @@ import kkStaff from '@/locales/kk/staff.json';
 import kkBilling from '@/locales/kk/billing.json';
 import kkParentRequests from '@/locales/kk/parent-requests.json';
 import kkAttendance from '@/locales/kk/attendance.json';
+import kkSchedule from '@/locales/kk/schedule.json';
+import kkMealPlans from '@/locales/kk/meal-plans.json';
 
 const initialLocale = useUiStore.getState().locale;
 
@@ -49,6 +53,8 @@ void i18n.use(initReactI18next).init({
       billing: ruBilling,
       'parent-requests': ruParentRequests,
       attendance: ruAttendance,
+      schedule: ruSchedule,
+      'meal-plans': ruMealPlans,
     },
     kk: {
       common: kkCommon,
@@ -65,6 +71,8 @@ void i18n.use(initReactI18next).init({
       billing: kkBilling,
       'parent-requests': kkParentRequests,
       attendance: kkAttendance,
+      schedule: kkSchedule,
+      'meal-plans': kkMealPlans,
     },
   },
   lng: initialLocale,

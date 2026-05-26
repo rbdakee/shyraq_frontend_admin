@@ -404,6 +404,30 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/saas/kindergartens/{id}/admins': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List admins of a kindergarten.
+     * @description Returns a plain array (NOT offset-paginated) of staff_members with role=admin for the kindergarten. Optional `is_active` filter; omit it to return ALL admins (active + deactivated). full_name/phone/locale are resolved from the linked users row.
+     */
+    get: operations['SuperAdminKindergartenController_listAdmins_v1'];
+    put?: never;
+    /**
+     * Add another admin to an existing kindergarten.
+     * @description Find-or-create user by phone (existing identity untouched), then a staff_members row with role=admin. Strict 409 if ANY staff row already exists for the (kg, user) pair regardless of is_active. Best-effort invite SMS afterwards.
+     */
+    post: operations['SuperAdminKindergartenController_addAdmin_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/saas/kindergartens/{id}/archive': {
     parameters: {
       query?: never;
@@ -2560,23 +2584,6 @@ export interface paths {
     patch: operations['AdminAttendanceController_patchEvent_v1'];
     trace?: never;
   };
-  '/api/v1/admin/dashboard/attendance-today': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /** Today's attendance summary: list of child_daily_status records for the current day (Asia/Almaty TZ). Optional ?groupId= filter. */
-    get: operations['AdminAttendanceController_dashboardToday_v1'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/v1/admin/daily-status': {
     parameters: {
       query?: never;
@@ -3333,6 +3340,57 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/dashboard/summary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Dashboard KPI aggregate: active children/staff/groups, in-processing enrollments, overdue invoices, MTD/YTD revenue. */
+    get: operations['DashboardController_summary_v1'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/dashboard/payments-overview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Payments overview for a date range: paid/pending/overdue/refunded invoice buckets + completed-payment breakdown by provider. */
+    get: operations['DashboardController_paymentsOverview_v1'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/dashboard/attendance-today': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Today's attendance donut aggregate (Asia/Almaty): in_kindergarten / checked_out / absent / on_vacation / sick. */
+    get: operations['DashboardController_attendanceToday_v1'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/admin/diagnostic-templates': {
     parameters: {
       query?: never;
@@ -4012,6 +4070,92 @@ export interface components {
        * @example true
        */
       sent: boolean;
+    };
+    KindergartenAdminDto: {
+      /** @example e2e2b6a7-1a2b-4c3d-9e8f-0a1b2c3d4e5f */
+      staff_member_id: string;
+      /** @example d3e2b6a7-1a2b-4c3d-9e8f-0a1b2c3d4e5f */
+      user_id: string;
+      /** @example Айгерим Нурланкызы */
+      full_name: string | null;
+      /** @example +77011112233 */
+      phone: string | null;
+      /**
+       * @example ru
+       * @enum {string|null}
+       */
+      locale: 'ru' | 'kk' | null;
+      /** @example true */
+      is_active: boolean;
+      /**
+       * @description YYYY-MM-DD hire date; null when unset.
+       * @example 2026-04-28
+       */
+      hired_at: string | null;
+      /**
+       * @description YYYY-MM-DD fired date; null when still active.
+       * @example null
+       */
+      fired_at: string | null;
+      /** @example 2026-04-28T10:00:00.000Z */
+      created_at: string;
+    };
+    AddKindergartenAdminDto: {
+      /**
+       * @description Admin full name.
+       * @example Жанна Серикова
+       */
+      full_name: string;
+      /**
+       * @description Admin phone — E.164 format. Used to find-or-create the user.
+       * @example +77011115566
+       */
+      phone: string;
+      /**
+       * @description Preferred locale for invite SMS and UI. Defaults to ru.
+       * @example kk
+       * @enum {string}
+       */
+      locale?: 'ru' | 'kk';
+    };
+    AddedAdminUserDto: {
+      /** @example d3e2b6a7-1a2b-4c3d-9e8f-0a1b2c3d4e5f */
+      id: string;
+      /** @example +77011115566 */
+      phone: string;
+      /** @example Жанна Серикова */
+      full_name: string;
+      /**
+       * @example kk
+       * @enum {string}
+       */
+      locale: 'ru' | 'kk';
+    };
+    AddedAdminStaffDto: {
+      /** @example e2e2b6a7-1a2b-4c3d-9e8f-0a1b2c3d4e5f */
+      id: string;
+      /**
+       * @example admin
+       * @enum {string}
+       */
+      role: 'admin';
+      /** @example true */
+      is_active: boolean;
+      /** @example 2026-04-28 */
+      hired_at: string | null;
+      /** @example 2026-04-28T10:00:00.000Z */
+      created_at: string;
+    };
+    AddKindergartenAdminResponseDto: {
+      /** @example 7c2c2b6a-1a2b-4c3d-9e8f-0a1b2c3d4e5f */
+      kindergarten_id: string;
+      user: components['schemas']['AddedAdminUserDto'];
+      staff_member: components['schemas']['AddedAdminStaffDto'];
+      /**
+       * @description true if the invite SMS adapter accepted the message. false means the adapter rejected it but the request still succeeded (best-effort).
+       * @example true
+       */
+      invite_sms_sent: boolean;
     };
     GroupDto: {
       /** @example b2c3d4e5-1234-5678-abcd-1234567890ab */
@@ -7803,6 +7947,116 @@ export interface components {
        */
       kindergartens_processed?: number;
     };
+    DashboardSummaryResponseDto: {
+      /**
+       * @description Children with status = 'active'.
+       * @example 128
+       */
+      active_children: number;
+      /**
+       * @description Enrollments with status IN ('new','in_processing','waitlist').
+       * @example 9
+       */
+      enrollments_in_processing: number;
+      /**
+       * @description Invoices with due_date < today (Asia/Almaty) AND status IN ('pending','partial').
+       * @example 4
+       */
+      invoices_overdue_count: number;
+      /**
+       * @description Sum of amount_after_discount over the overdue invoices (₸).
+       * @example 320000
+       */
+      invoices_overdue_amount: number;
+      /**
+       * @description Gross completed-payment revenue for the current calendar month (Asia/Almaty), ₸.
+       * @example 1850000
+       */
+      mtd_revenue: number;
+      /**
+       * @description Gross completed-payment revenue for the current calendar year (Asia/Almaty), ₸.
+       * @example 14200000
+       */
+      ytd_revenue: number;
+      /**
+       * @description Staff members with is_active = true AND archived_at IS NULL.
+       * @example 23
+       */
+      active_staff: number;
+      /**
+       * @description Groups with archived_at IS NULL.
+       * @example 8
+       */
+      active_groups: number;
+    };
+    PaymentBucketDto: {
+      /**
+       * @description Invoice count in this bucket.
+       * @example 96
+       */
+      count: number;
+      /**
+       * @description Sum of amount_after_discount over the bucket (₸).
+       * @example 1850000
+       */
+      amount: number;
+    };
+    ProviderRowDto: {
+      /**
+       * @description Payment provider — one of 'mock','halyk_epay','kaspi_pay','tiptoppay','freedom_pay','cash'.
+       * @example kaspi_pay
+       */
+      provider: string;
+      /**
+       * @description Completed payment count.
+       * @example 80
+       */
+      count: number;
+      /**
+       * @description Sum of payment amount for this provider (₸).
+       * @example 1600000
+       */
+      amount: number;
+    };
+    PaymentsOverviewResponseDto: {
+      /** @description Invoices with status = 'paid'. */
+      paid: components['schemas']['PaymentBucketDto'];
+      /** @description Invoices with status IN ('pending','partial') AND NOT overdue (due_date >= today). */
+      pending: components['schemas']['PaymentBucketDto'];
+      /** @description Invoices with due_date < today (Asia/Almaty) AND status IN ('pending','partial'). */
+      overdue: components['schemas']['PaymentBucketDto'];
+      /** @description Invoices with status = 'refunded'. */
+      refunded: components['schemas']['PaymentBucketDto'];
+      /** @description Completed-payment breakdown by provider over [from,to] (by paid_at). */
+      by_provider: components['schemas']['ProviderRowDto'][];
+    };
+    AttendanceTodayResponseDto: {
+      /**
+       * @description Children whose last event today is check_in.
+       * @example 42
+       */
+      in_kindergarten: number;
+      /**
+       * @description Children whose last event today is check_out.
+       * @example 7
+       */
+      checked_out: number;
+      /**
+       * @description daily_status='absent' AND no check_in event that day.
+       * @example 5
+       */
+      absent: number;
+      /**
+       * @description daily_status='on_vacation'.
+       * @example 3
+       */
+      on_vacation: number;
+      /**
+       * @description daily_status='sick'.
+       * @example 2
+       */
+      sick: number;
+    };
     DiagnosticTemplateResponseDto: {
       /** @example aaaaaaaa-1111-1111-1111-aaaaaaaaaaaa */
       id: string;
@@ -9022,6 +9276,129 @@ export interface operations {
           [name: string]: unknown;
         };
         content?: never;
+      };
+    };
+  };
+  SuperAdminKindergartenController_listAdmins_v1: {
+    parameters: {
+      query?: {
+        /** @description Filter admins by active flag. Omit to return ALL admins (active + deactivated). */
+        is_active?: boolean;
+      };
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['KindergartenAdminDto'][];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Caller is not super_admin/support. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Kindergarten not found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+    };
+  };
+  SuperAdminKindergartenController_addAdmin_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AddKindergartenAdminDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AddKindergartenAdminResponseDto'];
+        };
+      };
+      /** @description Invalid phone/locale format (`invariant_violation`). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Caller is not super_admin/support. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Kindergarten not found (`kindergarten_not_found`). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Kindergarten archived (`kindergarten_archived`), or an admin (`admin_already_exists`) / non-admin staff (`staff_already_exists`) row already exists for the (kg, user) pair. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
       };
     };
   };
@@ -16608,46 +16985,6 @@ export interface operations {
       };
     };
   };
-  AdminAttendanceController_dashboardToday_v1: {
-    parameters: {
-      query?: {
-        /** @description Filter by group id. */
-        groupId?: string;
-        /** @description Date override YYYY-MM-DD (defaults to today in Asia/Almaty). */
-        date?: string;
-      };
-      header?: {
-        'x-custom-lang'?: unknown;
-      };
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['DailyStatusResponseDto'][];
-        };
-      };
-      /** @description Bearer missing/invalid/revoked. */
-      401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Caller is not admin/reception. */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
   AdminAttendanceController_listDailyStatuses_v1: {
     parameters: {
       query?: {
@@ -19475,6 +19812,128 @@ export interface operations {
       };
       /** @description File not found. */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DashboardController_summary_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DashboardSummaryResponseDto'];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not admin/reception. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DashboardController_paymentsOverview_v1: {
+    parameters: {
+      query: {
+        /** @description Inclusive lower bound (YYYY-MM-DD). */
+        from: string;
+        /** @description Inclusive upper bound (YYYY-MM-DD). Must be >= from. */
+        to: string;
+      };
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PaymentsOverviewResponseDto'];
+        };
+      };
+      /** @description Validation error or invalid_date_range (to < from). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not admin/reception. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  DashboardController_attendanceToday_v1: {
+    parameters: {
+      query?: {
+        /** @description Filter by group (children.current_group_id). */
+        group_id?: string;
+        /** @description Date override YYYY-MM-DD (defaults to today in Asia/Almaty). */
+        date?: string;
+      };
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttendanceTodayResponseDto'];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not admin/reception. */
+      403: {
         headers: {
           [name: string]: unknown;
         };

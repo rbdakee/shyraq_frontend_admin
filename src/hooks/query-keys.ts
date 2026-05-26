@@ -3,9 +3,15 @@ import type { CustomDiscountListFilters, ApplicationListFilters } from '@/api/cu
 import type { EnrollmentListFilters } from '@/api/enrollments';
 import type { GroupListFilters } from '@/api/groups';
 import type { InvoiceListFilters } from '@/api/invoices';
+import type { MealPlanListFilters } from '@/api/meal-plans';
 import type { ParentRequestListFilters } from '@/api/parent-requests';
 import type { PaymentListFilters } from '@/api/payments';
 import type { RefundListFilters } from '@/api/refunds';
+import type {
+  ScheduleTemplateListFilters,
+  WeekSnapshotListFilters,
+  ActivityEventListFilters,
+} from '@/api/schedule';
 import type { StaffListFilters } from '@/api/staff';
 import type { TariffAssignmentListFilters } from '@/api/tariff-assignments';
 import type { TariffPlanListFilters } from '@/api/tariff-plans';
@@ -93,5 +99,22 @@ export const qk = {
       ['parent-requests', 'list', filters] as const,
     detail: (id: string) => ['parent-requests', 'detail', id] as const,
     messages: (id: string) => ['parent-requests', 'messages', id] as const,
+  },
+  schedule: {
+    all: ['schedule'] as const,
+    templatesList: (filters: ScheduleTemplateListFilters = {}) =>
+      ['schedule', 'templates', 'list', filters] as const,
+    templateDetail: (id: string) => ['schedule', 'templates', 'detail', id] as const,
+    templateSlots: (templateId: string) => ['schedule', 'templates', templateId, 'slots'] as const,
+    weekSnapshots: (filters: WeekSnapshotListFilters = {}) =>
+      ['schedule', 'week-snapshots', filters] as const,
+    activityEvents: (filters: ActivityEventListFilters = {}) =>
+      ['schedule', 'activity-events', 'list', filters] as const,
+    activityEventDetail: (id: string) => ['schedule', 'activity-events', 'detail', id] as const,
+  },
+  mealPlans: {
+    all: ['meal-plans'] as const,
+    list: (filters: MealPlanListFilters = {}) => ['meal-plans', 'list', filters] as const,
+    detail: (id: string) => ['meal-plans', 'detail', id] as const,
   },
 } as const;

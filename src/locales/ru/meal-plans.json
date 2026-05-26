@@ -1,0 +1,129 @@
+{
+  "title": "Меню",
+  "sub_kg_wide": "Весь садик",
+  "week_range": "Неделя {{from}} — {{to}}",
+  "view": {
+    "week": "Неделя",
+    "month": "Месяц"
+  },
+  "nav": {
+    "prev": "Пред.",
+    "next": "След."
+  },
+  "group_filter": {
+    "all": "Весь садик"
+  },
+  "today_badge": "Сегодня",
+  "copy_button": "Скопировать на след. неделю",
+  "copy_dialog": {
+    "title": "Скопировать неделю меню?",
+    "description": "Меню с указанной недели будет скопировано на следующую. Уже существующие дни будут пропущены.",
+    "from_monday": "Понедельник недели-источника",
+    "submit": "Скопировать",
+    "cancel": "Отмена"
+  },
+  "copy": {
+    "success": "Скопировано {{created}} планов, пропущено {{skipped}}"
+  },
+  "add_dish_button": "Добавить блюдо",
+  "is_published": {
+    "true": "Опубликовано",
+    "false": "Черновик"
+  },
+  "source": {
+    "manual": "Вручную",
+    "cron": "Авто-копия",
+    "copied": "Скопировано"
+  },
+  "meal_type": {
+    "breakfast": "Завтрак",
+    "snack_am": "2-й завтрак",
+    "lunch": "Обед",
+    "snack_pm": "Полдник",
+    "dinner": "Ужин"
+  },
+  "meal_type_kk": {
+    "breakfast": "Таңғы ас",
+    "snack_am": "Жеңіл тамақ",
+    "lunch": "Түскі ас",
+    "snack_pm": "Шай",
+    "dinner": "Кешкі ас"
+  },
+  "create_plan": {
+    "button": "Создать меню на этот день",
+    "confirm_title": "Создать меню?",
+    "confirm_description": "Будет создан план меню на {{date}}.",
+    "submit": "Создать",
+    "cancel": "Отмена"
+  },
+  "day_dialog": {
+    "title": "Меню на {{date}}",
+    "notes": "Заметки",
+    "is_published_label": "Опубликовано",
+    "close": "Закрыть",
+    "delete_plan": "Удалить меню"
+  },
+  "plan_delete_confirm": {
+    "title": "Удалить меню дня?",
+    "description": "Меню и все блюда этого дня будут удалены. Это действие нельзя отменить.",
+    "confirm": "Удалить",
+    "success": "Меню удалено"
+  },
+  "item_form": {
+    "create_title": "Новое блюдо",
+    "edit_title": "Редактировать блюдо",
+    "meal_type": "Приём пищи",
+    "dish_name": "Название блюда",
+    "description": "Описание",
+    "allergens": "Аллергены",
+    "calories": "Калории",
+    "photo_url": "Фото (URL)",
+    "position": "Порядок",
+    "submit_create": "Добавить",
+    "submit_edit": "Сохранить",
+    "cancel": "Отмена"
+  },
+  "item_delete_confirm": {
+    "title": "Удалить блюдо?",
+    "description": "Это действие нельзя отменить.",
+    "confirm": "Удалить"
+  },
+  "allergens": {
+    "title": "Аллергены и калории",
+    "label": {
+      "dairy": "Молочные",
+      "gluten": "Глютен",
+      "eggs": "Яйца",
+      "fish": "Рыба",
+      "honey": "Мёд",
+      "nuts": "Орехи"
+    },
+    "emoji": {
+      "dairy": "🥛",
+      "gluten": "🌾",
+      "eggs": "🥚",
+      "fish": "🐟",
+      "honey": "🍯",
+      "nuts": "🥜"
+    },
+    "unknown": "{{code}}",
+    "with_count": "{{label}} · {{count}}"
+  },
+  "calories": {
+    "per_day": "Калорий за день",
+    "unit": "ккал"
+  },
+  "empty": {
+    "week": "На этой неделе меню не задано",
+    "day": "Блюда не добавлены",
+    "filtered": "По фильтрам ничего не найдено",
+    "meal_type_placeholder": "—"
+  },
+  "days": {
+    "mon": "Пн",
+    "tue": "Вт",
+    "wed": "Ср",
+    "thu": "Чт",
+    "fri": "Пт"
+  }
+}

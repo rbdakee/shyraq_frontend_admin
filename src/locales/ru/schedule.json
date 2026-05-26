@@ -1,0 +1,170 @@
+{
+  "title": "Расписание",
+  "sub": "Шаблоны и события для групп",
+  "tabs": {
+    "templates": "Шаблоны",
+    "weeks": "Недели и события"
+  },
+  "templates": {
+    "list_empty": "Шаблонов пока нет",
+    "list_filtered_empty": "По фильтрам ничего не найдено",
+    "create_button": "Создать шаблон",
+    "first_template": "Создать первый шаблон",
+    "filter_group": "Группа",
+    "filter_all_groups": "Все группы",
+    "filter_kg_wide": "Весь садик",
+    "filter_active": "Только активные",
+    "active_badge": "Активен",
+    "inactive_badge": "Неактивен",
+    "slots_count": "{{count}} слотов",
+    "valid_from": "Действует с {{date}}",
+    "valid_until": "до {{date}}",
+    "valid_indefinite": "бессрочно",
+    "detail_sub": "Действует с {{from}} {{until}} · {{count}} слотов в неделю",
+    "detail_until": "до {{date}}",
+    "detail_indefinite": "· бессрочно",
+    "create_dialog": {
+      "title": "Новый шаблон",
+      "group": "Группа (опц.)",
+      "name": "Название",
+      "valid_from": "Действует с",
+      "valid_until": "Действует до (опц.)",
+      "is_active": "Активен",
+      "submit": "Создать",
+      "cancel": "Отмена"
+    },
+    "edit_dialog": {
+      "title": "Редактировать шаблон",
+      "name": "Название",
+      "is_active": "Активен",
+      "valid_until": "Действует до",
+      "submit": "Сохранить"
+    },
+    "create_success": "Шаблон создан",
+    "update_success": "Шаблон обновлён"
+  },
+  "slots": {
+    "add_button": "Добавить слот",
+    "create_dialog": {
+      "title": "Новый слот",
+      "day": "День недели",
+      "start_time": "Начало",
+      "end_time": "Конец",
+      "activity": "Активность",
+      "location": "Локация (опц.)",
+      "description": "Описание (опц.)",
+      "submit": "Добавить",
+      "cancel": "Отмена"
+    },
+    "edit_dialog": {
+      "title": "Слот",
+      "delete": "Удалить",
+      "submit": "Сохранить",
+      "delete_confirm": {
+        "title": "Удалить слот?",
+        "description": "Это действие нельзя отменить.",
+        "confirm": "Удалить"
+      }
+    },
+    "create_success": "Слот добавлен",
+    "update_success": "Слот обновлён",
+    "delete_success": "Слот удалён",
+    "days": {
+      "mon": "Пн",
+      "tue": "Вт",
+      "wed": "Ср",
+      "thu": "Чт",
+      "fri": "Пт",
+      "sat": "Сб",
+      "sun": "Вс"
+    },
+    "days_full": {
+      "mon": "Понедельник",
+      "tue": "Вторник",
+      "wed": "Среда",
+      "thu": "Четверг",
+      "fri": "Пятница",
+      "sat": "Суббота",
+      "sun": "Воскресенье"
+    },
+    "legend": {
+      "title": "Условные обозначения",
+      "lesson": "Урок",
+      "lesson_sub": "обычное занятие",
+      "meal": "Еда",
+      "meal_sub": "приём пищи",
+      "walk": "Прогулка",
+      "walk_sub": "прогулка / приём"
+    }
+  },
+  "weeks": {
+    "title": "Недели и события",
+    "filter_week_from": "С недели",
+    "filter_week_to": "По неделю",
+    "copy_button": "Скопировать неделю садика",
+    "copy_confirm": {
+      "title": "Скопировать неделю?",
+      "description": "Будет скопировано расписание ВСЕХ групп с указанной недели на следующую. Per-group копирование появится позже.",
+      "from_monday": "Понедельник недели-источника",
+      "submit": "Скопировать",
+      "cancel": "Отмена",
+      "must_be_monday": "Дата должна быть понедельником"
+    },
+    "snapshots": {
+      "title": "Активные недели",
+      "table": {
+        "group": "Группа",
+        "week": "Неделя",
+        "source": "Источник",
+        "events": "События"
+      },
+      "source": {
+        "manual": "Вручную",
+        "cron": "Авто-копия"
+      },
+      "empty": "Снимков недель ещё нет",
+      "filtered_empty": "По фильтрам снимков не найдено"
+    },
+    "events": {
+      "title": "События",
+      "add_button": "Добавить событие",
+      "status_header": "Статус",
+      "status": {
+        "scheduled": "Запланировано",
+        "in_progress": "В процессе",
+        "completed": "Завершено",
+        "cancelled": "Отменено"
+      },
+      "edit": "Редактировать",
+      "delete": "Удалить",
+      "create_dialog": {
+        "title": "Новое событие",
+        "group": "Группа",
+        "activity": "Активность",
+        "starts_at": "Начало",
+        "ends_at": "Конец (опц.)",
+        "location": "Локация (опц.)",
+        "notes": "Заметка (опц.)",
+        "submit": "Создать",
+        "cancel": "Отмена"
+      },
+      "edit_dialog": {
+        "title": "Событие",
+        "submit": "Сохранить"
+      },
+      "delete_confirm": {
+        "title": "Удалить событие?",
+        "description": "Это действие нельзя отменить.",
+        "confirm": "Удалить"
+      },
+      "create_success": "Событие создано",
+      "update_success": "Событие обновлено",
+      "delete_success": "Событие удалено",
+      "empty": "Событий ещё нет",
+      "filtered_empty": "По фильтрам событий не найдено"
+    }
+  },
+  "copy": {
+    "success": "Скопировано: {{copied}} групп, пропущено {{skipped}}, всего событий {{events}}"
+  }
+}
