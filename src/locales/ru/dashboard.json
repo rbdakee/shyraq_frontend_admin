@@ -17,6 +17,7 @@
   "sick": "Болеют",
   "finances": "Финансы",
   "go_to_invoices": "Перейти в счета →",
+  "go_to_attendance": "Журнал посещений →",
   "overdue": "Просрочено",
   "invoices_count_one": "{{count}} счёт",
   "invoices_count_few": "{{count}} счёта",

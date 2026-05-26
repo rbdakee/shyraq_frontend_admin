@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { type ColumnDef } from '@tanstack/react-table';
-import { PlusIcon, SearchIcon, EyeIcon, DownloadIcon } from 'lucide-react';
+import { PlusIcon, SearchIcon, EyeIcon, DownloadIcon, ChevronRightIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
@@ -28,10 +28,14 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { DataTable } from '@/components/data-table/data-table';
+import { Fab } from '@/components/ui/fab';
 import { PhoneInput } from '@/components/forms/phone-input';
 import { mapValidationErrors } from '@/components/forms/map-validation-errors';
+import MobileTopBar from '@/components/layout/mobile-top-bar';
 import { useStaffList, useCreateStaff } from '@/hooks/use-staff';
 import { useGroups, useAssignGroupMentor } from '@/hooks/use-groups';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { cn } from '@/lib/cn';
 import { formatPhone, getInitials } from '@/lib/format';
 import { toI18nKey } from '@/lib/error-map';
 import { SEARCH_DEBOUNCE_MS } from '@/lib/constants';
@@ -77,6 +81,7 @@ type CreateStaffForm = z.infer<typeof CreateStaffSchema>;
 export default function StaffListPage() {
   const { t } = useTranslation('staff');
   const navigate = useNavigate();
+  const { isMobile } = useBreakpoint();
 
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [activeFilter, setActiveFilter] = useState<string>('all');
@@ -257,6 +262,102 @@ export default function StaffListPage() {
       </Button>
     </>
   );
+
+  const roleChips: { value: string; label: string; count?: number }[] = useMemo(
+    () => [
+      { value: 'all', label: t('filters.all_roles'), count: allData.length },
+      { value: 'mentor', label: t('role.mentor'), count: mentorCount },
+      { value: 'specialist', label: t('role.specialist'), count: specialistCount },
+    ],
+    [t, allData.length, mentorCount, specialistCount],
+  );
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col gap-3">
+        <MobileTopBar
+          title={t('title')}
+          sub={t('mobile.header_sub', { count: activeCount })}
+          back={false}
+          action={
+            <button
+              type="button"
+              className="m-iconbtn primary"
+              onClick={() => setCreateOpen(true)}
+              aria-label={t('create_button')}
+            >
+              <PlusIcon />
+            </button>
+          }
+        />
+
+        <div className="m-search">
+          <SearchIcon />
+          <input
+            value={searchInput}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            placeholder={t('search_placeholder')}
+          />
+        </div>
+
+        <div className="m-chips">
+          {roleChips.map((chip) => (
+            <button
+              key={chip.value}
+              type="button"
+              className={cn('m-chip', roleFilter === chip.value && 'active')}
+              onClick={() => setRoleFilter(chip.value)}
+            >
+              {chip.label}
+              {chip.count !== undefined && <span className="m-chip-count">{chip.count}</span>}
+            </button>
+          ))}
+        </div>
+
+        <div className="m-card flush">
+          {data.map((s) => (
+            <div
+              key={s.id}
+              className="m-list-row"
+              style={{ opacity: s.is_active ? 1 : 0.55 }}
+              onClick={() => navigate(`/staff/${s.id}`)}
+            >
+              <div className="m-avatar staff">{getInitials(s.full_name)}</div>
+              <div className="min-w-0">
+                <div className="m-row-title">{s.full_name}</div>
+                <div className="m-row-sub flex items-center gap-1.5" style={{ marginTop: 3 }}>
+                  <Badge
+                    variant={roleVariant(s.role)}
+                    className="text-[10.5px]"
+                    style={{ padding: '1px 6px' }}
+                  >
+                    {t(`role.${s.role}`)}
+                  </Badge>
+                  <span className="text-[color:var(--text-3)]">· —</span>
+                </div>
+              </div>
+              {!s.is_active && (
+                <span className="text-[11px] text-[color:var(--text-4)]">
+                  {t('status.inactive')}
+                </span>
+              )}
+              {s.is_active && <ChevronRightIcon className="m-row-chev size-4" />}
+            </div>
+          ))}
+        </div>
+
+        <Fab onClick={() => setCreateOpen(true)} aria-label={t('create_button')}>
+          <PlusIcon />
+        </Fab>
+
+        <CreateStaffModal
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          groups={groupsQuery.data ?? []}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-[14px]">

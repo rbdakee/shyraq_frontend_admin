@@ -110,6 +110,11 @@
     "load_more": "Загрузить ранние сообщения"
   },
 
+  "mobile_sub": "{{newCount}} новых · {{total}} всего",
+  "mobile_tab_new": "Новые",
+  "mobile_tab_in_progress": "В работе",
+  "mobile_tab_closed": "Закрытые",
+
   "success": {
     "accepted": "Заявка принята",
     "rejected": "Заявка отклонена",

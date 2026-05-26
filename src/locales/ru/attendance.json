@@ -1,0 +1,17 @@
+{
+  "title": "Посещаемость",
+  "mobile_today_sub": "Сегодня",
+  "mobile_total_today": "Всего сегодня",
+  "mobile_fill_rate": "Заполняемость",
+  "mobile_stat_present": "В саду",
+  "mobile_stat_late": "Опозд.",
+  "mobile_stat_sick": "Болеют",
+  "mobile_stat_absent": "Нет",
+  "mobile_by_groups": "По группам",
+  "mobile_children_title": "Дети",
+  "mobile_all_count": "Все {{count}} →",
+  "mobile_status_present": "В саду",
+  "mobile_status_late": "Опоздал",
+  "mobile_status_sick": "Болеет",
+  "mobile_status_absent": "Нет"
+}

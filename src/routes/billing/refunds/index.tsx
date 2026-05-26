@@ -5,7 +5,17 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { type ColumnDef } from '@tanstack/react-table';
-import { PlusIcon, MoreHorizontalIcon, CheckIcon, XIcon, PlayIcon } from 'lucide-react';
+import {
+  PlusIcon,
+  MoreHorizontalIcon,
+  CheckIcon,
+  XIcon,
+  PlayIcon,
+  AlertTriangleIcon,
+  FilterIcon,
+} from 'lucide-react';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import MobileTopBar from '@/components/layout/mobile-top-bar';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,6 +88,7 @@ const EMPTY_DATA: RefundResponseDto[] = [];
 export default function RefundsListPage() {
   const { t } = useTranslation('billing');
   const tz = DEFAULT_TIMEZONE;
+  const { isMobile } = useBreakpoint();
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [createOpen, setCreateOpen] = useState(false);
@@ -165,6 +176,10 @@ export default function RefundsListPage() {
       },
     });
   }
+
+  const [mobileTab, setMobileTab] = useState<'pending' | 'approved' | 'processed' | 'history'>(
+    'pending',
+  );
 
   const columns: ColumnDef<RefundResponseDto, unknown>[] = useMemo(
     () => [
@@ -287,6 +302,145 @@ export default function RefundsListPage() {
     ],
     [t, tz, paymentsMap, childrenMap],
   );
+
+  if (isMobile) {
+    const filteredItems = data.filter((r) => {
+      if (mobileTab === 'pending') return r.status === 'pending';
+      if (mobileTab === 'approved') return r.status === 'approved';
+      return r.status === 'processed' || r.status === 'rejected';
+    });
+
+    return (
+      <div className="m-shell">
+        <MobileTopBar
+          title={t('refunds.title')}
+          sub={t('mobile.refunds_sub', { count: pendingCount })}
+          action={
+            <button type="button" className="m-iconbtn" aria-label="Filter">
+              <FilterIcon className="size-5" />
+            </button>
+          }
+        />
+        <div className="m-scroll">
+          <div
+            style={{
+              padding: 14,
+              background: 'var(--warning-soft)',
+              borderRadius: 14,
+              color: 'var(--warning-fg)',
+              fontSize: '12.5px',
+              display: 'flex',
+              gap: 10,
+              marginBottom: 14,
+            }}
+          >
+            <AlertTriangleIcon style={{ width: 16, height: 16, flexShrink: 0, marginTop: 1 }} />
+            <div>{t('mobile.refunds_phase_a_banner')}</div>
+          </div>
+
+          <div className="m-segmented" style={{ marginBottom: 12 }}>
+            <button
+              type="button"
+              className={mobileTab === 'pending' ? 'on' : ''}
+              onClick={() => setMobileTab('pending')}
+            >
+              {t('mobile.refunds_tab_pending')}
+              {pendingCount > 0 && (
+                <span
+                  style={{
+                    marginLeft: 5,
+                    background: 'var(--warning)',
+                    color: 'white',
+                    fontSize: 10,
+                    padding: '1px 6px',
+                    borderRadius: 999,
+                    fontWeight: 700,
+                  }}
+                >
+                  {pendingCount}
+                </span>
+              )}
+            </button>
+            <button
+              type="button"
+              className={mobileTab === 'approved' ? 'on' : ''}
+              onClick={() => setMobileTab('approved')}
+            >
+              {t('mobile.refunds_tab_in_progress')}
+            </button>
+            <button
+              type="button"
+              className={mobileTab === 'history' ? 'on' : ''}
+              onClick={() => setMobileTab('history')}
+            >
+              {t('mobile.refunds_tab_history')}
+            </button>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {filteredItems.length === 0 && (
+              <div className="py-8 text-center text-[13px] text-[color:var(--text-3)]">
+                {t('refunds.empty_title')}
+              </div>
+            )}
+            {filteredItems.map((r) => {
+              const payment = paymentsMap.get(r.payment_id);
+              const childName = payment
+                ? (childrenMap.get(payment.child_id) ?? payment.child_id.slice(0, 8))
+                : '—';
+              return (
+                <div key={r.id} className="m-card" style={{ padding: 14 }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      marginBottom: 8,
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontFamily: 'JetBrains Mono, monospace',
+                          fontSize: 11,
+                          color: 'var(--text-4)',
+                        }}
+                      >
+                        {r.id.slice(0, 8)}
+                      </div>
+                      <div style={{ fontWeight: 600, fontSize: 14, marginTop: 2 }}>{childName}</div>
+                    </div>
+                    <div
+                      style={{ fontSize: 16, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}
+                    >
+                      {formatMoney(r.amount)}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '12.5px', color: 'var(--text-2)', marginBottom: 8 }}>
+                    {r.reason}
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                      {formatDateTime(r.created_at, tz)}
+                    </span>
+                    <Badge variant={REFUND_STATUS_BADGE[r.status]} dot>
+                      {t(`refunds.status.${r.status}`)}
+                    </Badge>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const toolbar = (
     <>

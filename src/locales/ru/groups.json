@@ -149,5 +149,24 @@
     "archive": "Деактивировать",
     "restore": "Восстановить",
     "view": "Просмотр"
+  },
+
+  "mobile": {
+    "header_sub": "{{count}} активных",
+    "kpi_groups": "Групп",
+    "kpi_children": "Детей",
+    "kpi_overflow": "Перепол.",
+    "capacity_label": "Заполненность",
+    "children_tab": "Дети",
+    "schedule_tab": "Расписание",
+    "history_tab": "История",
+    "waitlist": "лист ожидания: {{count}}",
+    "show_more": "Показать ещё {{count}} →",
+    "info_mentor": "Воспитатель",
+    "info_assistant": "Помощник",
+    "info_location": "Локация",
+    "info_age": "Возраст",
+    "info_tariff": "Тариф по умолч.",
+    "status_full": "Полная"
   }
 }

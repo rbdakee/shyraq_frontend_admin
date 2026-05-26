@@ -23,6 +23,9 @@ import {
   TagIcon,
   ClockIcon,
 } from 'lucide-react';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import MobileTopBar from '@/components/layout/mobile-top-bar';
+import { StickyBottomBar } from '@/components/layout/sticky-bottom-bar';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -246,6 +249,7 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
   const navigate = useNavigate();
   const locale = (i18n.language === 'kk' ? 'kk' : 'ru') as 'ru' | 'kk';
   const tz = DEFAULT_TIMEZONE;
+  const { isMobile } = useBreakpoint();
 
   const [step, setStep] = useState(1);
   const [activateConfirm, setActivateConfirm] = useState(false);
@@ -484,6 +488,243 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
     () => new Map((childrenQuery.data?.data ?? []).map((c) => [c.id, c.full_name])),
     [childrenQuery.data],
   );
+
+  const MOBILE_TOTAL_STEPS = 4;
+
+  if (isMobile) {
+    const mobileStepTitle: Record<number, string> = {
+      1: t('discounts.wizard.step1'),
+      2: t('mobile.discount_wizard_step2_title'),
+      3: t('discounts.wizard.step3'),
+      4: t('discounts.wizard.step4'),
+    };
+
+    async function handleMobileNext() {
+      if (step >= MOBILE_TOTAL_STEPS) {
+        const ok = await form.trigger([
+          'valid_from',
+          'valid_until',
+          'priority',
+          'push_ru',
+          'push_kk',
+          'notify_on_activation',
+        ]);
+        if (!ok) return;
+        handleSaveDraft();
+        return;
+      }
+      void handleNext();
+    }
+
+    function handleMobileBack() {
+      if (step <= 1) {
+        navigate('/billing/discounts');
+        return;
+      }
+      setStep(step - 1);
+    }
+
+    return (
+      <div className="m-shell">
+        <MobileTopBar
+          title={t('discounts.wizard.title_new')}
+          sub={t('mobile.discount_wizard_step_of', { step, total: MOBILE_TOTAL_STEPS })}
+          back
+          onBack={() => navigate('/billing/discounts')}
+          action={
+            <button
+              type="button"
+              className="m-iconbtn ghost"
+              onClick={() => navigate('/billing/discounts')}
+            >
+              <XIcon className="size-5" />
+            </button>
+          }
+        />
+        <div className="m-scroll" style={{ paddingBottom: 170 }}>
+          {/* Stepper progress bar */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
+            {Array.from({ length: MOBILE_TOTAL_STEPS }, (_, i) => (
+              <div
+                key={i}
+                style={{
+                  flex: 1,
+                  height: 4,
+                  borderRadius: 2,
+                  background: i < step ? 'var(--primary)' : 'var(--bg-sunken)',
+                }}
+              />
+            ))}
+          </div>
+
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: 'var(--primary)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              marginBottom: 4,
+            }}
+          >
+            {t('mobile.discount_wizard_step', { step })}
+          </div>
+          <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.02em', marginBottom: 6 }}>
+            {mobileStepTitle[step]}
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-3)', marginBottom: 18 }}>
+            {step === 2 ? t('mobile.discount_wizard_step2_desc') : ' '}
+          </div>
+
+          {step === 1 && (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                  {t('discounts.wizard.basic.name_ru')}
+                </label>
+                <input className="input" {...form.register('name_ru')} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                  {t('discounts.wizard.basic.name_kk')}
+                </label>
+                <input className="input" {...form.register('name_kk')} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                  {t('discounts.wizard.basic.discount_type')}
+                </label>
+                <select className="select" {...form.register('discount_type')}>
+                  <option value="percentage">{t('discounts.type.percentage')}</option>
+                  <option value="fixed_amount">{t('discounts.type.fixed_amount')}</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                  {t('discounts.wizard.basic.amount')}
+                </label>
+                <input
+                  className="input"
+                  type="number"
+                  {...form.register('amount', { valueAsNumber: true })}
+                />
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="flex flex-col gap-4">
+              {fields.map((field, idx) => (
+                <div
+                  key={field.id}
+                  className="m-card"
+                  style={{ padding: 14, background: 'var(--bg-subtle)' }}
+                >
+                  <div className="m-section-h" style={{ margin: '0 0 8px' }}>
+                    <div className="m-section-title">
+                      {t('mobile.discount_wizard_condition_n', { n: idx + 1 })}
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-semibold text-[color:var(--text-3)]">
+                        {t('mobile.discount_wizard_field')}
+                      </label>
+                      <select className="select" {...form.register(`conditions.${idx}.type`)}>
+                        {CONDITION_TYPES.map((ct) => (
+                          <option key={ct} value={ct}>
+                            {t(`discounts.wizard.conditions.type.${ct}`)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-semibold text-[color:var(--text-3)]">
+                        {t('mobile.discount_wizard_value')}
+                      </label>
+                      <input className="input" {...form.register(`conditions.${idx}.value`)} />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="m-iconbtn ghost mt-2"
+                    onClick={() => remove(idx)}
+                  >
+                    <XIcon className="size-4" />
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                className="m-btn ghost"
+                style={{
+                  marginTop: 10,
+                  justifyContent: 'flex-start',
+                  background: 'var(--primary-soft)',
+                  color: 'var(--primary-fg)',
+                }}
+                onClick={() => append({ type: CONDITION_TYPES[0], value: '' })}
+              >
+                <PlusIcon className="size-4" />
+                {t('mobile.discount_wizard_add_condition')}
+              </button>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                  {t('discounts.wizard.targeting.title')}
+                </label>
+                <select className="select" {...form.register('target_type')}>
+                  {TARGET_OPTIONS.map((opt) => (
+                    <option key={opt.id} value={opt.id}>
+                      {t(`discounts.target_type.${opt.id}`)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                  {t('discounts.wizard.period.valid_from')}
+                </label>
+                <input className="input" type="date" {...form.register('valid_from')} />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                  {t('discounts.wizard.period.valid_until')}
+                </label>
+                <input className="input" type="date" {...form.register('valid_until')} />
+              </div>
+            </div>
+          )}
+        </div>
+
+        <StickyBottomBar>
+          <button type="button" className="m-btn" style={{ flex: 1 }} onClick={handleMobileBack}>
+            {t('mobile.discount_wizard_prev')}
+          </button>
+          <button
+            type="button"
+            className="m-btn primary"
+            style={{ flex: 2 }}
+            onClick={handleMobileNext}
+            disabled={isSaving}
+          >
+            {step < MOBILE_TOTAL_STEPS
+              ? t('mobile.discount_wizard_next')
+              : t('discounts.wizard.save_draft')}
+          </button>
+        </StickyBottomBar>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-[14px]">

@@ -11,7 +11,14 @@ import {
   InfoIcon,
   CreditCardIcon,
   GiftIcon,
+  DownloadIcon,
+  MailIcon,
+  ReceiptIcon,
+  MoreHorizontalIcon,
 } from 'lucide-react';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import MobileTopBar from '@/components/layout/mobile-top-bar';
+import { StickyBottomBar } from '@/components/layout/sticky-bottom-bar';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -57,6 +64,7 @@ export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation('billing');
   const tz = DEFAULT_TIMEZONE;
+  const { isMobile } = useBreakpoint();
 
   const invoiceQuery = useInvoice(id ?? '');
   const invoice = invoiceQuery.data;
@@ -145,6 +153,160 @@ export default function InvoiceDetailPage() {
     invoice.discount_pct > 0 &&
     invoice.amount_due !== invoice.amount_after_discount;
   const lineItems = invoice.line_items ?? [];
+
+  const statusTone: Record<string, string> = {
+    paid: 'success',
+    overdue: 'danger',
+    partial: 'warning',
+    pending: 'neutral',
+    refunded: 'info',
+    cancelled: 'neutral',
+  };
+  const tone = statusTone[invoice.status] ?? 'neutral';
+
+  if (isMobile) {
+    return (
+      <div className="m-shell">
+        <MobileTopBar
+          title={invoice.id.slice(0, 8)}
+          sub={t(`invoices.type.${invoice.invoice_type}`)}
+          back
+          action={
+            <button type="button" className="m-iconbtn ghost">
+              <MoreHorizontalIcon className="size-5" />
+            </button>
+          }
+        />
+        <div className="m-scroll" style={{ paddingBottom: 170 }}>
+          <div
+            className="m-card"
+            style={{
+              padding: 18,
+              marginBottom: 14,
+              textAlign: 'center',
+              background: `linear-gradient(180deg, var(--${tone}-soft), var(--bg-elev))`,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                color: `var(--${tone}-fg)`,
+              }}
+            >
+              {t(`invoices.status.${invoice.status}`)}
+            </div>
+            <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginTop: 4 }}>
+              {formatMoney(invoice.amount_after_discount)}
+            </div>
+            {invoice.status === 'paid' && (
+              <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>
+                {t('mobile.invoice_detail_paid_at', {
+                  date: formatDate(invoice.updated_at, tz),
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="m-card flush" style={{ marginBottom: 14 }}>
+            <div className="m-kv">
+              <span className="k">{t('mobile.invoice_detail_period')}</span>
+              <span className="v">
+                {formatDate(invoice.period_start, tz)} – {formatDate(invoice.period_end, tz)}
+              </span>
+            </div>
+            <div className="m-kv">
+              <span className="k">{t('mobile.invoice_detail_due_date')}</span>
+              <span className="v">{formatDate(invoice.due_date, tz)}</span>
+            </div>
+            <div className="m-kv">
+              <span className="k">{t('invoices.detail.child_label')}</span>
+              <span className="v">{childName ?? invoice.child_id.slice(0, 8)}</span>
+            </div>
+          </div>
+
+          <div className="m-section-h">
+            <div className="m-section-title">{t('mobile.invoice_detail_calculation')}</div>
+          </div>
+          <div className="m-card flush">
+            {lineItems.map((li) => (
+              <div key={li.id} className="m-kv">
+                <span className="k">{li.description}</span>
+                <span className="v">{formatMoney(li.line_total)}</span>
+              </div>
+            ))}
+            {hasDiscount && (
+              <div className="m-kv">
+                <span className="k" style={{ color: 'var(--success-fg)' }}>
+                  {invoice.discount_reason ?? t('invoices.detail.discount_label')} −
+                  {invoice.discount_pct}%
+                </span>
+                <span className="v" style={{ color: 'var(--success-fg)' }}>
+                  −{formatMoney(invoice.amount_due - invoice.amount_after_discount)}
+                </span>
+              </div>
+            )}
+            <div className="m-kv" style={{ background: 'var(--bg-subtle)' }}>
+              <span className="k" style={{ fontWeight: 700, color: 'var(--text-1)' }}>
+                {t('mobile.invoice_detail_total')}
+              </span>
+              <span className="v" style={{ fontSize: 18, fontWeight: 700 }}>
+                {formatMoney(invoice.amount_after_discount)}
+              </span>
+            </div>
+          </div>
+
+          <div className="m-section-h">
+            <div className="m-section-title">{t('mobile.invoice_detail_payments')}</div>
+          </div>
+          <div className="m-card flush">
+            <div className="px-4 py-6 text-center text-[12px] text-[color:var(--text-3)]">
+              {t('invoices.detail.payments_unavailable_hint')}
+            </div>
+          </div>
+
+          <div className="m-section-h">
+            <div className="m-section-title">{t('mobile.invoice_detail_fiscal')}</div>
+          </div>
+          <div
+            className="m-card"
+            style={{ padding: 14, display: 'flex', gap: 12, alignItems: 'center' }}
+          >
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 10,
+                background: 'var(--bg-sunken)',
+                color: 'var(--text-3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ReceiptIcon className="size-[18px]" />
+            </div>
+            <div style={{ flex: 1, fontSize: 12, color: 'var(--text-3)' }}>
+              {t('invoices.detail.fiscal_unavailable')}
+            </div>
+          </div>
+        </div>
+
+        <StickyBottomBar>
+          <button type="button" className="m-btn" style={{ flex: 1 }}>
+            <DownloadIcon className="size-4" />
+            {t('mobile.invoice_detail_pdf')}
+          </button>
+          <button type="button" className="m-btn primary" style={{ flex: 1 }}>
+            <MailIcon className="size-4" />
+            {t('mobile.invoice_detail_send')}
+          </button>
+        </StickyBottomBar>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-[14px]">

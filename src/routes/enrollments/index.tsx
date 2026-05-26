@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'sonner';
 import { type ColumnDef } from '@tanstack/react-table';
-import { PlusIcon, SearchIcon, EyeIcon } from 'lucide-react';
+import { PlusIcon, SearchIcon, EyeIcon, ChevronRightIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,8 +40,10 @@ import { ErrorState } from '@/components/feedback/error-state';
 import { SkeletonLine, SkeletonBox } from '@/components/feedback/skeleton';
 import { useEnrollmentsList, useCreateEnrollment } from '@/hooks/use-enrollments';
 import { useStaffList } from '@/hooks/use-staff';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { formatDate, formatPhone, getInitials } from '@/lib/format';
 import { toI18nKey } from '@/lib/error-map';
+import { cn } from '@/lib/cn';
 import { DEFAULT_TIMEZONE, SEARCH_DEBOUNCE_MS } from '@/lib/constants';
 
 type EnrollmentListData = NonNullable<ReturnType<typeof useEnrollmentsList>['data']>;
@@ -351,6 +353,202 @@ export default function EnrollmentsListPage() {
       </Select>
     </>
   );
+
+  const { isMobile } = useBreakpoint();
+
+  if (isMobile) {
+    const stageChips: Array<{ value: string; label: string; count?: number; tone?: string }> = [
+      {
+        value: 'all',
+        label: t('mobile_filter_all', { defaultValue: 'Все' }),
+        count: allData.length,
+      },
+      { value: 'new', label: t('status.new'), tone: 'info' },
+      { value: 'in_processing', label: t('status.in_processing'), tone: 'warning' },
+      { value: 'waitlist', label: t('status.waitlist') },
+    ];
+
+    const filteredLeads =
+      statusFilter === 'all' ? allData : allData.filter((e) => e.status === statusFilter);
+
+    return (
+      <div className="flex flex-col gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="text-[22px] font-bold leading-tight text-[color:var(--text-1)]">
+              {t('title')}
+            </h1>
+            <div className="mt-0.5 truncate text-[13px] text-[color:var(--text-3)]">
+              {t('subtitle', { count: String(activeCount) })}
+            </div>
+          </div>
+          <button
+            type="button"
+            className="m-iconbtn primary"
+            onClick={() => setCreateOpen(true)}
+            aria-label={t('create_button')}
+          >
+            <PlusIcon />
+          </button>
+        </div>
+
+        {/* Segmented */}
+        <div className="m-segmented" style={{ marginBottom: 4 }}>
+          <button
+            type="button"
+            className={cn(viewMode === 'kanban' && 'on')}
+            onClick={() => setViewMode('kanban')}
+          >
+            {t('view_toggle.kanban')}
+          </button>
+          <button
+            type="button"
+            className={cn(viewMode === 'table' && 'on')}
+            onClick={() => setViewMode('table')}
+          >
+            {t('view_toggle.table')}
+          </button>
+        </div>
+
+        {/* Chips */}
+        <div className="m-chips">
+          {stageChips.map((chip) => (
+            <button
+              key={chip.value}
+              type="button"
+              className={cn('m-chip', statusFilter === chip.value && 'active')}
+              onClick={() => {
+                setStatusFilter(chip.value);
+                setPage(1);
+              }}
+            >
+              {chip.label}
+              {chip.count !== undefined && <span className="m-chip-count">{chip.count}</span>}
+            </button>
+          ))}
+        </div>
+
+        {/* Lead cards */}
+        {listQuery.isPending ? (
+          <div className="flex flex-col gap-2">
+            {Array.from({ length: 4 }, (_, i) => (
+              <SkeletonBox key={i} height={80} />
+            ))}
+          </div>
+        ) : listQuery.isError ? (
+          <ErrorState onRetry={() => void listQuery.refetch()} />
+        ) : filteredLeads.length === 0 ? (
+          <EmptyState
+            title={t('empty_title')}
+            text={t('empty_description')}
+            action={
+              <Button size="sm" onClick={() => setCreateOpen(true)}>
+                <PlusIcon className="size-4" />
+                {t('create_button')}
+              </Button>
+            }
+          />
+        ) : (
+          <div className="flex flex-col gap-2">
+            {filteredLeads.map((lead) => (
+              <button
+                key={lead.id}
+                type="button"
+                className="m-lead"
+                onClick={() => navigate(`/enrollments/${lead.id}`)}
+              >
+                <div className={cn('m-lead-strip', STATUS_BADGE_VARIANT[lead.status])} />
+                <div className="m-avatar child" style={{ marginLeft: 6 }}>
+                  {getInitials(lead.childName ?? lead.contactName)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="m-row-title">{lead.childName ?? lead.contactName}</div>
+                  <div className="m-row-sub">{lead.contactName}</div>
+                  {lead.source && (
+                    <div className="mt-1 flex gap-2 text-[11px] text-[color:var(--text-3)]">
+                      <span>{lead.source}</span>
+                      <span>· {formatDate(lead.statusChangedAt, tz)}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col items-end gap-1.5">
+                  <Badge variant={STATUS_BADGE_VARIANT[lead.status]}>
+                    {t(`status.${lead.status}`)}
+                  </Badge>
+                  <ChevronRightIcon className="m-row-chev size-3.5" />
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Create Lead Dialog (shared) */}
+        <Dialog
+          open={createOpen}
+          onOpenChange={(open) => {
+            setCreateOpen(open);
+            if (!open) form.reset();
+          }}
+        >
+          <DialogContent className="sm:max-w-[520px] rounded-[var(--r-xl)] border-[var(--line)] bg-[var(--bg-elev)] p-0 shadow-[var(--shadow-3)]">
+            <DialogHeader className="px-[22px] pt-[18px] pb-3">
+              <DialogTitle className="text-[17px] font-bold tracking-[-0.01em] text-[color:var(--text-1)]">
+                {t('create.title')}
+              </DialogTitle>
+            </DialogHeader>
+            <form
+              onSubmit={form.handleSubmit(handleCreateSubmit)}
+              className="flex flex-col gap-4 px-[22px] pb-[18px]"
+            >
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                  {t('create.contact_name')}
+                  <span className="text-[color:var(--danger)]"> *</span>
+                </Label>
+                <Input
+                  {...form.register('contactName')}
+                  placeholder={t('create.contact_name_placeholder')}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                  {t('create.contact_phone')}
+                  <span className="text-[color:var(--danger)]"> *</span>
+                </Label>
+                <Controller
+                  control={form.control}
+                  name="contactPhone"
+                  render={({ field }) => (
+                    <PhoneInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      hasError={!!form.formState.errors.contactPhone}
+                      placeholder={t('create.contact_phone_placeholder')}
+                    />
+                  )}
+                />
+              </div>
+              <DialogFooter className="-mx-0 -mb-0 rounded-b-[var(--r-xl)] border-t border-[var(--line)] bg-transparent px-[22px] py-[14px]">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    setCreateOpen(false);
+                    form.reset();
+                  }}
+                >
+                  {t('create.cancel')}
+                </Button>
+                <Button type="submit" disabled={createMutation.isPending}>
+                  {t('create.submit')}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-[14px]">

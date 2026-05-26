@@ -1,0 +1,17 @@
+{
+  "title": "Қатысу",
+  "mobile_today_sub": "Бүгін",
+  "mobile_total_today": "Бүгін барлығы",
+  "mobile_fill_rate": "Толтырылу",
+  "mobile_stat_present": "Бақшада",
+  "mobile_stat_late": "Кешік.",
+  "mobile_stat_sick": "Ауырады",
+  "mobile_stat_absent": "Жоқ",
+  "mobile_by_groups": "Топтар бойынша",
+  "mobile_children_title": "Балалар",
+  "mobile_all_count": "Барлық {{count}} →",
+  "mobile_status_present": "Бақшада",
+  "mobile_status_late": "Кешікті",
+  "mobile_status_sick": "Ауырады",
+  "mobile_status_absent": "Жоқ"
+}

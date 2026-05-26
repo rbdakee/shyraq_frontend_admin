@@ -147,5 +147,17 @@
     "deactivate": "Белсенді емеске ауыстыру",
     "activate": "Белсендіру",
     "view": "Қарау"
+  },
+
+  "mobile": {
+    "header_sub": "{{count}} белсенді",
+    "contacts": "Байланыстар",
+    "employment": "Еңбек",
+    "documents": "Құжаттар",
+    "add_document": "+ Қосу",
+    "call": "Қоңырау шалу",
+    "sms": "SMS",
+    "qr": "QR",
+    "shifts": "Ауысымдар"
   }
 }

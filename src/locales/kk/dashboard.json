@@ -17,6 +17,7 @@
   "sick": "Ауырып қалды",
   "finances": "Қаржы",
   "go_to_invoices": "Шоттарға өту →",
+  "go_to_attendance": "Қатысу журналы →",
   "overdue": "Мерзімі өткен",
   "invoices_count_one": "{{count}} шот",
   "invoices_count_few": "{{count}} шот",

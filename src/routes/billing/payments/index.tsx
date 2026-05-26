@@ -2,7 +2,9 @@ import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { type ColumnDef } from '@tanstack/react-table';
-import { EyeIcon, SearchIcon } from 'lucide-react';
+import { EyeIcon, SearchIcon, FilterIcon } from 'lucide-react';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import MobileTopBar from '@/components/layout/mobile-top-bar';
 
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -49,6 +51,7 @@ export default function PaymentsListPage() {
   const { t } = useTranslation('billing');
   const navigate = useNavigate();
   const tz = DEFAULT_TIMEZONE;
+  const { isMobile } = useBreakpoint();
 
   const [providerFilter, setProviderFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -170,6 +173,142 @@ export default function PaymentsListPage() {
     ],
     [navigate, t],
   );
+
+  if (isMobile) {
+    const completedCount = data.filter((p) => p.status === 'completed').length;
+    const failedCount = data.filter((p) => p.status === 'failed').length;
+    const totalAmount = data.reduce((s, p) => s + p.amount, 0);
+    const successRate = data.length > 0 ? Math.round((completedCount / data.length) * 100) : 0;
+
+    return (
+      <div className="m-shell">
+        <MobileTopBar
+          title={t('payments.title')}
+          sub={t('payments.subtitle', { count: data.length })}
+          action={
+            <button type="button" className="m-iconbtn" aria-label="Filter">
+              <FilterIcon className="size-5" />
+            </button>
+          }
+        />
+        <div className="m-scroll">
+          <div
+            className="m-kpi-row"
+            style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 12 }}
+          >
+            <div className="m-kpi" style={{ padding: '10px 12px' }}>
+              <div className="m-kpi-label" style={{ fontSize: '9.5px' }}>
+                {t('mobile.payments_kpi_sum')}
+              </div>
+              <div className="m-kpi-value" style={{ fontSize: 17 }}>
+                {formatMoney(totalAmount)}
+              </div>
+            </div>
+            <div className="m-kpi" style={{ padding: '10px 12px' }}>
+              <div className="m-kpi-label" style={{ fontSize: '9.5px' }}>
+                {t('mobile.payments_kpi_success')}
+              </div>
+              <div className="m-kpi-value" style={{ fontSize: 17, color: 'var(--success-fg)' }}>
+                {successRate}%
+              </div>
+            </div>
+            <div className="m-kpi" style={{ padding: '10px 12px' }}>
+              <div className="m-kpi-label" style={{ fontSize: '9.5px', color: 'var(--danger-fg)' }}>
+                {t('mobile.payments_kpi_errors')}
+              </div>
+              <div className="m-kpi-value" style={{ fontSize: 17, color: 'var(--danger-fg)' }}>
+                {failedCount}
+              </div>
+            </div>
+          </div>
+
+          <div className="m-chips">
+            <span
+              className={`m-chip${providerFilter === 'all' ? ' active' : ''}`}
+              onClick={() => setProviderFilter('all')}
+            >
+              {t('mobile.payments_chip_all')}
+              <span className="m-chip-count">{data.length}</span>
+            </span>
+            {PAYMENT_PROVIDERS.filter((p) => p !== 'mock').map((prov) => {
+              const cnt = allData.filter((p) => p.provider === prov).length;
+              if (cnt === 0) return null;
+              return (
+                <span
+                  key={prov}
+                  className={`m-chip${providerFilter === prov ? ' active' : ''}`}
+                  onClick={() => setProviderFilter(prov)}
+                >
+                  {t(PROVIDER_I18N_KEYS[prov])}
+                  <span className="m-chip-count">{cnt}</span>
+                </span>
+              );
+            })}
+          </div>
+
+          <div className="m-card flush">
+            {data.map((p) => {
+              const childName = childrenMap.get(p.child_id) ?? p.child_id.slice(0, 8);
+              const initials = childName
+                .split(' ')
+                .map((w) => w[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase();
+              return (
+                <div
+                  key={p.id}
+                  className="m-inv-row"
+                  onClick={() => navigate(`/billing/payments/${p.id}`)}
+                >
+                  <div className="m-avatar child sm">{initials}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="m-row-title" style={{ fontSize: '13.5px' }}>
+                      {childName}
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 6,
+                        fontSize: '11.5px',
+                        color: 'var(--text-3)',
+                        marginTop: 3,
+                      }}
+                    >
+                      <span
+                        style={{ fontFamily: 'JetBrains Mono, monospace', color: 'var(--text-4)' }}
+                      >
+                        {p.id.slice(0, 8)}
+                      </span>
+                      <span>·</span>
+                      <span>{t(PROVIDER_I18N_KEYS[p.provider])}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-4)', marginTop: 1 }}>
+                      {formatDateTime(p.created_at, tz)}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      textAlign: 'right',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 4,
+                      alignItems: 'flex-end',
+                    }}
+                  >
+                    <div className="m-inv-amount">{formatMoney(p.amount)}</div>
+                    <Badge variant={PAYMENT_STATUS_BADGE[p.status]} dot>
+                      {t(`payments.status.${p.status}`)}
+                    </Badge>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const toolbar = (
     <>

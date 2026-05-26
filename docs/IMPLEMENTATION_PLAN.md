@@ -844,10 +844,20 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 
 Каждый `// TODO(B<N>): …` в коде — строка здесь (тот же текст + `file:line` + owner-батч). Пусто на старте.
 
-| TODO                                                                                                                                     | Файл:строка            | Owner | Статус |
-| ---------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- | ----- | ------ |
-| ~~expand groups domain (CRUD, mentors, children, deactivate) — minimal read created in B4 for child list filter/transfer/create select~~ | `src/api/groups.ts:25` | B6    | done   |
-| child_photo storage: presigned backend не готов — 404 оставлен как есть (обработанная ошибка), переписать по факту когда backend выкатит | `src/api/storage.ts:1` | C5    | parked |
+| TODO                                                                                                                                     | Файл:строка                                      | Owner | Статус |
+| ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ | ----- | ------ |
+| ~~expand groups domain (CRUD, mentors, children, deactivate) — minimal read created in B4 for child list filter/transfer/create select~~ | `src/api/groups.ts:25`                           | B6    | done   |
+| child_photo storage: presigned backend не готов — 404 оставлен как есть (обработанная ошибка), переписать по факту когда backend выкатит | `src/api/storage.ts:1`                           | C5    | parked |
+| Replace useMockNotifications with real useNotifications hook once backend endpoint is available                                          | `src/routes/notifications.tsx:39`                | B18   | open   |
+| wire useAttendance hook to backend GET /api/v1/attendance/daily-status when B13 desktop batch runs                                       | `src/routes/attendance/index.tsx:1`              | B13   | open   |
+| wire useAttendance hook to backend GET /api/v1/attendance/daily-status when B13 desktop batch runs                                       | `src/routes/attendance/daily-status.tsx:1`       | B13   | open   |
+| wire useStructure hook when B14 (Structure desktop) is built                                                                             | `src/routes/structure/locations/index.tsx:1`     | B14   | open   |
+| wire useStructure hook when B14 (Structure desktop) is built                                                                             | `src/routes/structure/cameras/index.tsx:1`       | B14   | open   |
+| wire useSchedule hook when B11 (Schedule desktop) is built                                                                               | `src/routes/schedule/templates/$id.tsx:1`        | B11   | open   |
+| wire useMealPlans hook when B11 (Schedule + Meals desktop) is built                                                                      | `src/routes/meal-plans/index.tsx:1`              | B11   | open   |
+| wire useContent hook when B12 (Content desktop) is built                                                                                 | `src/routes/content/index.tsx:1`                 | B12   | open   |
+| wire useHolidays hook when holidays API + desktop page is built                                                                          | `src/routes/billing/holidays/index.tsx:1`        | B15   | open   |
+| wire useFiscalReceipts hook when fiscal API + desktop page is built                                                                      | `src/routes/billing/fiscal-receipts/index.tsx:1` | B15   | open   |
 
 ---
 

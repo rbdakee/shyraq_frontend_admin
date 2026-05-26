@@ -7,6 +7,8 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { type ColumnDef } from '@tanstack/react-table';
 import { PlusIcon, XCircleIcon, InfoIcon, ArrowRightIcon } from 'lucide-react';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import TariffMobile from '@/routes/billing/tariff-mobile';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,6 +61,7 @@ const EMPTY_DATA: TariffAssignmentResponseDto[] = [];
 export default function TariffAssignmentsListPage() {
   const { t } = useTranslation('billing');
   const tz = DEFAULT_TIMEZONE;
+  const { isMobile } = useBreakpoint();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [activeFilter, setActiveFilter] = useState<string>('active');
@@ -187,6 +190,10 @@ export default function TariffAssignmentsListPage() {
     ],
     [t],
   );
+
+  if (isMobile) {
+    return <TariffMobile />;
+  }
 
   const toolbar = (
     <>

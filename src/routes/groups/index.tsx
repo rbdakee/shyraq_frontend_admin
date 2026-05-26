@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { PlusIcon, LayersIcon } from 'lucide-react';
+import { PlusIcon, LayersIcon, IdCardIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,8 +9,10 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { ErrorState } from '@/components/feedback/error-state';
 import { SkeletonBox } from '@/components/feedback/skeleton';
+import MobileTopBar from '@/components/layout/mobile-top-bar';
 import { useGroups, useGroupChildren, useGroupActiveMentor } from '@/hooks/use-groups';
 import { useStaff } from '@/hooks/use-staff';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { cn } from '@/lib/cn';
 import { getInitials } from '@/lib/format';
 import { CreateGroupDialog } from './create-group-dialog';
@@ -121,9 +123,92 @@ function MentorBlockResolved({ staffId }: { staffId: string }) {
   );
 }
 
+function MobileGroupCard({
+  group,
+  navigate,
+  t,
+}: {
+  group: {
+    id: string;
+    name: string;
+    capacity: number;
+    age_range_min: number | null;
+    age_range_max: number | null;
+  };
+  navigate: (path: string) => void;
+  t: (key: string, opts?: Record<string, unknown>) => string;
+}) {
+  const childrenQuery = useGroupChildren(group.id);
+  const mentorQuery = useGroupActiveMentor(group.id);
+  const mentorStaffId = mentorQuery.data?.staff_member_id;
+
+  const kids = childrenQuery.data?.data.length ?? 0;
+  const pct = group.capacity > 0 ? Math.min(100, (kids / group.capacity) * 100) : 0;
+  const isOver = kids > group.capacity;
+
+  return (
+    <div className="m-card" style={{ padding: 14 }} onClick={() => navigate(`/groups/${group.id}`)}>
+      <div className="mb-2 flex items-start justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="flex size-10 items-center justify-center rounded-xl bg-[var(--bg-sunken)] text-xl">
+            <LayersIcon className="size-5 text-[color:var(--primary)]" />
+          </div>
+          <div>
+            <div className="text-[15px] font-bold">{group.name}</div>
+            <div className="mt-0.5 text-[12px] text-[color:var(--text-3)]">
+              {group.age_range_min !== null && group.age_range_max !== null
+                ? t('card.age_range', { min: group.age_range_min, max: group.age_range_max })
+                : '—'}
+            </div>
+          </div>
+        </div>
+        {isOver && (
+          <Badge variant="error" className="text-[10.5px]">
+            {t('card.overflow')}
+          </Badge>
+        )}
+      </div>
+      <div className="mb-2 flex items-center gap-1.5 text-[12px] text-[color:var(--text-3)]">
+        <IdCardIcon className="size-[13px]" />
+        <MobileMentorName staffId={mentorStaffId ?? null} />
+      </div>
+      <div className="mb-[5px] flex justify-between text-[12px] text-[color:var(--text-3)]">
+        <span>{t('mobile.capacity_label')}</span>
+        <span>
+          <strong
+            className="text-[color:var(--text-1)]"
+            style={{ fontVariantNumeric: 'tabular-nums' }}
+          >
+            {kids}
+          </strong>{' '}
+          / {group.capacity}
+        </span>
+      </div>
+      <div className="cap-bar">
+        <div
+          className="cap-fill"
+          style={{
+            width: `${pct}%`,
+            background:
+              pct >= 100 ? 'var(--danger)' : pct >= 85 ? 'var(--warning)' : 'var(--success)',
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function MobileMentorName({ staffId }: { staffId: string | null }) {
+  const { t } = useTranslation('groups');
+  const staffQuery = useStaff(staffId ?? '');
+  if (!staffId) return <span>{t('card.no_mentor')}</span>;
+  return <span>{staffQuery.data?.full_name ?? '—'}</span>;
+}
+
 export default function GroupsListPage() {
   const { t } = useTranslation('groups');
   const navigate = useNavigate();
+  const { isMobile } = useBreakpoint();
   const [createOpen, setCreateOpen] = useState(false);
 
   const groupsQuery = useGroups({ archived: false });
@@ -175,6 +260,73 @@ export default function GroupsListPage() {
             </Button>
           }
         />
+        <CreateGroupDialog
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onSuccess={(id) => navigate(`/groups/${id}`)}
+        />
+      </div>
+    );
+  }
+
+  const totalChildren = 0;
+  const overflowCount = 0;
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col gap-3">
+        <MobileTopBar
+          title={t('title')}
+          sub={t('mobile.header_sub', { count: groups.length })}
+          back={false}
+          action={
+            <button
+              type="button"
+              className="m-iconbtn primary"
+              onClick={() => setCreateOpen(true)}
+              aria-label={t('create_button')}
+            >
+              <PlusIcon />
+            </button>
+          }
+        />
+
+        <div
+          className="m-kpi-row"
+          style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 12 }}
+        >
+          <div className="m-kpi" style={{ padding: '10px 12px' }}>
+            <div className="m-kpi-label" style={{ fontSize: 9.5 }}>
+              {t('mobile.kpi_groups')}
+            </div>
+            <div className="m-kpi-value" style={{ fontSize: 18 }}>
+              {groups.length}
+            </div>
+          </div>
+          <div className="m-kpi" style={{ padding: '10px 12px' }}>
+            <div className="m-kpi-label" style={{ fontSize: 9.5 }}>
+              {t('mobile.kpi_children')}
+            </div>
+            <div className="m-kpi-value" style={{ fontSize: 18 }}>
+              {totalChildren}
+            </div>
+          </div>
+          <div className="m-kpi" style={{ padding: '10px 12px' }}>
+            <div className="m-kpi-label" style={{ fontSize: 9.5, color: 'var(--danger-fg)' }}>
+              {t('mobile.kpi_overflow')}
+            </div>
+            <div className="m-kpi-value" style={{ fontSize: 18, color: 'var(--danger-fg)' }}>
+              {overflowCount}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-2.5">
+          {groups.map((g) => (
+            <MobileGroupCard key={g.id} group={g} navigate={navigate} t={t} />
+          ))}
+        </div>
+
         <CreateGroupDialog
           open={createOpen}
           onOpenChange={setCreateOpen}

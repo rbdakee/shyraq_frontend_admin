@@ -149,5 +149,24 @@
     "archive": "Белсенді емеске ауыстыру",
     "restore": "Қалпына келтіру",
     "view": "Қарау"
+  },
+
+  "mobile": {
+    "header_sub": "{{count}} белсенді",
+    "kpi_groups": "Топтар",
+    "kpi_children": "Балалар",
+    "kpi_overflow": "Артық",
+    "capacity_label": "Толтырылу",
+    "children_tab": "Балалар",
+    "schedule_tab": "Кесте",
+    "history_tab": "Тарих",
+    "waitlist": "кезек тізімі: {{count}}",
+    "show_more": "Тағы {{count}} көрсету →",
+    "info_mentor": "Тәрбиеші",
+    "info_assistant": "Көмекші",
+    "info_location": "Орналасу",
+    "info_age": "Жас",
+    "info_tariff": "Тариф",
+    "status_full": "Толық"
   }
 }

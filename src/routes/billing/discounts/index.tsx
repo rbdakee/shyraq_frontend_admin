@@ -2,7 +2,9 @@ import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { type ColumnDef } from '@tanstack/react-table';
-import { PlusIcon, MoreHorizontalIcon } from 'lucide-react';
+import { PlusIcon, MoreHorizontalIcon, GiftIcon } from 'lucide-react';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import MobileTopBar from '@/components/layout/mobile-top-bar';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,6 +49,7 @@ export default function DiscountsListPage() {
   const { t, i18n } = useTranslation('billing');
   const navigate = useNavigate();
   const locale = (i18n.language === 'kk' ? 'kk' : 'ru') as 'ru' | 'kk';
+  const { isMobile } = useBreakpoint();
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
@@ -182,6 +185,135 @@ export default function DiscountsListPage() {
     ],
     [t, locale, navigate],
   );
+
+  if (isMobile) {
+    type BadgeV = 'neutral' | 'warning' | 'success' | 'error' | 'info';
+    const STATUS_BADGE_MOBILE: Record<string, BadgeV> = {
+      draft: 'neutral',
+      active: 'success',
+      paused: 'warning',
+      expired: 'neutral',
+      cancelled: 'error',
+    };
+    const totalUsed = allRows.reduce((s, d) => s + d.used_count, 0);
+
+    return (
+      <div className="m-shell">
+        <MobileTopBar
+          title={t('discounts.title')}
+          sub={t('mobile.discounts_sub', { active: activeCount, uses: totalUsed })}
+          action={
+            <button
+              type="button"
+              className="m-iconbtn primary"
+              onClick={() => navigate('/billing/discounts/new')}
+              aria-label={t('discounts.create_button')}
+            >
+              <PlusIcon className="size-5" />
+            </button>
+          }
+        />
+        <div className="m-scroll">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {data.map((d) => {
+              const name = resolveJsonbI18n(d.name as JsonbI18n, locale);
+              const desc = d.description
+                ? resolveJsonbI18n(d.description as JsonbI18n, locale)
+                : '';
+              const amountLabel =
+                d.discount_type === 'percentage' ? `−${d.amount}%` : `−${formatMoney(d.amount)}`;
+              return (
+                <div
+                  key={d.id}
+                  className="m-card"
+                  style={{ padding: 14 }}
+                  onClick={() => navigate(`/billing/discounts/${d.id}`)}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'flex-start',
+                      marginBottom: 8,
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}
+                      >
+                        <div
+                          style={{
+                            width: 34,
+                            height: 34,
+                            borderRadius: 10,
+                            background: 'var(--primary-soft)',
+                            color: 'var(--primary)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                          }}
+                        >
+                          <GiftIcon style={{ width: 18, height: 18 }} />
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '14.5px' }}>{name}</div>
+                          {desc && (
+                            <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{desc}</div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 18,
+                        fontWeight: 700,
+                        color: 'var(--primary)',
+                        fontVariantNumeric: 'tabular-nums',
+                      }}
+                    >
+                      {amountLabel}
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginTop: 8,
+                      paddingTop: 10,
+                      borderTop: '1px solid var(--line)',
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 10,
+                        fontSize: '11.5px',
+                        color: 'var(--text-3)',
+                      }}
+                    >
+                      <span>
+                        <strong style={{ color: 'var(--text-1)' }}>{d.used_count}</strong>{' '}
+                        {t('mobile.tariffs_kids_suffix')}
+                      </span>
+                      <span>
+                        · {d.valid_from}
+                        {d.valid_until ? ` — ${d.valid_until}` : ''}
+                      </span>
+                    </div>
+                    <Badge variant={STATUS_BADGE_MOBILE[d.status] ?? 'neutral'} dot>
+                      {t(`discounts.status.${d.status}`)}
+                    </Badge>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const toolbar = (
     <>

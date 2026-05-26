@@ -147,5 +147,17 @@
     "deactivate": "Деактивировать",
     "activate": "Активировать",
     "view": "Просмотр"
+  },
+
+  "mobile": {
+    "header_sub": "{{count}} активных",
+    "contacts": "Контакты",
+    "employment": "Трудовая",
+    "documents": "Документы",
+    "add_document": "+ Добавить",
+    "call": "Позвонить",
+    "sms": "SMS",
+    "qr": "QR",
+    "shifts": "Смены"
   }
 }

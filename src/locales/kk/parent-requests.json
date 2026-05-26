@@ -110,6 +110,11 @@
     "load_more": "Бұрынғы хабарламаларды жүктеу"
   },
 
+  "mobile_sub": "{{newCount}} жаңа · {{total}} барлығы",
+  "mobile_tab_new": "Жаңалар",
+  "mobile_tab_in_progress": "Жұмыста",
+  "mobile_tab_closed": "Жабық",
+
   "success": {
     "accepted": "Өтініш қабылданды",
     "rejected": "Өтініш қабылданбады",

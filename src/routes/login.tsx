@@ -4,7 +4,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
-import { CheckCircleIcon, LoaderCircleIcon } from 'lucide-react';
+import { CheckCircleIcon, LoaderCircleIcon, PhoneIcon, InfoIcon } from 'lucide-react';
 import { toast } from 'sonner';
 
 import { cn } from '@/lib/cn';
@@ -13,6 +13,7 @@ import { useUiStore } from '@/stores/ui-store';
 import { useSessionStore } from '@/stores/session-store';
 import { useRequestOtp, useVerifyOtp, useSelectRole, hasAdminRole } from '@/hooks/use-auth';
 import type { AuthResponse } from '@/hooks/use-auth';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 
 import { PhoneInput } from '@/components/forms/phone-input';
 import { OtpInput, type OtpInputHandle } from '@/components/forms/otp-input';
@@ -247,6 +248,256 @@ function LoginPage() {
         (r) => r.role === 'admin' && r.kindergarten_id === kg.id,
       ),
     ) ?? [];
+
+  const { isMobile } = useBreakpoint();
+
+  if (isMobile) {
+    return (
+      <div className="m-shell">
+        {step === 'otp' || step === 'locked' || step === 'no-access' ? (
+          <>
+            <div className="m-bar">
+              <button
+                type="button"
+                className="m-iconbtn ghost"
+                onClick={() => {
+                  setStep('phone');
+                  setOtpError('');
+                }}
+              >
+                <CheckCircleIcon className="size-5 rotate-180 opacity-0" />
+                <span className="absolute inset-0 flex items-center justify-center">
+                  <svg
+                    width="20"
+                    height="20"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="m15 18-6-6 6-6" />
+                  </svg>
+                </span>
+              </button>
+              <div className="grow">
+                <div className="m-bar-title" style={{ fontSize: 17 }}>
+                  {step === 'no-access'
+                    ? t('no_access_title')
+                    : step === 'locked'
+                      ? t('locked_title')
+                      : t('otp_hint').split(' ')[0]}
+                </div>
+              </div>
+            </div>
+            <div className="m-scroll no-bar" style={{ padding: '24px 22px 32px' }}>
+              {step === 'otp' && (
+                <form onSubmit={otpForm.handleSubmit(handleOtpSubmit)}>
+                  <div className="mb-5 flex size-14 items-center justify-center rounded-2xl bg-[var(--primary-soft)] text-[color:var(--primary)]">
+                    <PhoneIcon className="size-6" />
+                  </div>
+                  <div className="mb-1.5 text-[22px] font-bold tracking-tight">
+                    {t('otp_hint').split(',')[0]}
+                  </div>
+                  <div className="text-[13.5px] leading-relaxed text-text-3">
+                    {t('otp_hint')} <strong className="text-text-1">{phone}</strong>.{' '}
+                    <button
+                      type="button"
+                      className="border-none bg-transparent font-semibold text-primary"
+                      onClick={() => {
+                        setStep('phone');
+                        setOtpError('');
+                      }}
+                    >
+                      {t('change_phone')}
+                    </button>
+                  </div>
+
+                  <div className="my-5">
+                    <Controller
+                      name="code"
+                      control={otpForm.control}
+                      render={({ field }) => (
+                        <OtpInput
+                          ref={otpRef}
+                          value={field.value}
+                          onChange={field.onChange}
+                          hasError={!!otpError}
+                        />
+                      )}
+                    />
+                  </div>
+
+                  {otpError && (
+                    <div className="mb-3 text-center text-xs text-danger-fg">{otpError}</div>
+                  )}
+
+                  <div className="mb-4 text-center text-[12.5px] text-text-3">
+                    {resend > 0 ? (
+                      <>
+                        {t('resend_timer')}{' '}
+                        <strong className="text-text-2">0:{String(resend).padStart(2, '0')}</strong>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        className="border-none bg-transparent font-semibold text-primary"
+                        onClick={handleResend}
+                        disabled={requestOtp.isPending}
+                      >
+                        {t('resend_code')}
+                      </button>
+                    )}
+                  </div>
+
+                  <button type="submit" disabled={verifyOtp.isPending} className="m-btn primary">
+                    {verifyOtp.isPending && <LoaderCircleIcon className="size-4 animate-spin" />}
+                    {t('sign_in')}
+                  </button>
+
+                  <div className="mt-6 flex gap-2.5 rounded-xl bg-bg-sunken p-3.5 text-[12px] text-text-3">
+                    <InfoIcon className="mt-0.5 size-4 shrink-0 text-text-3" />
+                    <span>{t('terms_notice')}</span>
+                  </div>
+                </form>
+              )}
+              {step === 'no-access' && (
+                <div>
+                  <p className="mb-6 mt-0 text-[13.5px] text-text-3">{t('no_access_message')}</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStep('phone');
+                      phoneForm.reset({ phone: '' });
+                    }}
+                    className="m-btn primary"
+                  >
+                    {t('try_another_number')}
+                  </button>
+                </div>
+              )}
+              {step === 'locked' && (
+                <div>
+                  <p className="mb-4 mt-0 text-[13.5px] text-text-3">{t('locked_message')}</p>
+                  {lockCountdown > 0 && (
+                    <div className="mb-4 text-center text-2xl font-bold text-text-1">
+                      {formatTimer(lockCountdown)}
+                    </div>
+                  )}
+                  {lockCountdown <= 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setStep('phone')}
+                      className="m-btn primary"
+                    >
+                      {t('try_again')}
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </>
+        ) : step === 'select' ? (
+          <div className="m-scroll no-bar" style={{ padding: '24px 22px 32px' }}>
+            <div className="mb-4 text-[18px] font-bold tracking-tight">
+              {t('select_kindergarten_title')}
+            </div>
+            <p className="mb-4 text-[13.5px] text-text-3">{t('select_kindergarten_hint')}</p>
+            <div className="mb-4 flex flex-col gap-2.5">
+              {adminKindergartens.map((kg) => (
+                <label
+                  key={kg.id}
+                  className={cn(
+                    'flex cursor-pointer items-center gap-3 rounded-[10px] border-[1.5px] p-3.5',
+                    selectedKgId === kg.id
+                      ? 'border-primary bg-primary-soft'
+                      : 'border-border bg-bg-elev',
+                  )}
+                >
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-bg-sunken text-lg">
+                    🌱
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-bold">{kg.name}</div>
+                    <div className="text-xs text-text-3">{kg.slug}</div>
+                  </div>
+                  <input
+                    type="radio"
+                    name="kindergarten"
+                    checked={selectedKgId === kg.id}
+                    onChange={() => setSelectedKgId(kg.id)}
+                    className="accent-primary"
+                  />
+                </label>
+              ))}
+            </div>
+            <button
+              type="button"
+              disabled={!selectedKgId || selectRoleMutation.isPending}
+              onClick={handleSelectSubmit}
+              className="m-btn primary"
+            >
+              {selectRoleMutation.isPending && <LoaderCircleIcon className="size-4 animate-spin" />}
+              {t('continue')}
+            </button>
+          </div>
+        ) : (
+          <div className="m-auth">
+            <div className="m-auth-grid" />
+            <div className="m-auth-brand">
+              <div className="brand-mark">Sh</div>
+              <div>
+                <div className="text-base font-extrabold tracking-tight">
+                  {t('app:app.brand', { defaultValue: 'Shyraq' })}
+                </div>
+                <div className="text-[9.5px] font-bold uppercase tracking-[0.1em] opacity-70">
+                  Admin
+                </div>
+              </div>
+            </div>
+            <div className="m-auth-hero">{t('hero_title')}</div>
+
+            <div className="m-auth-card">
+              <div className="mb-1 text-[18px] font-bold tracking-tight">{t('login_title')}</div>
+              <div className="mb-4 text-[13px] text-text-3">{t('phone_hint')}</div>
+
+              <form onSubmit={phoneForm.handleSubmit(handlePhoneSubmit)}>
+                <div className="mb-3.5 flex flex-col gap-1.5">
+                  <label className="text-[12.5px] font-semibold text-text-2">
+                    {t('phone_label')}
+                  </label>
+                  <Controller
+                    name="phone"
+                    control={phoneForm.control}
+                    render={({ field, fieldState }) => (
+                      <>
+                        <PhoneInput
+                          value={field.value}
+                          onChange={field.onChange}
+                          hasError={!!fieldState.error}
+                        />
+                        {fieldState.error && (
+                          <span className="text-xs text-danger-fg">
+                            {t(fieldState.error.message ?? 'auth.phone_invalid')}
+                          </span>
+                        )}
+                      </>
+                    )}
+                  />
+                </div>
+                <button type="submit" disabled={requestOtp.isPending} className="m-btn primary">
+                  {requestOtp.isPending && <LoaderCircleIcon className="size-4 animate-spin" />}
+                  {t('get_code')}
+                </button>
+                <div className="mt-3 text-center text-[11px] text-text-3">{t('terms_notice')}</div>
+              </form>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="grid min-h-screen grid-cols-2 bg-bg">

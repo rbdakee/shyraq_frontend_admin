@@ -3,7 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { format, startOfMonth } from 'date-fns';
 import { ru, kk } from 'date-fns/locale';
-import { ClockAlertIcon, DownloadIcon, PlusIcon } from 'lucide-react';
+import {
+  ClockAlertIcon,
+  DownloadIcon,
+  PlusIcon,
+  InboxIcon,
+  CheckCircleIcon,
+  IdCardIcon,
+  ChevronRightIcon,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -22,6 +30,7 @@ import {
   usePaymentsOverview,
 } from '@/hooks/use-dashboard';
 import { useSessionStore } from '@/stores/session-store';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { formatMoney } from '@/lib/format';
 import { cn } from '@/lib/cn';
 
@@ -116,6 +125,32 @@ function PaymentsSkeleton() {
   );
 }
 
+function MobileDonut({
+  segments,
+  total,
+  cap,
+}: {
+  segments: Array<{ label: string; value: number; color: string }>;
+  total: number;
+  cap: string;
+}) {
+  const stops = buildConicGradient(segments);
+  return (
+    <div
+      className="relative size-[90px] shrink-0 rounded-full"
+      style={{ background: `conic-gradient(${stops})` }}
+    >
+      <div className="absolute inset-[14px] rounded-full bg-[var(--bg-elev)]" />
+      <div className="absolute inset-0 z-[1] flex flex-col items-center justify-center text-center">
+        <div className="text-[18px] font-bold leading-none">{total}</div>
+        <div className="text-[9px] uppercase tracking-[0.04em] text-[color:var(--text-3)]">
+          {cap}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const { t, i18n } = useTranslation('dashboard');
   const navigate = useNavigate();
@@ -163,6 +198,159 @@ export default function DashboardPage() {
     : [];
 
   const attendanceTotal = attendanceSegments.reduce((s, x) => s + x.value, 0);
+
+  const { isMobile } = useBreakpoint();
+
+  if (isMobile) {
+    return (
+      <div className="flex flex-col gap-0">
+        {/* KPI row */}
+        <div className="m-kpi-row">
+          {summaryQuery.isPending ? (
+            Array.from({ length: 4 }, (_, i) => (
+              <div key={i} className="m-kpi">
+                <SkeletonLine width={60} height={10} />
+                <SkeletonLine width={40} height={22} className="mt-1" />
+              </div>
+            ))
+          ) : summaryQuery.isError ? (
+            <div className="col-span-2">
+              <ErrorState onRetry={() => summaryQuery.refetch()} />
+            </div>
+          ) : (
+            <>
+              <div
+                className="m-kpi"
+                onClick={() => navigate('/children')}
+                role="button"
+                tabIndex={0}
+              >
+                <div className="m-kpi-label">{t('active_children')}</div>
+                <div className="m-kpi-value">{summaryQuery.data.active_children}</div>
+              </div>
+              <div
+                className="m-kpi"
+                onClick={() => navigate('/enrollments')}
+                role="button"
+                tabIndex={0}
+              >
+                <div className="m-kpi-label">{t('leads_processing')}</div>
+                <div className="m-kpi-value">{summaryQuery.data.enrollments_in_processing}</div>
+              </div>
+              <div className="m-kpi" onClick={() => navigate('/staff')} role="button" tabIndex={0}>
+                <div className="m-kpi-label">{t('active_staff')}</div>
+                <div className="m-kpi-value">{summaryQuery.data.active_staff}</div>
+              </div>
+              <div className="m-kpi" onClick={() => navigate('/groups')} role="button" tabIndex={0}>
+                <div className="m-kpi-label">{t('active_groups')}</div>
+                <div className="m-kpi-value">{summaryQuery.data.active_groups}</div>
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* Overdue alert */}
+        {summaryQuery.data && summaryQuery.data.invoices_overdue_count > 0 && (
+          <button
+            type="button"
+            onClick={() => navigate('/billing/invoices?status=overdue')}
+            className="mx-0 mt-3.5 flex items-start gap-3 rounded-[14px] border border-[color-mix(in_oklab,var(--danger)_25%,transparent)] bg-[var(--danger-soft)] p-3.5 text-left"
+          >
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[rgba(180,35,24,0.18)] text-[color:var(--danger)]">
+              <ClockAlertIcon className="size-5" />
+            </div>
+            <div className="flex-1">
+              <div className="text-[11px] font-bold uppercase tracking-[0.04em] text-[color:var(--danger-fg)]">
+                {t('overdue')}
+              </div>
+              <div className="mt-0.5 text-[20px] font-bold tracking-tight text-[color:var(--danger-fg)]">
+                {formatMoney(summaryQuery.data.invoices_overdue_amount)}
+              </div>
+              <div className="mt-0.5 text-[12px] text-[color:var(--danger-fg)]">
+                {summaryQuery.data.invoices_overdue_count}{' '}
+                {summaryQuery.data.invoices_overdue_count === 1
+                  ? t('invoices_count_one', { count: summaryQuery.data.invoices_overdue_count })
+                  : t('invoices_count_many', {
+                      count: summaryQuery.data.invoices_overdue_count,
+                    })}{' '}
+                · {t('needs_attention')}
+              </div>
+            </div>
+            <ChevronRightIcon className="mt-2.5 size-4 text-[color:var(--danger-fg)]" />
+          </button>
+        )}
+
+        {/* Attendance card */}
+        <div className="m-section-h">
+          <div className="m-section-title">{t('attendance_today')}</div>
+          <button type="button" className="m-section-link" onClick={() => navigate('/attendance')}>
+            {t('go_to_attendance')}
+          </button>
+        </div>
+        {attendanceQuery.isPending ? (
+          <div className="m-card">
+            <SkeletonBox height={80} />
+          </div>
+        ) : attendanceQuery.isError ? (
+          <div className="m-card">
+            <ErrorState onRetry={() => attendanceQuery.refetch()} />
+          </div>
+        ) : (
+          <div className="m-card">
+            <div className="flex items-center gap-3.5">
+              <MobileDonut
+                segments={attendanceSegments}
+                total={attendanceTotal}
+                cap={t('children_unit')}
+              />
+              <div className="flex flex-1 flex-col gap-1.5">
+                {attendanceSegments.map((a) => (
+                  <div key={a.label} className="flex items-center gap-2 text-[12.5px]">
+                    <span className="size-2 rounded-[2px]" style={{ background: a.color }} />
+                    <span className="flex-1 text-[color:var(--text-2)]">{a.label}</span>
+                    <span className="font-semibold tabular-nums">{a.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Quick actions */}
+        <div className="m-section-h">
+          <div className="m-section-title">
+            {t('mobile_quick_actions', { defaultValue: 'Быстрые действия' })}
+          </div>
+        </div>
+        <div className="m-quick-grid">
+          <button type="button" className="m-quick" onClick={() => navigate('/enrollments')}>
+            <div className="m-quick-icon">
+              <PlusIcon />
+            </div>
+            <div className="m-quick-label">{t('create_lead')}</div>
+          </button>
+          <button type="button" className="m-quick" onClick={() => navigate('/children/new')}>
+            <div className="m-quick-icon">
+              <IdCardIcon />
+            </div>
+            <div className="m-quick-label">{t('create_card')}</div>
+          </button>
+          <button type="button" className="m-quick" onClick={() => navigate('/parent-requests')}>
+            <div className="m-quick-icon">
+              <InboxIcon />
+            </div>
+            <div className="m-quick-label">{t('mobile_requests', { defaultValue: 'Заявки' })}</div>
+          </button>
+          <button type="button" className="m-quick" onClick={() => navigate('/attendance')}>
+            <div className="m-quick-icon">
+              <CheckCircleIcon />
+            </div>
+            <div className="m-quick-label">{t('mobile_mark', { defaultValue: 'Отметить' })}</div>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const paymentMetrics = paymentsQuery.data
     ? [

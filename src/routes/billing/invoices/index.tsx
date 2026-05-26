@@ -6,7 +6,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { type ColumnDef } from '@tanstack/react-table';
-import { PlusIcon, EyeIcon, DownloadIcon, Trash2Icon } from 'lucide-react';
+import { PlusIcon, EyeIcon, DownloadIcon, Trash2Icon, FilterIcon } from 'lucide-react';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import MobileTopBar from '@/components/layout/mobile-top-bar';
+import { Fab } from '@/components/ui/fab';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -105,6 +108,7 @@ export default function InvoicesListPage() {
   const { t } = useTranslation('billing');
   const navigate = useNavigate();
   const tz = DEFAULT_TIMEZONE;
+  const { isMobile } = useBreakpoint();
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -252,6 +256,149 @@ export default function InvoicesListPage() {
     ],
     [navigate, t],
   );
+
+  const childrenMapArr = childrenQuery.data?.data ?? [];
+
+  if (isMobile) {
+    const statusChips: Array<{ value: string; label: string; count?: number }> = [
+      { value: 'all', label: t('mobile.invoices_chip_all'), count: data.length },
+      {
+        value: 'overdue',
+        label: t('mobile.invoices_chip_overdue'),
+        count: kpiTotals.overdueCount,
+      },
+      {
+        value: 'pending',
+        label: t('mobile.invoices_chip_pending'),
+        count: kpiTotals.pendingCount,
+      },
+      { value: 'paid', label: t('mobile.invoices_chip_paid') },
+      { value: 'partial', label: t('mobile.invoices_chip_partial') },
+    ];
+
+    const filteredData =
+      statusFilter === 'all' ? data : data.filter((inv) => inv.status === statusFilter);
+
+    return (
+      <div className="m-shell">
+        <MobileTopBar
+          title={t('invoices.title')}
+          sub={t('invoices.subtitle')}
+          action={
+            <button type="button" className="m-iconbtn" aria-label="Filter">
+              <FilterIcon className="size-5" />
+            </button>
+          }
+        />
+        <div className="m-scroll">
+          <div className="m-kpi-row" style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+            <div className="m-kpi" style={{ padding: '10px 12px' }}>
+              <div className="m-kpi-label" style={{ fontSize: '9.5px' }}>
+                {t('mobile.invoices_kpi_issued')}
+              </div>
+              <div className="m-kpi-value" style={{ fontSize: 17 }}>
+                {formatMoney(data.reduce((s, i) => s + i.amount_due, 0))}
+              </div>
+            </div>
+            <div className="m-kpi" style={{ padding: '10px 12px' }}>
+              <div
+                className="m-kpi-label"
+                style={{ fontSize: '9.5px', color: 'var(--success-fg)' }}
+              >
+                {t('mobile.invoices_kpi_paid')}
+              </div>
+              <div className="m-kpi-value" style={{ fontSize: 17, color: 'var(--success-fg)' }}>
+                {formatMoney(kpiTotals.paidAmount)}
+              </div>
+            </div>
+            <div className="m-kpi" style={{ padding: '10px 12px' }}>
+              <div className="m-kpi-label" style={{ fontSize: '9.5px', color: 'var(--danger-fg)' }}>
+                {t('mobile.invoices_kpi_debt')}
+              </div>
+              <div className="m-kpi-value" style={{ fontSize: 17, color: 'var(--danger-fg)' }}>
+                {formatMoney(kpiTotals.overdueAmount)}
+              </div>
+            </div>
+          </div>
+
+          <div className="m-chips" style={{ marginTop: 12 }}>
+            {statusChips.map((chip) => (
+              <span
+                key={chip.value}
+                className={`m-chip${statusFilter === chip.value ? ' active' : ''}`}
+                onClick={() => setStatusFilter(chip.value)}
+              >
+                {chip.label}
+                {chip.count != null && <span className="m-chip-count">{chip.count}</span>}
+              </span>
+            ))}
+          </div>
+
+          <div className="m-card flush" style={{ marginTop: 4 }}>
+            {filteredData.map((inv) => {
+              const childName =
+                childrenMapArr.find((c) => c.id === inv.child_id)?.full_name ??
+                inv.child_id.slice(0, 8);
+              const initials = childName
+                .split(' ')
+                .map((w) => w[0])
+                .join('')
+                .slice(0, 2)
+                .toUpperCase();
+              return (
+                <div
+                  key={inv.id}
+                  className="m-inv-row"
+                  onClick={() => navigate(`/billing/invoices/${inv.id}`)}
+                >
+                  <div className="m-avatar child sm">{initials}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="m-row-title" style={{ fontSize: '13.5px' }}>
+                      {childName}
+                    </div>
+                    <div
+                      className="m-row-sub"
+                      style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}
+                    >
+                      <span
+                        style={{
+                          fontFamily: 'JetBrains Mono, monospace',
+                          fontSize: 11,
+                          color: 'var(--text-4)',
+                        }}
+                      >
+                        {inv.id.slice(0, 8)}
+                      </span>
+                      <span>·</span>
+                      <span>{t(`invoices.type.${inv.invoice_type}`)}</span>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'flex-end',
+                      gap: 4,
+                    }}
+                  >
+                    <div className={`m-inv-amount${inv.status === 'overdue' ? ' overdue' : ''}`}>
+                      {formatMoney(inv.amount_after_discount)}
+                    </div>
+                    <Badge variant={INVOICE_STATUS_BADGE[inv.status]} dot>
+                      {t(`invoices.status.${inv.status}`)}
+                    </Badge>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <Fab onClick={() => setCreateOpen(true)}>
+          <PlusIcon className="size-6" />
+        </Fab>
+      </div>
+    );
+  }
 
   const toolbar = (
     <>

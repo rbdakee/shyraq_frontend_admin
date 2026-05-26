@@ -1,7 +1,16 @@
 import { useMemo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronRightIcon, ReceiptIcon, UsersIcon } from 'lucide-react';
+import {
+  ChevronRightIcon,
+  ReceiptIcon,
+  UsersIcon,
+  CheckIcon,
+  ClockIcon,
+  MoreHorizontalIcon,
+} from 'lucide-react';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import MobileTopBar from '@/components/layout/mobile-top-bar';
 
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -39,6 +48,7 @@ export default function PaymentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation('billing');
   const tz = DEFAULT_TIMEZONE;
+  const { isMobile } = useBreakpoint();
 
   const paymentQuery = usePayment(id ?? '');
   const payment = paymentQuery.data;
@@ -66,6 +76,124 @@ export default function PaymentDetailPage() {
   }
 
   const dtoRecord = paymentDtoToRecord(payment);
+
+  const statusTone: Record<string, string> = {
+    completed: 'success',
+    failed: 'danger',
+    processing: 'info',
+    initiated: 'neutral',
+    refunded: 'warning',
+  };
+  const payTone = statusTone[payment.status] ?? 'neutral';
+
+  if (isMobile) {
+    return (
+      <div className="m-shell">
+        <MobileTopBar
+          title={payment.id.slice(0, 8)}
+          sub={`${t('payments.detail.breadcrumb')} · ${t(PROVIDER_I18N_KEYS[payment.provider])}`}
+          back
+          action={
+            <button type="button" className="m-iconbtn ghost">
+              <MoreHorizontalIcon className="size-5" />
+            </button>
+          }
+        />
+        <div className="m-scroll">
+          <div className="m-card" style={{ padding: 20, marginBottom: 14, textAlign: 'center' }}>
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: '50%',
+                background: `var(--${payTone}-soft)`,
+                color: `var(--${payTone}-fg)`,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                marginBottom: 10,
+              }}
+            >
+              <CheckIcon style={{ width: 32, height: 32 }} />
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: `var(--${payTone}-fg)`,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+              }}
+            >
+              {t(`payments.status.${payment.status}`)}
+            </div>
+            <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginTop: 6 }}>
+              {formatMoney(payment.amount)}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>
+              {formatDateTime(payment.created_at, tz)}
+            </div>
+          </div>
+
+          <div className="m-card flush" style={{ marginBottom: 14 }}>
+            <div className="m-kv">
+              <span className="k">{t('mobile.payment_detail_invoice')}</span>
+              <span className="v" style={{ color: 'var(--primary)', fontWeight: 600 }}>
+                {payment.invoice_id.slice(0, 8)} →
+              </span>
+            </div>
+            <div className="m-kv">
+              <span className="k">{t('mobile.payment_detail_child')}</span>
+              <span className="v">{childName ?? payment.child_id.slice(0, 8)}</span>
+            </div>
+            <div className="m-kv">
+              <span className="k">{t('mobile.payment_detail_provider')}</span>
+              <span className="v">{t(PROVIDER_I18N_KEYS[payment.provider])}</span>
+            </div>
+            {payment.provider_txn_id && (
+              <div className="m-kv">
+                <span className="k">{t('mobile.payment_detail_reference')}</span>
+                <span
+                  className="v"
+                  style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 11 }}
+                >
+                  {payment.provider_txn_id}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="m-section-h">
+            <div className="m-section-title">{t('mobile.payment_detail_events')}</div>
+          </div>
+          <div className="m-card flush" style={{ padding: '4px 0' }}>
+            <div className="m-tl">
+              {payment.paid_at && (
+                <div className="m-tl-item">
+                  <div className="m-tl-dot">
+                    <CheckIcon className="size-3" />
+                  </div>
+                  <div>
+                    <div className="m-tl-title">{t('mobile.payment_detail_completed')}</div>
+                    <div className="m-tl-meta">{formatDateTime(payment.paid_at, tz)}</div>
+                  </div>
+                </div>
+              )}
+              <div className="m-tl-item">
+                <div className="m-tl-dot neutral">
+                  <ClockIcon className="size-3" />
+                </div>
+                <div>
+                  <div className="m-tl-title">{t('payments.status.initiated')}</div>
+                  <div className="m-tl-meta">{formatDateTime(payment.created_at, tz)}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-[14px]">

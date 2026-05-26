@@ -1,8 +1,8 @@
 import { Suspense, lazy, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { ChevronRightIcon, LayersIcon, RefreshCwIcon, InfoIcon } from 'lucide-react';
+import { ChevronRightIcon, LayersIcon, RefreshCwIcon, InfoIcon, EllipsisIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,9 +18,11 @@ import {
 import { DestructiveConfirm } from '@/components/feedback/destructive-confirm';
 import { ErrorState } from '@/components/feedback/error-state';
 import { SkeletonLine, SkeletonBox } from '@/components/feedback/skeleton';
+import MobileTopBar from '@/components/layout/mobile-top-bar';
 import { useGroup, useGroupChildren, useArchiveGroup, useRestoreGroup } from '@/hooks/use-groups';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { toI18nKey } from '@/lib/error-map';
-import { formatDate } from '@/lib/format';
+import { formatDate, getInitials } from '@/lib/format';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
 
 const OverviewTab = lazy(() => import('./tabs/overview-tab'));
@@ -40,6 +42,8 @@ function TabSkeleton() {
 export default function GroupDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation('groups');
+  const { isMobile } = useBreakpoint();
+  const navigate = useNavigate();
   const tz = DEFAULT_TIMEZONE;
 
   const groupQuery = useGroup(id ?? '');
@@ -103,6 +107,174 @@ export default function GroupDetailPage() {
   }
 
   const isArchived = group.archived_at !== null;
+  const kids = childrenQuery.data?.data ?? [];
+
+  if (isMobile) {
+    const mobileTab = activeTab === 'overview' ? 'children' : activeTab;
+    const statusLabel = childrenCount >= group.capacity ? t('mobile.status_full') : null;
+
+    return (
+      <div className="flex flex-col gap-3">
+        <MobileTopBar
+          title={group.name}
+          sub={
+            group.age_range_min !== null && group.age_range_max !== null
+              ? `${group.age_range_min}–${group.age_range_max} мес.`
+              : undefined
+          }
+          back
+          action={
+            <button type="button" className="m-iconbtn ghost" aria-label={t('actions.edit')}>
+              <EllipsisIcon />
+            </button>
+          }
+        />
+
+        {/* Gradient header with capacity */}
+        <div
+          className="flex items-center gap-3.5 rounded-[18px] p-[18px]"
+          style={{ background: 'linear-gradient(135deg, var(--warning-soft), var(--bg))' }}
+        >
+          <div
+            className="flex size-[60px] items-center justify-center rounded-2xl text-[28px]"
+            style={{ background: 'rgba(255,175,54,0.2)' }}
+          >
+            <LayersIcon className="size-7 text-[color:var(--primary)]" />
+          </div>
+          <div className="flex-1">
+            <div className="text-[18px] font-bold" style={{ letterSpacing: '-0.01em' }}>
+              {childrenCount} / {group.capacity}
+            </div>
+            <div className="text-[12px] text-[color:var(--text-3)]">
+              {t('mobile.capacity_label')}
+            </div>
+          </div>
+          {statusLabel && (
+            <Badge variant="warning" dot>
+              {statusLabel}
+            </Badge>
+          )}
+        </div>
+
+        {/* KV info card */}
+        <div className="m-card flush">
+          <div className="m-kv">
+            <span className="k">{t('mobile.info_mentor')}</span>
+            <span className="v">—</span>
+          </div>
+          <div className="m-kv">
+            <span className="k">{t('mobile.info_location')}</span>
+            <span className="v">—</span>
+          </div>
+          <div className="m-kv">
+            <span className="k">{t('mobile.info_age')}</span>
+            <span className="v">
+              {group.age_range_min ?? '—'}–{group.age_range_max ?? '—'} мес.
+            </span>
+          </div>
+        </div>
+
+        {/* Segmented tabs */}
+        <div className="m-segmented" style={{ marginBottom: 12 }}>
+          <button
+            type="button"
+            className={mobileTab === 'children' ? 'on' : ''}
+            onClick={() => setActiveTab('children')}
+          >
+            {t('mobile.children_tab')}
+            {childrenCount > 0 && (
+              <span
+                style={{
+                  marginLeft: 5,
+                  background: 'var(--primary-soft)',
+                  color: 'var(--primary-fg)',
+                  fontSize: 10,
+                  padding: '1px 6px',
+                  borderRadius: 999,
+                  fontWeight: 700,
+                }}
+              >
+                {childrenCount}
+              </span>
+            )}
+          </button>
+          <button
+            type="button"
+            className={mobileTab === 'schedule' ? 'on' : ''}
+            onClick={() => setActiveTab('schedule')}
+          >
+            {t('mobile.schedule_tab')}
+          </button>
+          <button
+            type="button"
+            className={mobileTab === 'history' ? 'on' : ''}
+            onClick={() => setActiveTab('history')}
+          >
+            {t('mobile.history_tab')}
+          </button>
+        </div>
+
+        {/* Children list */}
+        {mobileTab === 'children' && (
+          <div className="m-card flush">
+            {kids.slice(0, 6).map((child) => (
+              <div
+                key={child.id}
+                className="m-list-row"
+                onClick={() => navigate(`/children/${child.id}`)}
+              >
+                <div className="relative">
+                  <div className="m-avatar child">{getInitials(child.full_name)}</div>
+                </div>
+                <div>
+                  <div className="m-row-title">{child.full_name}</div>
+                  <div className="m-row-sub">
+                    {child.date_of_birth ? formatDate(child.date_of_birth, tz) : '—'}
+                  </div>
+                </div>
+                <ChevronRightIcon className="m-row-chev size-4" />
+              </div>
+            ))}
+            {childrenCount > 6 && (
+              <div
+                className="m-list-row"
+                style={{
+                  justifyContent: 'center',
+                  color: 'var(--primary)',
+                  fontWeight: 600,
+                  fontSize: 13,
+                }}
+              >
+                <div />
+                <div style={{ textAlign: 'center' }}>
+                  {t('mobile.show_more', { count: childrenCount - 6 })}
+                </div>
+                <div />
+              </div>
+            )}
+          </div>
+        )}
+
+        {mobileTab === 'schedule' && (
+          <div
+            className="m-card"
+            style={{ padding: 14, textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}
+          >
+            {t('mobile.schedule_tab')} — {t('common:shell.section_in_development')}
+          </div>
+        )}
+
+        {mobileTab === 'history' && (
+          <div
+            className="m-card"
+            style={{ padding: 14, textAlign: 'center', color: 'var(--text-3)', fontSize: 13 }}
+          >
+            {t('mobile.history_tab')} — {t('common:shell.section_in_development')}
+          </div>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-[14px]">

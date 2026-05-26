@@ -114,13 +114,43 @@ export const router = createBrowserRouter([
               return { Component };
             },
           },
-          { path: 'structure/locations', lazy: lazyStub },
-          { path: 'structure/cameras', lazy: lazyStub },
+          {
+            path: 'structure/locations',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/structure/locations/index');
+              return { Component };
+            },
+          },
+          {
+            path: 'structure/cameras',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/structure/cameras/index');
+              return { Component };
+            },
+          },
           { path: 'schedule/templates', lazy: lazyStub },
-          { path: 'schedule/templates/:id', lazy: lazyStub },
+          {
+            path: 'schedule/templates/:id',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/schedule/templates/$id');
+              return { Component };
+            },
+          },
           { path: 'schedule/weeks', lazy: lazyStub },
-          { path: 'meal-plans', lazy: lazyStub },
-          { path: 'content', lazy: lazyStub },
+          {
+            path: 'meal-plans',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/meal-plans/index');
+              return { Component };
+            },
+          },
+          {
+            path: 'content',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/content/index');
+              return { Component };
+            },
+          },
           { path: 'content/qundylyq', lazy: lazyStub },
           {
             path: 'billing/invoices',
@@ -172,7 +202,13 @@ export const router = createBrowserRouter([
               return { Component };
             },
           },
-          { path: 'billing/holidays', lazy: lazyStub },
+          {
+            path: 'billing/holidays',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/billing/holidays/index');
+              return { Component };
+            },
+          },
           {
             path: 'billing/refunds',
             lazy: async () => {
@@ -201,7 +237,13 @@ export const router = createBrowserRouter([
               return { Component };
             },
           },
-          { path: 'billing/fiscal-receipts', lazy: lazyStub },
+          {
+            path: 'billing/fiscal-receipts',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/billing/fiscal-receipts/index');
+              return { Component };
+            },
+          },
           {
             path: 'parent-requests',
             lazy: async () => {
@@ -223,8 +265,20 @@ export const router = createBrowserRouter([
               return { Component };
             },
           },
-          { path: 'attendance', lazy: lazyStub },
-          { path: 'attendance/daily-status', lazy: lazyStub },
+          {
+            path: 'attendance',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/attendance/index');
+              return { Component };
+            },
+          },
+          {
+            path: 'attendance/daily-status',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/attendance/daily-status');
+              return { Component };
+            },
+          },
           { path: 'diagnostics/templates', lazy: lazyStub },
           { path: 'face', lazy: lazyStub },
           { path: 'operations/lifecycle-dlq', lazy: lazyStub },

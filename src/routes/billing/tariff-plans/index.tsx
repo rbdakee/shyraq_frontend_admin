@@ -7,6 +7,8 @@ import { z } from 'zod';
 import { toast } from 'sonner';
 import { type ColumnDef } from '@tanstack/react-table';
 import { PlusIcon, EyeIcon, BanIcon, ArrowRightIcon } from 'lucide-react';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
+import TariffMobile from '@/routes/billing/tariff-mobile';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -83,6 +85,7 @@ export default function TariffPlansListPage() {
   const { t } = useTranslation('billing');
   const navigate = useNavigate();
   const tz = DEFAULT_TIMEZONE;
+  const { isMobile } = useBreakpoint();
 
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [typeFilter, setTypeFilter] = useState<string>('all');
@@ -175,6 +178,10 @@ export default function TariffPlansListPage() {
     ],
     [navigate, t],
   );
+
+  if (isMobile) {
+    return <TariffMobile />;
+  }
 
   const toolbar = (
     <>
