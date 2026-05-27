@@ -105,7 +105,7 @@ export default function ScheduleTemplatesIndexPage() {
 
   if (isMobile) {
     return (
-      <div className="flex flex-col gap-3">
+      <>
         <MobileTopBar
           title={t('title')}
           sub={t('sub')}
@@ -122,76 +122,78 @@ export default function ScheduleTemplatesIndexPage() {
           }
         />
 
-        <div className="m-chips">
-          <button
-            type="button"
-            className={cn('m-chip', groupFilter === 'all' && 'active')}
-            onClick={() => setGroupFilter('all')}
-          >
-            {t('templates.filter_all_groups')}
-          </button>
-          {groups.map((g) => (
+        <div className="flex flex-col gap-3">
+          <div className="m-chips">
             <button
-              key={g.id}
               type="button"
-              className={cn('m-chip', groupFilter === g.id && 'active')}
-              onClick={() => setGroupFilter(g.id)}
+              className={cn('m-chip', groupFilter === 'all' && 'active')}
+              onClick={() => setGroupFilter('all')}
             >
-              {g.name}
+              {t('templates.filter_all_groups')}
             </button>
-          ))}
-        </div>
+            {groups.map((g) => (
+              <button
+                key={g.id}
+                type="button"
+                className={cn('m-chip', groupFilter === g.id && 'active')}
+                onClick={() => setGroupFilter(g.id)}
+              >
+                {g.name}
+              </button>
+            ))}
+          </div>
 
-        {templates.length === 0 && !isFiltered && (
-          <EmptyState
-            title={t('templates.list_empty')}
-            action={
-              <Button size="sm" onClick={() => setCreateOpen(true)}>
-                <PlusIcon className="size-4" />
-                {t('templates.first_template')}
-              </Button>
-            }
-          />
-        )}
+          {templates.length === 0 && !isFiltered && (
+            <EmptyState
+              title={t('templates.list_empty')}
+              action={
+                <Button size="sm" onClick={() => setCreateOpen(true)}>
+                  <PlusIcon className="size-4" />
+                  {t('templates.first_template')}
+                </Button>
+              }
+            />
+          )}
 
-        {templates.length === 0 && isFiltered && (
-          <EmptyState
-            variant="filtered"
-            title={t('templates.list_filtered_empty')}
-            onResetFilters={handleResetFilters}
-          />
-        )}
+          {templates.length === 0 && isFiltered && (
+            <EmptyState
+              variant="filtered"
+              title={t('templates.list_filtered_empty')}
+              onResetFilters={handleResetFilters}
+            />
+          )}
 
-        <div className="flex flex-col gap-2.5">
-          {templates.map((tpl) => (
-            <div
-              key={tpl.id}
-              className="m-card"
-              style={{ padding: 14, cursor: 'pointer' }}
-              onClick={() => navigate(`/schedule/templates/${tpl.id}`)}
-            >
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="text-[15px] font-bold">{tpl.name}</div>
-                  <div className="mt-0.5 text-[12px] text-[color:var(--text-3)]">
-                    {t('templates.slots_count', { count: tpl.slots.length })}
+          <div className="flex flex-col gap-2.5">
+            {templates.map((tpl) => (
+              <div
+                key={tpl.id}
+                className="m-card"
+                style={{ padding: 14, cursor: 'pointer' }}
+                onClick={() => navigate(`/schedule/templates/${tpl.id}`)}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="text-[15px] font-bold">{tpl.name}</div>
+                    <div className="mt-0.5 text-[12px] text-[color:var(--text-3)]">
+                      {t('templates.slots_count', { count: tpl.slots.length })}
+                    </div>
                   </div>
+                  <Badge variant={tpl.isActive ? 'success' : 'neutral'}>
+                    {tpl.isActive ? t('templates.active_badge') : t('templates.inactive_badge')}
+                  </Badge>
                 </div>
-                <Badge variant={tpl.isActive ? 'success' : 'neutral'}>
-                  {tpl.isActive ? t('templates.active_badge') : t('templates.inactive_badge')}
-                </Badge>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
 
-        <MobileCreateTemplateSheet
-          open={createOpen}
-          onOpenChange={setCreateOpen}
-          groups={groups}
-          onSuccess={(id) => navigate(`/schedule/templates/${id}`)}
-        />
-      </div>
+          <MobileCreateTemplateSheet
+            open={createOpen}
+            onOpenChange={setCreateOpen}
+            groups={groups}
+            onSuccess={(id) => navigate(`/schedule/templates/${id}`)}
+          />
+        </div>
+      </>
     );
   }
 

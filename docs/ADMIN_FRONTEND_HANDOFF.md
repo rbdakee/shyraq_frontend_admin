@@ -496,7 +496,7 @@
 
 `GET /admin/content?content_type=&status=&target_type=&target_group_id=&target_child_id=&scheduled_from=&scheduled_to=&published_from=&published_to=&cursor=&limit=` (limit ≤100, default 20).
 
-Cursor: `{items, next_cursor: string|null}` на момент текущего backend repo возвращает `next_cursor: null` (cursor-pagination end-to-end ещё не закончен) — но клиент готовит код под cursor по контракту.
+Cursor: `{items, cursor: string|null}` — поле называется **`cursor`** (не `next_cursor`; подтверждено live `/docs-json` 2026-05-27 при QA B12, prev draft drifted on field name). На момент текущего backend repo возвращает `cursor: null` (cursor-pagination end-to-end ещё не закончен) — но клиент готовит код под cursor по контракту. NB: parent-requests module использует `next_cursor` (§A15) — content module отличается.
 
 ### Response shape
 

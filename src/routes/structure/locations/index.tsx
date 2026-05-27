@@ -57,7 +57,7 @@ export default function StructureLocationsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <>
       <MobileTopBar
         title={t('mobile_structure_title')}
         sub={t('mobile_structure_sub')}
@@ -69,107 +69,109 @@ export default function StructureLocationsPage() {
         }
       />
 
-      <div className="m-segmented" style={{ marginBottom: 12 }}>
-        <button
-          type="button"
-          className={tab === 'locations' ? 'on' : ''}
-          onClick={() => switchTab('locations')}
-        >
-          {t('mobile_structure_locations')}
-          <span
-            style={{
-              marginLeft: 5,
-              background: 'var(--bg-sunken)',
-              fontSize: 10,
-              padding: '1px 6px',
-              borderRadius: 999,
-            }}
+      <div className="flex flex-col gap-3">
+        <div className="m-segmented" style={{ marginBottom: 12 }}>
+          <button
+            type="button"
+            className={tab === 'locations' ? 'on' : ''}
+            onClick={() => switchTab('locations')}
           >
-            {PLACEHOLDER_LOCATIONS.length}
-          </span>
-        </button>
-        <button
-          type="button"
-          className={tab === 'cameras' ? 'on' : ''}
-          onClick={() => switchTab('cameras')}
-        >
-          {t('mobile_structure_cameras')}
-          <span
-            style={{
-              marginLeft: 5,
-              background: 'var(--bg-sunken)',
-              fontSize: 10,
-              padding: '1px 6px',
-              borderRadius: 999,
-            }}
+            {t('mobile_structure_locations')}
+            <span
+              style={{
+                marginLeft: 5,
+                background: 'var(--bg-sunken)',
+                fontSize: 10,
+                padding: '1px 6px',
+                borderRadius: 999,
+              }}
+            >
+              {PLACEHOLDER_LOCATIONS.length}
+            </span>
+          </button>
+          <button
+            type="button"
+            className={tab === 'cameras' ? 'on' : ''}
+            onClick={() => switchTab('cameras')}
           >
-            12
-          </span>
-        </button>
-      </div>
+            {t('mobile_structure_cameras')}
+            <span
+              style={{
+                marginLeft: 5,
+                background: 'var(--bg-sunken)',
+                fontSize: 10,
+                padding: '1px 6px',
+                borderRadius: 999,
+              }}
+            >
+              12
+            </span>
+          </button>
+        </div>
 
-      {tab === 'locations' && (
-        <div className="m-card flush" style={{ marginBottom: 12 }}>
-          {PLACEHOLDER_LOCATIONS.map((l) => (
-            <div key={l.id} className="m-list-row">
-              <div
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: 10,
-                  background: 'var(--primary-soft)',
-                  color: 'var(--primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <BuildingIcon style={{ width: 18, height: 18 }} />
-              </div>
-              <div>
-                <div className="m-row-title">{l.name}</div>
-                <div className="m-row-sub">{l.desc}</div>
+        {tab === 'locations' && (
+          <div className="m-card flush" style={{ marginBottom: 12 }}>
+            {PLACEHOLDER_LOCATIONS.map((l) => (
+              <div key={l.id} className="m-list-row">
                 <div
                   style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 10,
+                    background: 'var(--primary-soft)',
+                    color: 'var(--primary)',
                     display: 'flex',
-                    gap: 10,
-                    marginTop: 5,
-                    fontSize: 11,
-                    color: 'var(--text-3)',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
                 >
-                  <span>
-                    <strong style={{ color: 'var(--text-1)' }}>{l.groups}</strong>{' '}
-                    {t('mobile_structure_groups_unit')}
-                  </span>
-                  <span>
-                    <strong style={{ color: 'var(--text-1)' }}>{l.cams}</strong>{' '}
-                    {t('mobile_structure_cameras_unit')}
-                  </span>
+                  <BuildingIcon style={{ width: 18, height: 18 }} />
                 </div>
+                <div>
+                  <div className="m-row-title">{l.name}</div>
+                  <div className="m-row-sub">{l.desc}</div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: 10,
+                      marginTop: 5,
+                      fontSize: 11,
+                      color: 'var(--text-3)',
+                    }}
+                  >
+                    <span>
+                      <strong style={{ color: 'var(--text-1)' }}>{l.groups}</strong>{' '}
+                      {t('mobile_structure_groups_unit')}
+                    </span>
+                    <span>
+                      <strong style={{ color: 'var(--text-1)' }}>{l.cams}</strong>{' '}
+                      {t('mobile_structure_cameras_unit')}
+                    </span>
+                  </div>
+                </div>
+                <ChevronRightIcon className="m-row-chev" style={{ width: 16, height: 16 }} />
               </div>
-              <ChevronRightIcon className="m-row-chev" style={{ width: 16, height: 16 }} />
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
 
-      {tab === 'cameras' && (
-        <div
-          style={{
-            padding: 14,
-            borderRadius: 12,
-            background: 'var(--info-soft)',
-            color: 'var(--info-fg)',
-            fontSize: 12.5,
-            display: 'flex',
-            gap: 10,
-          }}
-        >
-          <InfoIcon style={{ width: 16, height: 16, flexShrink: 0, marginTop: 1 }} />
-          <div>{t('mobile_structure_cameras_phase_c')}</div>
-        </div>
-      )}
-    </div>
+        {tab === 'cameras' && (
+          <div
+            style={{
+              padding: 14,
+              borderRadius: 12,
+              background: 'var(--info-soft)',
+              color: 'var(--info-fg)',
+              fontSize: 12.5,
+              display: 'flex',
+              gap: 10,
+            }}
+          >
+            <InfoIcon style={{ width: 16, height: 16, flexShrink: 0, marginTop: 1 }} />
+            <div>{t('mobile_structure_cameras_phase_c')}</div>
+          </div>
+        )}
+      </div>
+    </>
   );
 }

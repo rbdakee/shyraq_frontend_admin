@@ -78,7 +78,7 @@ export default function FaceIdPage() {
   }
 
   return (
-    <div className="flex flex-col gap-3">
+    <>
       <MobileTopBar
         title={t('mobile_face_title')}
         sub={t('mobile_face_sub')}
@@ -90,161 +90,163 @@ export default function FaceIdPage() {
         }
       />
 
-      {/* Phase C banner */}
-      <div
-        style={{
-          padding: 18,
-          marginBottom: 14,
-          background: 'linear-gradient(135deg, var(--warning-soft), var(--bg))',
-          borderRadius: 16,
-          display: 'flex',
-          gap: 14,
-          alignItems: 'flex-start',
-        }}
-      >
+      <div className="flex flex-col gap-3">
+        {/* Phase C banner */}
         <div
           style={{
-            width: 48,
-            height: 48,
-            borderRadius: 14,
-            background: 'rgba(255,175,54,0.25)',
-            color: 'var(--warning-fg)',
+            padding: 18,
+            marginBottom: 14,
+            background: 'linear-gradient(135deg, var(--warning-soft), var(--bg))',
+            borderRadius: 16,
             display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexShrink: 0,
+            gap: 14,
+            alignItems: 'flex-start',
           }}
         >
-          <TriangleAlertIcon style={{ width: 22, height: 22 }} />
-        </div>
-        <div>
           <div
             style={{
-              fontSize: 11,
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              letterSpacing: '0.06em',
+              width: 48,
+              height: 48,
+              borderRadius: 14,
+              background: 'rgba(255,175,54,0.25)',
               color: 'var(--warning-fg)',
-              marginBottom: 4,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
             }}
           >
-            {t('mobile_face_phase_c_label')}
+            <TriangleAlertIcon style={{ width: 22, height: 22 }} />
           </div>
-          <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.5 }}>
-            {t('mobile_face_phase_c_body')}
-          </div>
-        </div>
-      </div>
-
-      {/* Segmented control */}
-      <div className="m-segmented" style={{ marginBottom: 14 }}>
-        <button
-          type="button"
-          className={tab === 'consents' ? 'on' : ''}
-          onClick={() => setTab('consents')}
-        >
-          {t('mobile_face_tab_consents')}
-          <span
-            style={{
-              marginLeft: 5,
-              background: 'var(--bg-sunken)',
-              fontSize: 10,
-              padding: '1px 6px',
-              borderRadius: 999,
-            }}
-          >
-            {MOCK_KPI.signed}
-          </span>
-        </button>
-        <button
-          type="button"
-          className={tab === 'profiles' ? 'on' : ''}
-          onClick={() => setTab('profiles')}
-        >
-          {t('mobile_face_tab_profiles')}
-          <span
-            style={{
-              marginLeft: 5,
-              background: 'var(--bg-sunken)',
-              fontSize: 10,
-              padding: '1px 6px',
-              borderRadius: 999,
-            }}
-          >
-            58
-          </span>
-        </button>
-        <button
-          type="button"
-          className={tab === 'cameras' ? 'on' : ''}
-          onClick={() => setTab('cameras')}
-        >
-          {t('mobile_face_tab_cameras')}
-        </button>
-      </div>
-
-      {/* KPI row */}
-      <div
-        className="m-kpi-row"
-        style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 14 }}
-      >
-        <div className="m-kpi" style={{ padding: '10px 12px' }}>
-          <div className="m-kpi-label" style={{ fontSize: 9.5, color: 'var(--success-fg)' }}>
-            {t('mobile_face_kpi_signed')}
-          </div>
-          <div className="m-kpi-value" style={{ fontSize: 18, color: 'var(--success-fg)' }}>
-            {MOCK_KPI.signed}
-          </div>
-        </div>
-        <div className="m-kpi" style={{ padding: '10px 12px' }}>
-          <div className="m-kpi-label" style={{ fontSize: 9.5, color: 'var(--warning-fg)' }}>
-            {t('mobile_face_kpi_pending')}
-          </div>
-          <div className="m-kpi-value" style={{ fontSize: 18, color: 'var(--warning-fg)' }}>
-            {MOCK_KPI.pending}
-          </div>
-        </div>
-        <div className="m-kpi" style={{ padding: '10px 12px' }}>
-          <div className="m-kpi-label" style={{ fontSize: 9.5 }}>
-            {t('mobile_face_kpi_rejected')}
-          </div>
-          <div className="m-kpi-value" style={{ fontSize: 18 }}>
-            {MOCK_KPI.rejected}
-          </div>
-        </div>
-      </div>
-
-      {/* Consent list */}
-      {tab === 'consents' && (
-        <div className="m-card flush">
-          {MOCK_CONSENTS.map((c) => (
-            <div key={c.id} className="m-list-row">
-              <div className="m-avatar guardian">{getInitials(c.name)}</div>
-              <div>
-                <div className="m-row-title">{c.name}</div>
-                <div className="m-row-sub">
-                  {c.child} · {c.relation} · {c.date}
-                </div>
-              </div>
-              <Badge variant={statusVariant[c.status]} dot className="text-[10.5px]">
-                {t(`mobile_face_status_${c.status}`)}
-              </Badge>
+          <div>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 700,
+                textTransform: 'uppercase',
+                letterSpacing: '0.06em',
+                color: 'var(--warning-fg)',
+                marginBottom: 4,
+              }}
+            >
+              {t('mobile_face_phase_c_label')}
             </div>
-          ))}
+            <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.5 }}>
+              {t('mobile_face_phase_c_body')}
+            </div>
+          </div>
         </div>
-      )}
 
-      {tab === 'profiles' && (
-        <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-text-3">
-          <p className="text-[13px]">{t('mobile_face_profiles_placeholder')}</p>
+        {/* Segmented control */}
+        <div className="m-segmented" style={{ marginBottom: 14 }}>
+          <button
+            type="button"
+            className={tab === 'consents' ? 'on' : ''}
+            onClick={() => setTab('consents')}
+          >
+            {t('mobile_face_tab_consents')}
+            <span
+              style={{
+                marginLeft: 5,
+                background: 'var(--bg-sunken)',
+                fontSize: 10,
+                padding: '1px 6px',
+                borderRadius: 999,
+              }}
+            >
+              {MOCK_KPI.signed}
+            </span>
+          </button>
+          <button
+            type="button"
+            className={tab === 'profiles' ? 'on' : ''}
+            onClick={() => setTab('profiles')}
+          >
+            {t('mobile_face_tab_profiles')}
+            <span
+              style={{
+                marginLeft: 5,
+                background: 'var(--bg-sunken)',
+                fontSize: 10,
+                padding: '1px 6px',
+                borderRadius: 999,
+              }}
+            >
+              58
+            </span>
+          </button>
+          <button
+            type="button"
+            className={tab === 'cameras' ? 'on' : ''}
+            onClick={() => setTab('cameras')}
+          >
+            {t('mobile_face_tab_cameras')}
+          </button>
         </div>
-      )}
 
-      {tab === 'cameras' && (
-        <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-text-3">
-          <p className="text-[13px]">{t('mobile_face_cameras_placeholder')}</p>
+        {/* KPI row */}
+        <div
+          className="m-kpi-row"
+          style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 14 }}
+        >
+          <div className="m-kpi" style={{ padding: '10px 12px' }}>
+            <div className="m-kpi-label" style={{ fontSize: 9.5, color: 'var(--success-fg)' }}>
+              {t('mobile_face_kpi_signed')}
+            </div>
+            <div className="m-kpi-value" style={{ fontSize: 18, color: 'var(--success-fg)' }}>
+              {MOCK_KPI.signed}
+            </div>
+          </div>
+          <div className="m-kpi" style={{ padding: '10px 12px' }}>
+            <div className="m-kpi-label" style={{ fontSize: 9.5, color: 'var(--warning-fg)' }}>
+              {t('mobile_face_kpi_pending')}
+            </div>
+            <div className="m-kpi-value" style={{ fontSize: 18, color: 'var(--warning-fg)' }}>
+              {MOCK_KPI.pending}
+            </div>
+          </div>
+          <div className="m-kpi" style={{ padding: '10px 12px' }}>
+            <div className="m-kpi-label" style={{ fontSize: 9.5 }}>
+              {t('mobile_face_kpi_rejected')}
+            </div>
+            <div className="m-kpi-value" style={{ fontSize: 18 }}>
+              {MOCK_KPI.rejected}
+            </div>
+          </div>
         </div>
-      )}
-    </div>
+
+        {/* Consent list */}
+        {tab === 'consents' && (
+          <div className="m-card flush">
+            {MOCK_CONSENTS.map((c) => (
+              <div key={c.id} className="m-list-row">
+                <div className="m-avatar guardian">{getInitials(c.name)}</div>
+                <div>
+                  <div className="m-row-title">{c.name}</div>
+                  <div className="m-row-sub">
+                    {c.child} · {c.relation} · {c.date}
+                  </div>
+                </div>
+                <Badge variant={statusVariant[c.status]} dot className="text-[10.5px]">
+                  {t(`mobile_face_status_${c.status}`)}
+                </Badge>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {tab === 'profiles' && (
+          <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-text-3">
+            <p className="text-[13px]">{t('mobile_face_profiles_placeholder')}</p>
+          </div>
+        )}
+
+        {tab === 'cameras' && (
+          <div className="flex flex-col items-center justify-center gap-2 py-12 text-center text-text-3">
+            <p className="text-[13px]">{t('mobile_face_cameras_placeholder')}</p>
+          </div>
+        )}
+      </div>
+    </>
   );
 }

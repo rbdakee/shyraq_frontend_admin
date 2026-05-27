@@ -170,7 +170,27 @@ export const router = createBrowserRouter([
               return { Component };
             },
           },
-          { path: 'content/qundylyq', lazy: lazyStub },
+          {
+            path: 'content/new',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/content/new');
+              return { Component };
+            },
+          },
+          {
+            path: 'content/qundylyq',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/content/qundylyq');
+              return { Component };
+            },
+          },
+          {
+            path: 'content/:id',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/content/$id');
+              return { Component };
+            },
+          },
           {
             path: 'billing/invoices',
             lazy: async () => {

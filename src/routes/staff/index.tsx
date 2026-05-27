@@ -274,7 +274,7 @@ export default function StaffListPage() {
 
   if (isMobile) {
     return (
-      <div className="flex flex-col gap-3">
+      <>
         <MobileTopBar
           title={t('title')}
           sub={t('mobile.header_sub', { count: activeCount })}
@@ -291,71 +291,73 @@ export default function StaffListPage() {
           }
         />
 
-        <div className="m-search">
-          <SearchIcon />
-          <input
-            value={searchInput}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder={t('search_placeholder')}
+        <div className="flex flex-col gap-3">
+          <div className="m-search">
+            <SearchIcon />
+            <input
+              value={searchInput}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder={t('search_placeholder')}
+            />
+          </div>
+
+          <div className="m-chips">
+            {roleChips.map((chip) => (
+              <button
+                key={chip.value}
+                type="button"
+                className={cn('m-chip', roleFilter === chip.value && 'active')}
+                onClick={() => setRoleFilter(chip.value)}
+              >
+                {chip.label}
+                {chip.count !== undefined && <span className="m-chip-count">{chip.count}</span>}
+              </button>
+            ))}
+          </div>
+
+          <div className="m-card flush">
+            {data.map((s) => (
+              <div
+                key={s.id}
+                className="m-list-row"
+                style={{ opacity: s.is_active ? 1 : 0.55 }}
+                onClick={() => navigate(`/staff/${s.id}`)}
+              >
+                <div className="m-avatar staff">{getInitials(s.full_name)}</div>
+                <div className="min-w-0">
+                  <div className="m-row-title">{s.full_name}</div>
+                  <div className="m-row-sub flex items-center gap-1.5" style={{ marginTop: 3 }}>
+                    <Badge
+                      variant={roleVariant(s.role)}
+                      className="text-[10.5px]"
+                      style={{ padding: '1px 6px' }}
+                    >
+                      {t(`role.${s.role}`)}
+                    </Badge>
+                    <span className="text-[color:var(--text-3)]">· —</span>
+                  </div>
+                </div>
+                {!s.is_active && (
+                  <span className="text-[11px] text-[color:var(--text-4)]">
+                    {t('status.inactive')}
+                  </span>
+                )}
+                {s.is_active && <ChevronRightIcon className="m-row-chev size-4" />}
+              </div>
+            ))}
+          </div>
+
+          <Fab onClick={() => setCreateOpen(true)} aria-label={t('create_button')}>
+            <PlusIcon />
+          </Fab>
+
+          <CreateStaffModal
+            open={createOpen}
+            onOpenChange={setCreateOpen}
+            groups={groupsQuery.data ?? []}
           />
         </div>
-
-        <div className="m-chips">
-          {roleChips.map((chip) => (
-            <button
-              key={chip.value}
-              type="button"
-              className={cn('m-chip', roleFilter === chip.value && 'active')}
-              onClick={() => setRoleFilter(chip.value)}
-            >
-              {chip.label}
-              {chip.count !== undefined && <span className="m-chip-count">{chip.count}</span>}
-            </button>
-          ))}
-        </div>
-
-        <div className="m-card flush">
-          {data.map((s) => (
-            <div
-              key={s.id}
-              className="m-list-row"
-              style={{ opacity: s.is_active ? 1 : 0.55 }}
-              onClick={() => navigate(`/staff/${s.id}`)}
-            >
-              <div className="m-avatar staff">{getInitials(s.full_name)}</div>
-              <div className="min-w-0">
-                <div className="m-row-title">{s.full_name}</div>
-                <div className="m-row-sub flex items-center gap-1.5" style={{ marginTop: 3 }}>
-                  <Badge
-                    variant={roleVariant(s.role)}
-                    className="text-[10.5px]"
-                    style={{ padding: '1px 6px' }}
-                  >
-                    {t(`role.${s.role}`)}
-                  </Badge>
-                  <span className="text-[color:var(--text-3)]">· —</span>
-                </div>
-              </div>
-              {!s.is_active && (
-                <span className="text-[11px] text-[color:var(--text-4)]">
-                  {t('status.inactive')}
-                </span>
-              )}
-              {s.is_active && <ChevronRightIcon className="m-row-chev size-4" />}
-            </div>
-          ))}
-        </div>
-
-        <Fab onClick={() => setCreateOpen(true)} aria-label={t('create_button')}>
-          <PlusIcon />
-        </Fab>
-
-        <CreateStaffModal
-          open={createOpen}
-          onOpenChange={setCreateOpen}
-          groups={groupsQuery.data ?? []}
-        />
-      </div>
+      </>
     );
   }
 

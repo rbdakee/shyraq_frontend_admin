@@ -1,4 +1,5 @@
 import type { ChildListFilters, OffsetPaginationParams } from '@/api/children';
+import type { ContentListFilters } from '@/api/content';
 import type { CustomDiscountListFilters, ApplicationListFilters } from '@/api/custom-discounts';
 import type { EnrollmentListFilters } from '@/api/enrollments';
 import type { GroupListFilters } from '@/api/groups';
@@ -116,5 +117,10 @@ export const qk = {
     all: ['meal-plans'] as const,
     list: (filters: MealPlanListFilters = {}) => ['meal-plans', 'list', filters] as const,
     detail: (id: string) => ['meal-plans', 'detail', id] as const,
+  },
+  content: {
+    all: ['content'] as const,
+    list: (filters: ContentListFilters = {}) => ['content', 'list', filters] as const,
+    detail: (id: string) => ['content', 'detail', id] as const,
   },
 } as const;

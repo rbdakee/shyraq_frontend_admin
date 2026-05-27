@@ -117,7 +117,7 @@ export default function DiagnosticsTemplatesPage() {
         });
 
   return (
-    <div className="flex flex-col gap-3">
+    <>
       <MobileTopBar
         title={t('mobile_diag_title')}
         sub={t('mobile_diag_sub')}
@@ -129,85 +129,89 @@ export default function DiagnosticsTemplatesPage() {
         }
       />
 
-      <div className="m-chips">
-        {specFilters.map((sf) => (
-          <button
-            key={sf.key}
-            type="button"
-            className={`m-chip${filter === sf.key ? ' active' : ''}`}
-            onClick={() => setFilter(sf.key)}
-          >
-            {t(sf.labelKey)}
-            <span className="m-chip-count">{sf.count}</span>
-          </button>
-        ))}
-      </div>
+      <div className="flex flex-col gap-3">
+        <div className="m-chips">
+          {specFilters.map((sf) => (
+            <button
+              key={sf.key}
+              type="button"
+              className={`m-chip${filter === sf.key ? ' active' : ''}`}
+              onClick={() => setFilter(sf.key)}
+            >
+              {t(sf.labelKey)}
+              <span className="m-chip-count">{sf.count}</span>
+            </button>
+          ))}
+        </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {filtered.map((d) => (
-          <div key={d.id} className="m-card" style={{ padding: 14, opacity: d.active ? 1 : 0.6 }}>
-            <div
-              style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                marginBottom: 8,
-              }}
-            >
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <Badge variant={d.tone} dot className="text-[10.5px]">
-                  {t(d.specKey)}
-                </Badge>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: 14.5,
-                    marginTop: 6,
-                    letterSpacing: '-0.005em',
-                  }}
-                >
-                  {d.name}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {filtered.map((d) => (
+            <div key={d.id} className="m-card" style={{ padding: 14, opacity: d.active ? 1 : 0.6 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  marginBottom: 8,
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <Badge variant={d.tone} dot className="text-[10.5px]">
+                    {t(d.specKey)}
+                  </Badge>
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 14.5,
+                      marginTop: 6,
+                      letterSpacing: '-0.005em',
+                    }}
+                  >
+                    {d.name}
+                  </div>
                 </div>
+                {d.active ? (
+                  <Badge variant="success" dot className="text-[10.5px]">
+                    {t('mobile_diag_active')}
+                  </Badge>
+                ) : (
+                  <Badge variant="neutral" dot className="text-[10.5px]">
+                    {t('mobile_diag_inactive')}
+                  </Badge>
+                )}
               </div>
-              {d.active ? (
-                <Badge variant="success" dot className="text-[10.5px]">
-                  {t('mobile_diag_active')}
-                </Badge>
-              ) : (
-                <Badge variant="neutral" dot className="text-[10.5px]">
-                  {t('mobile_diag_inactive')}
-                </Badge>
-              )}
+              <div
+                style={{
+                  display: 'flex',
+                  gap: 14,
+                  fontSize: 11.5,
+                  color: 'var(--text-3)',
+                  marginTop: 8,
+                  paddingTop: 10,
+                  borderTop: '1px solid var(--line)',
+                }}
+              >
+                <span>
+                  {t('mobile_diag_version')}{' '}
+                  <strong
+                    style={{ color: 'var(--text-1)', fontFamily: 'JetBrains Mono, monospace' }}
+                  >
+                    v{d.ver}
+                  </strong>
+                </span>
+                <span>
+                  {'· '}
+                  <strong style={{ color: 'var(--text-1)' }}>{d.used}</strong>{' '}
+                  {t('mobile_diag_entries')}
+                </span>
+                <ChevronRightIcon
+                  style={{ width: 14, height: 14, marginLeft: 'auto', color: 'var(--text-4)' }}
+                />
+              </div>
             </div>
-            <div
-              style={{
-                display: 'flex',
-                gap: 14,
-                fontSize: 11.5,
-                color: 'var(--text-3)',
-                marginTop: 8,
-                paddingTop: 10,
-                borderTop: '1px solid var(--line)',
-              }}
-            >
-              <span>
-                {t('mobile_diag_version')}{' '}
-                <strong style={{ color: 'var(--text-1)', fontFamily: 'JetBrains Mono, monospace' }}>
-                  v{d.ver}
-                </strong>
-              </span>
-              <span>
-                {'· '}
-                <strong style={{ color: 'var(--text-1)' }}>{d.used}</strong>{' '}
-                {t('mobile_diag_entries')}
-              </span>
-              <ChevronRightIcon
-                style={{ width: 14, height: 14, marginLeft: 'auto', color: 'var(--text-4)' }}
-              />
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

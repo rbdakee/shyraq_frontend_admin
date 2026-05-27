@@ -1127,7 +1127,7 @@ export default function MealPlansPage() {
     const dayPlan = getPlanForDate(selectedDay);
 
     return (
-      <div className="flex flex-col gap-3">
+      <>
         <MobileTopBar
           title={t('title')}
           sub={format(selectedDay, 'EEEE, d MMMM', { locale: locale === 'kk' ? kk : ru })}
@@ -1144,61 +1144,63 @@ export default function MealPlansPage() {
           }
         />
 
-        {/* Day strip */}
-        <div
-          style={{
-            display: 'flex',
-            gap: 6,
-            marginBottom: 14,
-            overflowX: 'auto',
-            scrollbarWidth: 'none',
-          }}
-        >
-          {weekDays.map((day, i) => {
-            const active = i === selectedDayIndex;
-            return (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setSelectedDayIndex(i)}
-                style={{
-                  flexShrink: 0,
-                  padding: '8px 14px',
-                  borderRadius: 10,
-                  background: active ? 'var(--primary)' : 'var(--bg-elev)',
-                  color: active ? 'white' : 'var(--text-2)',
-                  border: active ? '1px solid var(--primary)' : '1px solid var(--line)',
-                  fontSize: 12,
-                  fontWeight: 600,
-                  textAlign: 'center',
-                  minWidth: 54,
-                  cursor: 'pointer',
-                }}
-              >
-                <div style={{ fontSize: 10.5, opacity: 0.75 }}>{shortDays[i]}</div>
-                <div style={{ fontSize: 15, fontWeight: 700, marginTop: 2 }}>
-                  {format(day, 'd')}
-                </div>
-              </button>
-            );
-          })}
-        </div>
-
-        <MobileDayView plan={dayPlan} locale={locale} t={t} />
-
-        {editingDay && (
-          <DayEditor
-            plan={getPlanForDate(editingDay)}
-            date={editingDay}
-            groupId={selectedGroupId}
-            isMobile
-            open={!!editingDay}
-            onOpenChange={(v) => {
-              if (!v) setEditingDay(null);
+        <div className="flex flex-col gap-3">
+          {/* Day strip */}
+          <div
+            style={{
+              display: 'flex',
+              gap: 6,
+              marginBottom: 14,
+              overflowX: 'auto',
+              scrollbarWidth: 'none',
             }}
-          />
-        )}
-      </div>
+          >
+            {weekDays.map((day, i) => {
+              const active = i === selectedDayIndex;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setSelectedDayIndex(i)}
+                  style={{
+                    flexShrink: 0,
+                    padding: '8px 14px',
+                    borderRadius: 10,
+                    background: active ? 'var(--primary)' : 'var(--bg-elev)',
+                    color: active ? 'white' : 'var(--text-2)',
+                    border: active ? '1px solid var(--primary)' : '1px solid var(--line)',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    textAlign: 'center',
+                    minWidth: 54,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ fontSize: 10.5, opacity: 0.75 }}>{shortDays[i]}</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, marginTop: 2 }}>
+                    {format(day, 'd')}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+
+          <MobileDayView plan={dayPlan} locale={locale} t={t} />
+
+          {editingDay && (
+            <DayEditor
+              plan={getPlanForDate(editingDay)}
+              date={editingDay}
+              groupId={selectedGroupId}
+              isMobile
+              open={!!editingDay}
+              onOpenChange={(v) => {
+                if (!v) setEditingDay(null);
+              }}
+            />
+          )}
+        </div>
+      </>
     );
   }
 

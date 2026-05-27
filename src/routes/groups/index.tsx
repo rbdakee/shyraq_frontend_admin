@@ -274,7 +274,7 @@ export default function GroupsListPage() {
 
   if (isMobile) {
     return (
-      <div className="flex flex-col gap-3">
+      <>
         <MobileTopBar
           title={t('title')}
           sub={t('mobile.header_sub', { count: groups.length })}
@@ -291,48 +291,50 @@ export default function GroupsListPage() {
           }
         />
 
-        <div
-          className="m-kpi-row"
-          style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 12 }}
-        >
-          <div className="m-kpi" style={{ padding: '10px 12px' }}>
-            <div className="m-kpi-label" style={{ fontSize: 9.5 }}>
-              {t('mobile.kpi_groups')}
+        <div className="flex flex-col gap-3">
+          <div
+            className="m-kpi-row"
+            style={{ gridTemplateColumns: '1fr 1fr 1fr', gap: 6, marginBottom: 12 }}
+          >
+            <div className="m-kpi" style={{ padding: '10px 12px' }}>
+              <div className="m-kpi-label" style={{ fontSize: 9.5 }}>
+                {t('mobile.kpi_groups')}
+              </div>
+              <div className="m-kpi-value" style={{ fontSize: 18 }}>
+                {groups.length}
+              </div>
             </div>
-            <div className="m-kpi-value" style={{ fontSize: 18 }}>
-              {groups.length}
+            <div className="m-kpi" style={{ padding: '10px 12px' }}>
+              <div className="m-kpi-label" style={{ fontSize: 9.5 }}>
+                {t('mobile.kpi_children')}
+              </div>
+              <div className="m-kpi-value" style={{ fontSize: 18 }}>
+                {totalChildren}
+              </div>
+            </div>
+            <div className="m-kpi" style={{ padding: '10px 12px' }}>
+              <div className="m-kpi-label" style={{ fontSize: 9.5, color: 'var(--danger-fg)' }}>
+                {t('mobile.kpi_overflow')}
+              </div>
+              <div className="m-kpi-value" style={{ fontSize: 18, color: 'var(--danger-fg)' }}>
+                {overflowCount}
+              </div>
             </div>
           </div>
-          <div className="m-kpi" style={{ padding: '10px 12px' }}>
-            <div className="m-kpi-label" style={{ fontSize: 9.5 }}>
-              {t('mobile.kpi_children')}
-            </div>
-            <div className="m-kpi-value" style={{ fontSize: 18 }}>
-              {totalChildren}
-            </div>
-          </div>
-          <div className="m-kpi" style={{ padding: '10px 12px' }}>
-            <div className="m-kpi-label" style={{ fontSize: 9.5, color: 'var(--danger-fg)' }}>
-              {t('mobile.kpi_overflow')}
-            </div>
-            <div className="m-kpi-value" style={{ fontSize: 18, color: 'var(--danger-fg)' }}>
-              {overflowCount}
-            </div>
-          </div>
-        </div>
 
-        <div className="flex flex-col gap-2.5">
-          {groups.map((g) => (
-            <MobileGroupCard key={g.id} group={g} navigate={navigate} t={t} />
-          ))}
-        </div>
+          <div className="flex flex-col gap-2.5">
+            {groups.map((g) => (
+              <MobileGroupCard key={g.id} group={g} navigate={navigate} t={t} />
+            ))}
+          </div>
 
-        <CreateGroupDialog
-          open={createOpen}
-          onOpenChange={setCreateOpen}
-          onSuccess={(id) => navigate(`/groups/${id}`)}
-        />
-      </div>
+          <CreateGroupDialog
+            open={createOpen}
+            onOpenChange={setCreateOpen}
+            onSuccess={(id) => navigate(`/groups/${id}`)}
+          />
+        </div>
+      </>
     );
   }
 

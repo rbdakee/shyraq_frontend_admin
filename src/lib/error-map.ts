@@ -73,11 +73,16 @@ export const KNOWN_ERROR_CODES = [
   'meal_item_not_found',
   'invalid_meal_type',
   // content §12
+  'file_required',
   'file_upload_error',
+  'file_too_large',
   'media_type_invalid',
   'content_post_not_found',
   'content_post_status_invalid',
   'content_target_invalid',
+  'content_already_published',
+  'content_cannot_delete_published',
+  'content_scheduled_for_in_past',
   // invoices/payments §13
   'invoice_not_found',
   'invoice_already_paid',

@@ -4,10 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/cn';
 
-// WHY `kk` not `kz` here: this component is a generic UI widget exposing the
-// user-facing locale pair {ru, kk} (matching DTO-enum locale convention). The
-// backend JSONB data key is `kz` (HANDOFF §2.4) — mapping {kk→kz} is the api
-// consumer's responsibility, not this presentational component's.
+// WHY `kk` not `kz`: canonical JSONB i18n key is `kk` (BCP 47) everywhere
+// per §A19. Backend normalises legacy `kz` via shim until B23; front sends
+// and reads only `{ru, kk}`. No mapping needed — backend accepts `kk` directly.
 interface PairedI18nValue {
   ru: string;
   kk: string;

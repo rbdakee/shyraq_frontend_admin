@@ -76,7 +76,7 @@ export default function LifecycleDlqPage() {
   const criticalCount = MOCK_ITEMS.filter((i) => i.tone === 'danger').length;
 
   return (
-    <div className="flex flex-col gap-3">
+    <>
       <MobileTopBar
         title={t('mobile_dlq_title')}
         sub={t('mobile_dlq_sub', { count: criticalCount })}
@@ -88,93 +88,101 @@ export default function LifecycleDlqPage() {
         }
       />
 
-      {/* Danger banner */}
-      <div
-        style={{
-          padding: 14,
-          background: 'var(--danger-soft)',
-          borderRadius: 14,
-          color: 'var(--danger-fg)',
-          fontSize: 12.5,
-          display: 'flex',
-          gap: 10,
-          marginBottom: 14,
-        }}
-      >
-        <TriangleAlertIcon style={{ width: 16, height: 16, flexShrink: 0, marginTop: 1 }} />
-        <div>
-          <strong>{t('mobile_dlq_banner_title', { count: criticalCount })}</strong>{' '}
-          {t('mobile_dlq_banner_body')}
+      <div className="flex flex-col gap-3">
+        {/* Danger banner */}
+        <div
+          style={{
+            padding: 14,
+            background: 'var(--danger-soft)',
+            borderRadius: 14,
+            color: 'var(--danger-fg)',
+            fontSize: 12.5,
+            display: 'flex',
+            gap: 10,
+            marginBottom: 14,
+          }}
+        >
+          <TriangleAlertIcon style={{ width: 16, height: 16, flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <strong>{t('mobile_dlq_banner_title', { count: criticalCount })}</strong>{' '}
+            {t('mobile_dlq_banner_body')}
+          </div>
         </div>
-      </div>
 
-      {/* Task cards */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {MOCK_ITEMS.map((q) => (
-          <div key={q.id} className="m-card" style={{ padding: 14 }}>
-            <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 8 }}>
+        {/* Task cards */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {MOCK_ITEMS.map((q) => (
+            <div key={q.id} className="m-card" style={{ padding: 14 }}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 8 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: q.tone === 'danger' ? 'var(--danger-soft)' : 'var(--warning-soft)',
+                    color: q.tone === 'danger' ? 'var(--danger-fg)' : 'var(--warning-fg)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <TriangleAlertIcon style={{ width: 18, height: 18 }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{t(q.titleKey)}</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2 }}>
+                    {q.detail}
+                  </div>
+                </div>
+              </div>
               <div
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  background: q.tone === 'danger' ? 'var(--danger-soft)' : 'var(--warning-soft)',
-                  color: q.tone === 'danger' ? 'var(--danger-fg)' : 'var(--warning-fg)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0,
+                  padding: '8px 10px',
+                  background: 'var(--bg-sunken)',
+                  borderRadius: 8,
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fontSize: 11,
+                  color: 'var(--danger-fg)',
+                  marginBottom: 10,
                 }}
               >
-                <TriangleAlertIcon style={{ width: 18, height: 18 }} />
+                {q.err}
               </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>{t(q.titleKey)}</div>
-                <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2 }}>
-                  {q.detail}
+              <div
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+              >
+                <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                  {t('mobile_dlq_attempts')}:{' '}
+                  <strong style={{ color: 'var(--text-1)' }}>{q.retries}</strong> · {q.ts}
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button
+                    type="button"
+                    className="btn ghost sm"
+                    style={{ height: 30, fontSize: 12 }}
+                  >
+                    {t('mobile_dlq_log')}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn secondary sm"
+                    style={{
+                      height: 30,
+                      fontSize: 12,
+                      background: 'var(--primary)',
+                      color: 'white',
+                      borderColor: 'transparent',
+                    }}
+                  >
+                    {t('mobile_dlq_retry')}
+                  </button>
                 </div>
               </div>
             </div>
-            <div
-              style={{
-                padding: '8px 10px',
-                background: 'var(--bg-sunken)',
-                borderRadius: 8,
-                fontFamily: 'JetBrains Mono, monospace',
-                fontSize: 11,
-                color: 'var(--danger-fg)',
-                marginBottom: 10,
-              }}
-            >
-              {q.err}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                {t('mobile_dlq_attempts')}:{' '}
-                <strong style={{ color: 'var(--text-1)' }}>{q.retries}</strong> · {q.ts}
-              </div>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button type="button" className="btn ghost sm" style={{ height: 30, fontSize: 12 }}>
-                  {t('mobile_dlq_log')}
-                </button>
-                <button
-                  type="button"
-                  className="btn secondary sm"
-                  style={{
-                    height: 30,
-                    fontSize: 12,
-                    background: 'var(--primary)',
-                    color: 'white',
-                    borderColor: 'transparent',
-                  }}
-                >
-                  {t('mobile_dlq_retry')}
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

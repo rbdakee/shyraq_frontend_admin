@@ -428,13 +428,13 @@ src/
 
 **Acceptance:**
 
-- [ ] Лента cursor-пагинируется (UI готов к `next_cursor`, даже если backend пока null отдаёт); фильтры работают; статус/тип/таргет бейджи отрисованы.
-- [ ] Редактор multipart-загружает медиа через FormData `files[]` (max 5, image≤10MB/video≤100MB enforcement на клиенте + сервер 400); `title_i18n`/`body_i18n`/`metadata` JSON-stringified в multipart-fields.
-- [ ] State machine соблюдён: published — read-only превью; delete — только draft; PATCH с files на draft/scheduled — full-replace; PATCH на published → 409 с правильным toast.
-- [ ] Инвариант таргета валидируется клиентом (Zod) и backend (422 → field error).
-- [ ] Qundylyq экран — filter работает, создание через общий редактор; latest published подсвечен.
-- [ ] `lib/jsonb-i18n.ts` unit-тесты покрывают `kk` (canonical) + `kz` (legacy fallback).
-- [ ] Gate: `pnpm typecheck && pnpm lint --max-warnings=0 && pnpm test` exit 0.
+- [x] Лента cursor-пагинируется (UI готов к `next_cursor`, даже если backend пока null отдаёт); фильтры работают; статус/тип/таргет бейджи отрисованы.
+- [x] Редактор multipart-загружает медиа через FormData `files[]` (max 5, image≤10MB/video≤100MB enforcement на клиенте + сервер 400); `title_i18n`/`body_i18n`/`metadata` JSON-stringified в multipart-fields.
+- [x] State machine соблюдён: published — read-only превью; delete — только draft; PATCH с files на draft/scheduled — full-replace; PATCH на published → 409 с правильным toast.
+- [x] Инвариант таргета валидируется клиентом (Zod) и backend (422 → field error).
+- [x] Qundylyq экран — filter работает, создание через общий редактор; latest published подсвечен.
+- [x] `lib/jsonb-i18n.ts` unit-тесты покрывают `kk` (canonical) + `kz` (legacy fallback).
+- [x] Gate: `pnpm typecheck && pnpm lint --max-warnings=0 && pnpm test` exit 0.
 
 ---
 
@@ -897,7 +897,7 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 | wire useStructure hook when B14 (Structure desktop) is built                                                                             | `src/routes/structure/cameras/index.tsx:1`        | B14   | open   |
 | ~~wire useSchedule hook when B11 (Schedule desktop) is built~~                                                                           | ~~`src/routes/schedule/templates/$id.tsx:1`~~     | B11   | done   |
 | ~~wire useMealPlans hook when B11 (Schedule + Meals desktop) is built~~                                                                  | ~~`src/routes/meal-plans/index.tsx:1`~~           | B11   | done   |
-| wire useContent hook when B12 (Content desktop) is built                                                                                 | `src/routes/content/index.tsx:1`                  | B12   | open   |
+| ~~wire useContent hook when B12 (Content desktop) is built~~                                                                             | ~~`src/routes/content/index.tsx:1`~~              | B12   | done   |
 | wire useHolidays hook when holidays API + desktop page is built                                                                          | `src/routes/billing/holidays/index.tsx:1`         | B15   | open   |
 | wire useFiscalReceipts hook when fiscal API + desktop page is built                                                                      | `src/routes/billing/fiscal-receipts/index.tsx:1`  | B15   | open   |
 | wire useDiagnosticsTemplates hook when B13 (Diagnostics desktop) is built                                                                | `src/routes/diagnostics/templates/index.tsx:1`    | B13   | open   |

@@ -499,7 +499,7 @@ function MobileWeeksView({
   const { t } = useTranslation('schedule');
 
   return (
-    <div className="flex flex-col gap-3">
+    <>
       <MobileTopBar
         title={t('weeks.title')}
         sub={t('sub')}
@@ -516,101 +516,107 @@ function MobileWeeksView({
         }
       />
 
-      <Button variant="outline" className="mx-4" onClick={() => setCopyOpen(true)}>
-        <CopyIcon className="size-4" />
-        {t('weeks.copy_button')}
-      </Button>
+      <div className="flex flex-col gap-3">
+        <Button variant="outline" className="mx-4" onClick={() => setCopyOpen(true)}>
+          <CopyIcon className="size-4" />
+          {t('weeks.copy_button')}
+        </Button>
 
-      {/* Snapshots */}
-      <div className="mx-4">
-        <div className="mb-2 text-[12px] font-bold uppercase tracking-[0.05em] text-[color:var(--text-3)]">
-          {t('weeks.snapshots.title')}
-        </div>
-        {snapshots.length === 0 ? (
-          <div className="m-card p-4 text-center text-[13px] text-[color:var(--text-3)]">
-            {t('weeks.snapshots.empty')}
+        {/* Snapshots */}
+        <div className="mx-4">
+          <div className="mb-2 text-[12px] font-bold uppercase tracking-[0.05em] text-[color:var(--text-3)]">
+            {t('weeks.snapshots.title')}
           </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {snapshots.map((snap) => (
-              <div key={snap.id} className="m-card" style={{ padding: 12 }}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-[14px] font-semibold">
-                      {groupMap.get(snap.groupId) ?? snap.groupId}
+          {snapshots.length === 0 ? (
+            <div className="m-card p-4 text-center text-[13px] text-[color:var(--text-3)]">
+              {t('weeks.snapshots.empty')}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {snapshots.map((snap) => (
+                <div key={snap.id} className="m-card" style={{ padding: 12 }}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-[14px] font-semibold">
+                        {groupMap.get(snap.groupId) ?? snap.groupId}
+                      </div>
+                      <div className="text-[12px] text-[color:var(--text-3)]">
+                        {formatDateRange(snap.weekStartDate)}
+                      </div>
                     </div>
-                    <div className="text-[12px] text-[color:var(--text-3)]">
-                      {formatDateRange(snap.weekStartDate)}
-                    </div>
+                    <Badge variant={snap.source === 'manual' ? 'info' : 'neutral'} dot={false}>
+                      {t('weeks.snapshots.source.' + snap.source)}
+                    </Badge>
                   </div>
-                  <Badge variant={snap.source === 'manual' ? 'info' : 'neutral'} dot={false}>
-                    {t('weeks.snapshots.source.' + snap.source)}
-                  </Badge>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Events */}
-      <div className="mx-4">
-        <div className="mb-2 text-[12px] font-bold uppercase tracking-[0.05em] text-[color:var(--text-3)]">
-          {t('weeks.events.title')}
+              ))}
+            </div>
+          )}
         </div>
-        {events.length === 0 ? (
-          <div className="m-card p-4 text-center text-[13px] text-[color:var(--text-3)]">
-            {t('weeks.events.empty')}
+
+        {/* Events */}
+        <div className="mx-4">
+          <div className="mb-2 text-[12px] font-bold uppercase tracking-[0.05em] text-[color:var(--text-3)]">
+            {t('weeks.events.title')}
           </div>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {events.map((ev) => (
-              <div
-                key={ev.id}
-                className="m-card"
-                style={{ padding: 12, cursor: 'pointer' }}
-                onClick={() => setEditEventId(ev.id)}
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="text-[14px] font-semibold">{ev.activityName}</div>
-                    <div className="text-[12px] text-[color:var(--text-3)]">
-                      {groupMap.get(ev.groupId) ?? ev.groupId} · {formatDateTime(ev.startsAt)}
+          {events.length === 0 ? (
+            <div className="m-card p-4 text-center text-[13px] text-[color:var(--text-3)]">
+              {t('weeks.events.empty')}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {events.map((ev) => (
+                <div
+                  key={ev.id}
+                  className="m-card"
+                  style={{ padding: 12, cursor: 'pointer' }}
+                  onClick={() => setEditEventId(ev.id)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="text-[14px] font-semibold">{ev.activityName}</div>
+                      <div className="text-[12px] text-[color:var(--text-3)]">
+                        {groupMap.get(ev.groupId) ?? ev.groupId} · {formatDateTime(ev.startsAt)}
+                      </div>
                     </div>
+                    <Badge variant={EVENT_STATUS_BADGE[ev.status]} dot={false}>
+                      {t('weeks.events.status.' + ev.status)}
+                    </Badge>
                   </div>
-                  <Badge variant={EVENT_STATUS_BADGE[ev.status]} dot={false}>
-                    {t('weeks.events.status.' + ev.status)}
-                  </Badge>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-      <MobileCopyWeekSheet open={copyOpen} onOpenChange={setCopyOpen} />
+        <MobileCopyWeekSheet open={copyOpen} onOpenChange={setCopyOpen} />
 
-      <MobileEventSheet open={createEventOpen} onOpenChange={setCreateEventOpen} groups={groups} />
-
-      {editingEvent && (
         <MobileEventSheet
-          open={!!editEventId}
-          onOpenChange={(open) => {
-            if (!open) setEditEventId(null);
-          }}
+          open={createEventOpen}
+          onOpenChange={setCreateEventOpen}
           groups={groups}
-          editEvent={editingEvent}
         />
-      )}
 
-      <DeleteEventConfirm
-        eventId={deleteEventId}
-        open={!!deleteEventId}
-        onOpenChange={(open) => {
-          if (!open) setDeleteEventId(null);
-        }}
-      />
-    </div>
+        {editingEvent && (
+          <MobileEventSheet
+            open={!!editEventId}
+            onOpenChange={(open) => {
+              if (!open) setEditEventId(null);
+            }}
+            groups={groups}
+            editEvent={editingEvent}
+          />
+        )}
+
+        <DeleteEventConfirm
+          eventId={deleteEventId}
+          open={!!deleteEventId}
+          onOpenChange={(open) => {
+            if (!open) setDeleteEventId(null);
+          }}
+        />
+      </div>
+    </>
   );
 }
 

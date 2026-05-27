@@ -216,6 +216,16 @@ Multipart-контракт **`files`** (множественное число), 
 
 Объектные form-поля (`title_i18n`, `body_i18n`, `metadata`) в multipart — JSON-stringified.
 
+### A21 — Content feed inline right-rail editor replaced with route-based editor · resolved (2026-05-27, orchestrator decision during B12)
+
+**Контекст:** VIS `screens-ops.jsx` `ContentFeed` (lines 280-328) shows a `two-col-right` layout with a "Quick editor" right-rail panel on the feed page, enabling inline creation/editing without leaving the feed. Implementation B12 uses a dedicated route-based editor at `/content/new` and `/content/:id` instead.
+
+**Решение:** route-based editor for consistency with other modules (children, billing, schedule, enrollments all use dedicated routes for create/edit) and mobile parity (mobile navigation to `/content/new` is natural; inline panel has no mobile equivalent). Editor is deeplinkable. Trade-off: slight VIS drift on `/content` desktop (no right-rail). Revert path: if owner requires inline right-rail, implement in a separate batch as two-column layout with embedded editor form.
+
+### A22 — Content list cursor field is `cursor` not `next_cursor` · resolved (2026-05-27, live-confirmed during B12 QA)
+
+Live OpenAPI inspection during manual QA showed `ContentListResponseDto = {items, cursor}`. Pre-B12 HANDOFF §12 drafted as `next_cursor` (drift from §A15 parent-requests precedent which DOES use `next_cursor` — content module is different). Fixed Zod schema + UI consumer + HANDOFF §12 to match live. Connected to: §A8 first-document rule (live = fact).
+
 ### A15 — Parent-requests: list `/admin/*` vs detail/actions `/staff/*`, `type` filter, snake_case, cursor · resolved (2026-05-19)
 
 Контекст: при B8 (parent-requests data+UI) сверка live `/docs-json` выявила существенное расхождение HANDOFF §19 ↔ факт. Решение: прецедент §A7/§A8 — live = факт. Зафиксировано (HANDOFF §19 правлен под факт в wave-коммите B7+B8 — first-document):
@@ -268,6 +278,14 @@ Multipart-контракт **`files`** (множественное число), 
 **Нужно решение (post-MVP):** дизайн-апдейт VIS для activity-events admin CRUD (модал, форма, row-actions, мобильная вёрстка). После апдейта — пересмотреть слой и привести 1:1 к новому дизайну.
 
 **Связано с:** §A18.7.
+
+### B3 — Content search query param (title search) · open (2026-05-27, backend-ask)
+
+**Контекст:** VIS feed toolbar shows a search-by-title input. HANDOFF §12 list endpoint `GET /admin/content` has no `search`/`q` filter param. FE degrades gracefully (no search input rendered).
+
+**Блокирует:** ничего (degraded UX). Влияет: `/content` feed page (B12).
+
+**Нужно решение от backend:** add `?search=<text>` or `?q=<text>` param to `GET /admin/content` for title/body substring search.
 
 ---
 

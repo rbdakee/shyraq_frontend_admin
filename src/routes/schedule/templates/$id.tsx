@@ -246,7 +246,7 @@ function MobileTemplateDetail({
     .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
   return (
-    <div className="flex flex-col gap-3">
+    <>
       <MobileTopBar
         title={template.name}
         sub={t('slots.days_full.' + selectedDay)}
@@ -263,122 +263,124 @@ function MobileTemplateDetail({
         }
       />
 
-      <div
-        style={{
-          display: 'flex',
-          gap: 6,
-          marginBottom: 14,
-          overflowX: 'auto',
-          scrollbarWidth: 'none',
-        }}
-      >
-        {DAY_KEYS.map((d, i) => (
-          <div
-            key={d}
-            onClick={() => setSelectedDay(d)}
-            style={{
-              flexShrink: 0,
-              padding: '8px 16px',
-              borderRadius: 10,
-              background: selectedDay === d ? 'var(--primary)' : 'var(--bg-elev)',
-              color: selectedDay === d ? 'white' : 'var(--text-2)',
-              border: selectedDay === d ? '1px solid var(--primary)' : '1px solid var(--line)',
-              fontSize: 13,
-              fontWeight: 600,
-              opacity: i >= 5 ? 0.5 : 1,
-              cursor: 'pointer',
-            }}
-          >
-            {t('slots.days.' + d)}
-          </div>
-        ))}
-      </div>
-
-      {daySlots.length === 0 && (
-        <EmptyState
-          title={t('templates.list_empty')}
-          action={
-            <Button size="sm" onClick={() => setCreateSlotOpen(true)}>
-              <PlusIcon className="size-4" />
-              {t('slots.add_button')}
-            </Button>
-          }
-        />
-      )}
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-        {daySlots.map((s) => {
-          const tone = getSlotTone(s.activityName);
-          return (
+      <div className="flex flex-col gap-3">
+        <div
+          style={{
+            display: 'flex',
+            gap: 6,
+            marginBottom: 14,
+            overflowX: 'auto',
+            scrollbarWidth: 'none',
+          }}
+        >
+          {DAY_KEYS.map((d, i) => (
             <div
-              key={s.id}
-              onClick={() => setEditSlotId(s.id)}
+              key={d}
+              onClick={() => setSelectedDay(d)}
               style={{
-                display: 'grid',
-                gridTemplateColumns: '52px 1fr',
-                gap: 10,
-                padding: '6px 0',
-                position: 'relative',
+                flexShrink: 0,
+                padding: '8px 16px',
+                borderRadius: 10,
+                background: selectedDay === d ? 'var(--primary)' : 'var(--bg-elev)',
+                color: selectedDay === d ? 'white' : 'var(--text-2)',
+                border: selectedDay === d ? '1px solid var(--primary)' : '1px solid var(--line)',
+                fontSize: 13,
+                fontWeight: 600,
+                opacity: i >= 5 ? 0.5 : 1,
                 cursor: 'pointer',
               }}
             >
-              <div
-                style={{
-                  fontFamily: 'JetBrains Mono, monospace',
-                  fontSize: 12,
-                  color: 'var(--text-3)',
-                  textAlign: 'right',
-                  paddingTop: 12,
-                }}
-              >
-                <div style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 13 }}>
-                  {s.startTime.slice(0, 5)}
-                </div>
-                <div style={{ fontSize: 10 }}>{s.endTime.slice(0, 5)}</div>
-              </div>
-              <div
-                style={{
-                  background: TONE_BG[tone],
-                  borderLeft: `3px solid ${TONE_BD[tone]}`,
-                  padding: '10px 12px',
-                  borderRadius: '0 10px 10px 0',
-                }}
-              >
-                <div style={{ fontWeight: 600, fontSize: 14, color: TONE_FG[tone] }}>
-                  {s.activityName}
-                </div>
-                {s.description && (
-                  <div
-                    style={{ fontSize: 11.5, color: TONE_FG[tone], opacity: 0.75, marginTop: 2 }}
-                  >
-                    {s.description}
-                  </div>
-                )}
-              </div>
+              {t('slots.days.' + d)}
             </div>
-          );
-        })}
-      </div>
+          ))}
+        </div>
 
-      <MobileSlotSheet
-        templateId={templateId}
-        open={createSlotOpen}
-        onOpenChange={setCreateSlotOpen}
-        defaultDay={selectedDay}
-      />
+        {daySlots.length === 0 && (
+          <EmptyState
+            title={t('templates.list_empty')}
+            action={
+              <Button size="sm" onClick={() => setCreateSlotOpen(true)}>
+                <PlusIcon className="size-4" />
+                {t('slots.add_button')}
+              </Button>
+            }
+          />
+        )}
 
-      {editingSlot && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {daySlots.map((s) => {
+            const tone = getSlotTone(s.activityName);
+            return (
+              <div
+                key={s.id}
+                onClick={() => setEditSlotId(s.id)}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '52px 1fr',
+                  gap: 10,
+                  padding: '6px 0',
+                  position: 'relative',
+                  cursor: 'pointer',
+                }}
+              >
+                <div
+                  style={{
+                    fontFamily: 'JetBrains Mono, monospace',
+                    fontSize: 12,
+                    color: 'var(--text-3)',
+                    textAlign: 'right',
+                    paddingTop: 12,
+                  }}
+                >
+                  <div style={{ fontWeight: 700, color: 'var(--text-1)', fontSize: 13 }}>
+                    {s.startTime.slice(0, 5)}
+                  </div>
+                  <div style={{ fontSize: 10 }}>{s.endTime.slice(0, 5)}</div>
+                </div>
+                <div
+                  style={{
+                    background: TONE_BG[tone],
+                    borderLeft: `3px solid ${TONE_BD[tone]}`,
+                    padding: '10px 12px',
+                    borderRadius: '0 10px 10px 0',
+                  }}
+                >
+                  <div style={{ fontWeight: 600, fontSize: 14, color: TONE_FG[tone] }}>
+                    {s.activityName}
+                  </div>
+                  {s.description && (
+                    <div
+                      style={{ fontSize: 11.5, color: TONE_FG[tone], opacity: 0.75, marginTop: 2 }}
+                    >
+                      {s.description}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
         <MobileSlotSheet
           templateId={templateId}
-          open={!!editSlotId}
-          onOpenChange={(open) => {
-            if (!open) setEditSlotId(null);
-          }}
-          defaultDay={editingSlot.dayOfWeek as DayKey}
-          editSlot={editingSlot}
+          open={createSlotOpen}
+          onOpenChange={setCreateSlotOpen}
+          defaultDay={selectedDay}
         />
-      )}
-    </div>
+
+        {editingSlot && (
+          <MobileSlotSheet
+            templateId={templateId}
+            open={!!editSlotId}
+            onOpenChange={(open) => {
+              if (!open) setEditSlotId(null);
+            }}
+            defaultDay={editingSlot.dayOfWeek as DayKey}
+            editSlot={editingSlot}
+          />
+        )}
+      </div>
+    </>
   );
 }
 
