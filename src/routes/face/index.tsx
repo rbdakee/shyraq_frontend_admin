@@ -82,7 +82,6 @@ export default function FaceIdPage() {
       <MobileTopBar
         title={t('mobile_face_title')}
         sub={t('mobile_face_sub')}
-        back
         action={
           <button type="button" className="m-iconbtn ghost" aria-label={t('actions.edit')}>
             <EllipsisIcon />

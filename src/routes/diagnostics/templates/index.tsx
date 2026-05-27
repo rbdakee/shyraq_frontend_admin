@@ -121,7 +121,6 @@ export default function DiagnosticsTemplatesPage() {
       <MobileTopBar
         title={t('mobile_diag_title')}
         sub={t('mobile_diag_sub')}
-        back
         action={
           <button type="button" className="m-iconbtn primary" aria-label={t('actions.create')}>
             <PlusIcon />

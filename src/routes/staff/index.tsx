@@ -278,7 +278,6 @@ export default function StaffListPage() {
         <MobileTopBar
           title={t('title')}
           sub={t('mobile.header_sub', { count: activeCount })}
-          back={false}
           action={
             <button
               type="button"

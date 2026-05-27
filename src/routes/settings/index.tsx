@@ -55,7 +55,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <MobileTopBar title={t('mobile_settings_title')} sub={kg?.name ?? ''} back />
+      <MobileTopBar title={t('mobile_settings_title')} sub={kg?.name ?? ''} />
 
       <div className="flex flex-col gap-0">
         {/* Kindergarten section */}

@@ -278,7 +278,6 @@ export default function GroupsListPage() {
         <MobileTopBar
           title={t('title')}
           sub={t('mobile.header_sub', { count: groups.length })}
-          back={false}
           action={
             <button
               type="button"

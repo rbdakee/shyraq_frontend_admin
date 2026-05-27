@@ -16,7 +16,6 @@ export function ContentPageHeader() {
       <MobileTopBar
         title={t('page_title')}
         sub={t('page_sub')}
-        back
         action={
           <button
             type="button"

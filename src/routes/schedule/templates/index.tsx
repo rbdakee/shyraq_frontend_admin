@@ -109,7 +109,6 @@ export default function ScheduleTemplatesIndexPage() {
         <MobileTopBar
           title={t('title')}
           sub={t('sub')}
-          back={false}
           action={
             <button
               type="button"

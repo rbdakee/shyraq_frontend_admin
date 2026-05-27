@@ -1131,7 +1131,6 @@ export default function MealPlansPage() {
         <MobileTopBar
           title={t('title')}
           sub={format(selectedDay, 'EEEE, d MMMM', { locale: locale === 'kk' ? kk : ru })}
-          back
           action={
             <button
               type="button"

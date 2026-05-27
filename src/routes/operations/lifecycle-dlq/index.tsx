@@ -80,7 +80,6 @@ export default function LifecycleDlqPage() {
       <MobileTopBar
         title={t('mobile_dlq_title')}
         sub={t('mobile_dlq_sub', { count: criticalCount })}
-        back
         action={
           <button type="button" className="m-iconbtn" aria-label={t('actions.retry')}>
             <RefreshCwIcon />
