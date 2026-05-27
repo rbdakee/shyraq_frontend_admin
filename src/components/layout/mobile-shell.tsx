@@ -1,21 +1,15 @@
 import { Outlet } from 'react-router-dom';
 import MobileTabBar from './mobile-tab-bar';
 
-// WHY: the outer wrapper uses Tailwind `h-dvh` instead of the `.m-shell`
-// class so it actually fills the viewport — the ported `.m-shell` rule
-// (`height: 100%`) cascades from #root which only has `min-height: 100vh`
-// and would otherwise resolve to auto, collapsing the shell and detaching
-// the absolutely-positioned tab bar from the viewport bottom.
-//
-// The default `.m-scroll` wrapper around <Outlet /> gives unadapted desktop
-// routes (B0–B15 pages) a scrollable region with bottom padding that clears
-// the floating tab bar. B18+ pages that adapt to the design's MBar-above-
-// m-scroll layout can render MobileTopBar inside this wrapper — slight
-// design-fidelity gap (MBar inside m-scroll instead of as sibling) that B18
-// can refine per-screen if it matters.
+// WHY: document-level scroll architecture — the wrapper is a regular block,
+// not a flex column constrained to the viewport. This lets iOS Safari retract
+// its bottom URL chrome on scroll (Safari only collapses chrome when the
+// window scrolls; an inner overflow:auto container keeps chrome expanded).
+// .m-bar uses position:sticky top:0 to stay at the top of the viewport while
+// the document scrolls; .m-tabbar uses position:fixed to stay at the bottom.
 export default function MobileShell() {
   return (
-    <div className="relative flex h-dvh w-full flex-col overflow-hidden bg-bg font-sans text-text-1">
+    <div className="bg-bg font-sans text-text-1">
       <div className="m-scroll">
         <Outlet />
       </div>

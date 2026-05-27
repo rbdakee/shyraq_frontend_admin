@@ -279,6 +279,17 @@
   #root {
     min-height: 100vh;
   }
+
+  /* Mobile: document-level scroll so iOS Safari can retract its bottom chrome
+     as the user scrolls (Safari only collapses chrome when window scrolls, not
+     when an inner div does). Tame the rubber-band a little — full prevention
+     would require inner-scroll architecture, which defeats chrome retraction. */
+  @media (max-width: 1023px) {
+    html,
+    body {
+      overscroll-behavior-y: none;
+    }
+  }
 }
 
 /* === Shyraq Mobile shell — foundation primitives (source: docs/design/handoff-with-mobile mobile.css) === */
@@ -306,13 +317,16 @@
   align-items: center;
   gap: 8px;
   min-height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
 }
 .m-bar.flat {
   background: transparent;
   border-bottom: 0;
 }
 .m-scroll > .m-bar:first-child {
-  margin: -16px -16px 16px;
+  margin: 0 -16px 16px;
 }
 .m-scroll > .m-bar.flat:first-child {
   margin-bottom: 0;
@@ -368,20 +382,22 @@
 }
 
 .m-scroll {
-  flex: 1;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  padding: 16px 16px 110px;
+  /* Document-level scroll architecture: this is a content wrapper, not a scroll
+     container. The bottom padding clears the fixed .m-tabbar plus home-indicator
+     safe-area; min-height ensures short pages still fill the viewport so the
+     tabbar/background don't float over body bg below the content. */
+  min-height: 100dvh;
+  padding: 0 16px calc(max(8px, env(safe-area-inset-bottom)) + 90px);
 }
 .m-scroll.no-bar {
   padding-top: 16px;
 }
 
 .m-tabbar {
-  position: absolute;
+  position: fixed;
   left: 8px;
   right: 8px;
-  bottom: 22px;
+  bottom: max(8px, env(safe-area-inset-bottom));
   height: 60px;
   background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(20px) saturate(160%);
@@ -436,8 +452,8 @@
 }
 
 .m-fab {
-  position: absolute;
-  bottom: 96px;
+  position: fixed;
+  bottom: calc(max(8px, env(safe-area-inset-bottom)) + 74px);
   right: 18px;
   width: 56px;
   height: 56px;
