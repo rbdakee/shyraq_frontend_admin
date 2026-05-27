@@ -985,6 +985,8 @@
   border-bottom: 1px solid var(--line);
   font-size: 14.5px;
   font-weight: 500;
+  width: 100%;
+  text-align: left;
 }
 .m-drawer-item:first-child {
   border-top-left-radius: 14px;
