@@ -200,7 +200,7 @@ function LoginPage() {
               setStep('locked');
               return;
             }
-            if (err.code === 'no_active_roles') {
+            if (err.code === 'no_active_roles' || err.code === 'no_role_for_app') {
               setStep('no-access');
               return;
             }

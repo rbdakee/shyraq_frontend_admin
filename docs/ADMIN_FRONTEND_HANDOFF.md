@@ -106,13 +106,15 @@
 
 > **Соглашение об именовании (подтверждено live `/docs-json` 2026-05-18, см. OPEN_QUESTIONS §A7):** тела **request**-DTO — **camelCase** (NestJS class-validator); поля **response** — **snake_case**. Ниже тела показаны в фактическом (camelCase) виде. **⚠️ Casing — per-module, не глобален** (уточнение §A8, 2026-05-18): camelCase-request верен для auth/users; **модуль children — snake_case request-DTO**. Перед каждым data-слайсом сверять per-endpoint по live `/docs-json`, не экстраполировать конвенцию на новые модули.
 
-| Шаг              | Метод | Путь                | Тело                                                                                                        | Ответ                         |
-| ---------------- | ----- | ------------------- | ----------------------------------------------------------------------------------------------------------- | ----------------------------- |
-| 1. Запрос кода   | POST  | `/auth/otp/request` | `{ phone }` (E.164 `+7...`)                                                                                 | `202 { otp_ref, expires_in }` |
-| 2. Проверка кода | POST  | `/auth/otp/verify`  | `{ phone, code }`, header `X-Device-Id` (опц., стабильный per-install)                                      | auth-response (см. ниже)      |
-| 3a. Выбор садика | POST  | `/auth/role/select` | `{ kindergartenId, role? }` (`role` опц.: `"admin"` для Admin Web; обязателен только при ≥2 ролях в садике) | auth-response                 |
-| 4. Рефреш        | POST  | `/auth/refresh`     | `{ refreshToken }` + текущий Bearer                                                                         | новая пара                    |
-| 5. Выход         | POST  | `/auth/logout`      | `{ refreshToken? }` + Bearer                                                                                | `204`                         |
+> **⚠️ App-aware auth (backend CHANGELOG 2026-06-03):** один аккаунт может иметь роли в разных аппках (`parent`/`staff`/`admin`). Клиент **обязан** слать поле `app` в `request`/`verify`; бэкенд выдаёт токен строго под неё (claim `aud`). Для Admin Web `app` всегда **`"admin"`** (видит только роль `admin`). Без `app` → `422`. Admin — **closed-app**: `request` для не приглашённого телефона → `404 not_invited` (OTP не отправляется; админов заводит только суперадмин). `role` в `role/select` больше **не передаётся** — бэкенд выводит роль из audience-scoped токена.
+
+| Шаг              | Метод | Путь                | Тело                                                                                                                     | Ответ                                        |
+| ---------------- | ----- | ------------------- | ------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
+| 1. Запрос кода   | POST  | `/auth/otp/request` | `{ phone, app: "admin" }` (E.164 `+7...`)                                                                                | `202 { sent, registered, resend_after_sec }` |
+| 2. Проверка кода | POST  | `/auth/otp/verify`  | `{ phone, code, app: "admin", kindergartenId? }`, header `X-Device-Id` (опц., стабильный per-install)                    | auth-response (см. ниже)                     |
+| 3a. Выбор садика | POST  | `/auth/role/select` | `{ kindergartenId }` (**`role` больше не нужен**; при ≥2 admin-садиках, либо передать `kindergartenId` сразу в `verify`) | auth-response                                |
+| 4. Рефреш        | POST  | `/auth/refresh`     | `{ refreshToken }` + текущий Bearer (audience держится на сервере, тело без изменений)                                   | новая пара                                   |
+| 5. Выход         | POST  | `/auth/logout`      | `{ refreshToken? }` + Bearer                                                                                             | `204`                                        |
 
 **Auth-response shape:**
 
@@ -135,8 +137,9 @@
 
 - После `verify`: если `pending_role_select:true` (у пользователя ≥2 активных staff-роли в разных садиках) → `refresh_token=null`, показать экран **«Выберите садик»** по `kindergartens[]`, вызвать `/auth/role/select` → получить полноценную пару.
 - Если ровно одна admin-роль — сразу в кабинет.
-- Если у пользователя нет роли `admin` ни в одном садике — он не должен попасть в Admin Web (роль `parent`/`mentor`/`specialist` — это другие приложения). Показать сообщение «нет доступа к админке».
-- Ошибки OTP: `400 otp_expired_or_missing`, `400 invalid_otp`, `400 invalid_phone_format`, `429 otp_rate_limit`, `429 otp_locked`, `403 no_active_roles`, `403 pending_role_select`, `403 role_not_available`, `403 role_select_not_required`. Покажи человекочитаемые сообщения, для 429 — таймер до разблокировки.
+- Если у пользователя нет роли `admin` — `verify` вернёт `403 no_role_for_app` (фильтр аудитории по `app=admin`). Показать экран «нет доступа к админке».
+- `404 not_invited` на `request` (телефон не приглашён как admin) — OTP не отправлен; показать сообщение «обратитесь к суперадмину», остаться на вводе телефона.
+- Ошибки OTP: `400 otp_expired_or_missing`, `400 invalid_otp`, `400 invalid_phone_format`, `404 not_invited`, `422` (отсутствует/неверное `app`), `429 otp_rate_limit`, `429 otp_locked`, `403 no_active_roles`, `403 no_role_for_app`, `403 pending_role_select`, `403 role_not_available`, `403 role_select_not_required`. Покажи человекочитаемые сообщения, для 429 — таймер до разблокировки.
 
 **Профиль текущего пользователя:** `GET /users/me` → **плоский** `UserResponseDto` (snake_case: `id, phone, full_name, avatar_url, iin, date_of_birth, locale`) — **без `roles[]`/`kindergartens[]`** (сверено с live `/docs-json` 2026-05-18; ранняя версия §141 обещала `+ roles[] + kindergartens[]` — расхождение, по прецеденту §A7/§A8 live = факт, §141 правлен под факт; см. OPEN_QUESTIONS §A9 + BACKEND_NEEDINGS N4). `roles[]`/`kindergartens[]` отдаются только в `AuthResponseDto` (`/auth/otp/verify|refresh|role/select`). Текущий садик — отдельным `GET /kindergartens/me` → `KindergartenDto {id, name, slug, …}`. `PATCH /users/me` тело **camelCase**: `{ fullName, avatarUrl, dateOfBirth, iin, locale(ru|kk) }`. `GET /users/me/qr` → личный Identity QR `{token(32 hex), issued_at, expires_at}` (рендерить QR на клиенте; авто-обновляется сервером).
 

@@ -11,6 +11,8 @@
   "pending_role_select": "Необходимо выбрать садик",
   "role_not_available": "Роль недоступна",
   "role_select_not_required": "Выбор роли не требуется",
+  "not_invited": "Этот номер не приглашён в админку. Обратитесь к суперадмину.",
+  "no_role_for_app": "У этого аккаунта нет доступа к админке",
   "child_not_found": "Ребёнок не найден",
   "archived_child_not_transferable": "Архивного ребёнка нельзя перевести",
   "child_already_archived": "Ребёнок уже в архиве",

@@ -32,6 +32,8 @@ export const KNOWN_ERROR_CODES = [
   'pending_role_select',
   'role_not_available',
   'role_select_not_required',
+  'not_invited',
+  'no_role_for_app',
   // children §5
   'child_not_found',
   'archived_child_not_transferable',

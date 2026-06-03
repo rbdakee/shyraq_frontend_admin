@@ -11,6 +11,8 @@
   "pending_role_select": "Балабақшаны таңдау қажет",
   "role_not_available": "Рөл қолжетімсіз",
   "role_select_not_required": "Рөл таңдау қажет емес",
+  "not_invited": "Бұл нөмір админ кабинетіне шақырылмаған. Суперадминге хабарласыңыз.",
+  "no_role_for_app": "Бұл аккаунттың админ кабинетіне қол жеткізуі жоқ",
   "child_not_found": "Бала табылмады",
   "archived_child_not_transferable": "Мұрағаттағы баланы ауыстыру мүмкін емес",
   "child_already_archived": "Бала бұрын мұрағатталған",
