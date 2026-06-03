@@ -1,5 +1,90 @@
 {
   "title": "Посещаемость",
+  "events_title": "Журнал событий",
+  "daily_status_title": "Дневные статусы",
+
+  "filters": {
+    "child": "Ребёнок",
+    "child_placeholder": "Все дети",
+    "group": "Группа",
+    "group_placeholder": "Все группы",
+    "method": "Метод",
+    "method_placeholder": "Все методы",
+    "date_from": "Дата от",
+    "date_to": "Дата до",
+    "date": "Дата",
+    "reset": "Сбросить"
+  },
+
+  "columns": {
+    "child": "Ребёнок",
+    "event_type": "Тип",
+    "method": "Метод",
+    "recorded_at": "Время",
+    "recorded_by": "Записал",
+    "pickup_user": "Забрал",
+    "notes": "Заметка",
+    "status": "Статус",
+    "date": "Дата",
+    "set_by": "Установил",
+    "updated_at": "Обновлено",
+    "note": "Примечание"
+  },
+
+  "event_type": {
+    "check_in": "Приход",
+    "check_out": "Уход"
+  },
+
+  "method": {
+    "face_id": "Face ID",
+    "manual": "Вручную",
+    "otp_pickup": "OTP забор"
+  },
+
+  "status": {
+    "present": "Присутствует",
+    "absent": "Отсутствует",
+    "sick": "Болеет",
+    "late": "Опоздал",
+    "early_pickup": "Ранний уход",
+    "on_vacation": "В отпуске"
+  },
+
+  "correction_modal": {
+    "title": "Корректировка записи",
+    "recorded_at": "Время записи",
+    "notes": "Заметка",
+    "notes_placeholder": "Причина корректировки",
+    "pickup_user": "Кто забрал",
+    "pickup_user_placeholder": "Выберите пользователя",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "success": "Запись обновлена"
+  },
+
+  "daily_board": {
+    "title": "Доска статусов на дату",
+    "summary": "Сводка",
+    "in_kindergarten": "В саду",
+    "checked_out": "Ушли",
+    "absent": "Отсутствуют",
+    "on_vacation": "В отпуске",
+    "sick": "Болеют",
+    "no_data": "Нет данных за выбранную дату"
+  },
+
+  "empty": {
+    "title": "Нет записей",
+    "description": "Записи о посещаемости появятся после отметки детей.",
+    "filtered_title": "Ничего не найдено",
+    "filtered_description": "Попробуйте изменить параметры фильтрации."
+  },
+
+  "pagination": {
+    "showing": "Показано {{from}}–{{to}}"
+  },
+
   "mobile_today_sub": "Сегодня",
   "mobile_total_today": "Всего сегодня",
   "mobile_fill_rate": "Заполняемость",

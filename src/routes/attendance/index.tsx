@@ -1,50 +1,296 @@
-// TODO(B13): wire useAttendance hook to backend GET /api/v1/attendance/daily-status when B13 desktop batch runs
-import { useState } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CalendarIcon, PlusIcon } from 'lucide-react';
+import { type ColumnDef } from '@tanstack/react-table';
+import { CalendarIcon, PlusIcon, PencilIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
 
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { DataTable } from '@/components/data-table/data-table';
+import { PeriodPicker } from '@/components/forms/period-picker';
+import { EntityCombobox } from '@/components/forms/entity-combobox';
+import type { ComboboxOption } from '@/components/forms/entity-combobox';
+import { mapValidationErrors } from '@/components/forms/map-validation-errors';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
+import {
+  useAttendanceEvents,
+  usePatchAttendanceEvent,
+  useDailyStatuses,
+  type AttendanceEvent,
+  type AttendanceMethod,
+  type AttendanceEventType,
+} from '@/hooks/use-attendance';
+import { useAttendanceToday } from '@/hooks/use-dashboard';
+import { useChildrenList } from '@/hooks/use-children';
+import { useGroups } from '@/hooks/use-groups';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { getInitials } from '@/lib/format';
+import { getInitials, toISODate } from '@/lib/format';
+import { DEFAULT_TIMEZONE } from '@/lib/constants';
+import { toI18nKey } from '@/lib/error-map';
 
-interface AttendanceGroup {
-  name: string;
-  present: number;
-  total: number;
+const PAGE_SIZE = 20;
+const ALL_METHODS = 'all';
+const ACTIVE_GROUP_FILTERS = { archived: false } as const;
+const CHILDREN_FETCH_LIMIT = 500;
+
+const EVENT_TYPE_BADGE: Record<AttendanceEventType, 'success' | 'info'> = {
+  check_in: 'success',
+  check_out: 'info',
+};
+
+const METHOD_BADGE: Record<AttendanceMethod, 'neutral' | 'info' | 'warning'> = {
+  face_id: 'info',
+  manual: 'neutral',
+  otp_pickup: 'warning',
+};
+
+function formatTimeOnly(isoString: string, tz: string): string {
+  const date = new Date(isoString);
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone: tz,
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date);
 }
 
-interface AttendanceCell {
-  name: string;
-  group: string;
-  status: 'present' | 'late' | 'sick' | 'absent';
+const CorrectionSchema = z.object({
+  recordedAt: z.string().min(1),
+  notes: z.string().optional(),
+  pickupUserId: z.string().optional(),
+});
+
+type CorrectionForm = z.infer<typeof CorrectionSchema>;
+
+function CorrectionModal({
+  event,
+  open,
+  onOpenChange,
+  childName,
+}: {
+  event: AttendanceEvent | null;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  childName: string;
+}) {
+  const { t } = useTranslation('attendance');
+  const tErrors = useTranslation('errors').t;
+  const patchMutation = usePatchAttendanceEvent();
+
+  const form = useForm<CorrectionForm>({
+    resolver: zodResolver(CorrectionSchema),
+    defaultValues: {
+      recordedAt: event?.recordedAt ?? '',
+      notes: event?.notes ?? '',
+      pickupUserId: event?.pickupUserId ?? '',
+    },
+  });
+
+  const isCheckOut = event?.eventType === 'check_out';
+
+  function handleClose() {
+    onOpenChange(false);
+    form.reset();
+  }
+
+  function handleSubmit(data: CorrectionForm) {
+    if (!event) return;
+    patchMutation.mutate(
+      {
+        eventId: event.id,
+        body: {
+          recordedAt: data.recordedAt || undefined,
+          notes: data.notes || undefined,
+          pickupUserId: isCheckOut && data.pickupUserId ? data.pickupUserId : undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success(t('correction_modal.success'));
+          handleClose();
+        },
+        onError: (error) => {
+          const mapped = mapValidationErrors(error, form.setError);
+          if (!mapped) {
+            toast.error(tErrors(toI18nKey(error)));
+          }
+        },
+      },
+    );
+  }
+
+  // WHY: reset form defaults when event changes (modal reopened for different row)
+  const currentEventId = event?.id;
+  useEffect(() => {
+    if (event) {
+      form.reset({
+        recordedAt: event.recordedAt,
+        notes: event.notes ?? '',
+        pickupUserId: event.pickupUserId ?? '',
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentEventId]);
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) handleClose();
+        else onOpenChange(v);
+      }}
+    >
+      <DialogContent className="rounded-[var(--r-xl)] border-[var(--line)] bg-[var(--bg-elev)] p-0 shadow-[var(--shadow-3)] sm:max-w-[480px]">
+        <DialogHeader className="px-[22px] pt-[18px] pb-3">
+          <DialogTitle className="text-[17px] font-bold tracking-[-0.01em] text-[color:var(--text-1)]">
+            {t('correction_modal.title')}
+          </DialogTitle>
+          <div className="text-[13px] text-[color:var(--text-3)]">{childName}</div>
+        </DialogHeader>
+
+        <form
+          onSubmit={form.handleSubmit(handleSubmit)}
+          className="flex flex-col gap-4 px-[22px] pb-[18px]"
+        >
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+              {t('correction_modal.recorded_at')}
+            </Label>
+            <Input
+              type="datetime-local"
+              {...form.register('recordedAt')}
+              className="border-[var(--border)] bg-[var(--bg-elev)]"
+            />
+            {form.formState.errors.recordedAt && (
+              <span className="text-[12px] text-[color:var(--danger)]">
+                {form.formState.errors.recordedAt.message}
+              </span>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+              {t('correction_modal.notes')}
+            </Label>
+            <Textarea
+              {...form.register('notes')}
+              placeholder={t('correction_modal.notes_placeholder')}
+              rows={3}
+              className="border-[var(--border)] bg-[var(--bg-elev)]"
+            />
+          </div>
+
+          {isCheckOut && (
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                {t('correction_modal.pickup_user')}
+              </Label>
+              <Input
+                {...form.register('pickupUserId')}
+                placeholder={t('correction_modal.pickup_user_placeholder')}
+                className="border-[var(--border)] bg-[var(--bg-elev)]"
+              />
+            </div>
+          )}
+
+          <DialogFooter className="-mx-0 -mb-0 rounded-b-[var(--r-xl)] border-t border-[var(--line)] bg-transparent px-[22px] py-[14px]">
+            <Button type="button" variant="outline" onClick={handleClose}>
+              {t('correction_modal.cancel')}
+            </Button>
+            <Button type="submit" disabled={patchMutation.isPending}>
+              {t('correction_modal.save')}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
 }
-
-const PLACEHOLDER_GROUPS: AttendanceGroup[] = [
-  { name: 'Солнышко', present: 16, total: 18 },
-  { name: 'Звёздочки', present: 14, total: 16 },
-  { name: 'Капельки', present: 12, total: 14 },
-];
-
-const PLACEHOLDER_CELLS: AttendanceCell[] = [
-  { name: 'Алихан Б.', group: 'Солнышко', status: 'present' },
-  { name: 'Дана К.', group: 'Звёзд.', status: 'present' },
-  { name: 'Темирлан Б.', group: 'Солнышко', status: 'late' },
-  { name: 'Аяна С.', group: 'Капельки', status: 'sick' },
-  { name: 'Камила Ж.', group: 'Звёзд.', status: 'present' },
-  { name: 'Нурлан О.', group: 'Радуга', status: 'absent' },
-  { name: 'Аружан К.', group: 'Солнышко', status: 'present' },
-  { name: 'Ерасыл Б.', group: 'Звёзд.', status: 'present' },
-];
-
-const WEEKDAYS = ['Пн 20', 'Вт 21', 'Ср 22', 'Чт 23', 'Пт 24', 'Сб 25', 'Вс 26'];
 
 function MobileAttendance() {
   const { t } = useTranslation('attendance');
-  const [activeDay, setActiveDay] = useState(4);
 
-  const totalPresent = PLACEHOLDER_GROUPS.reduce((s, g) => s + g.present, 0);
-  const totalAll = PLACEHOLDER_GROUPS.reduce((s, g) => s + g.total, 0);
+  const todayQuery = useAttendanceToday();
+  const childrenQuery = useChildrenList({ limit: CHILDREN_FETCH_LIMIT, status: 'active' });
+  const groupsQuery = useGroups(ACTIVE_GROUP_FILTERS);
+
+  const today = todayQuery.data;
+  const totalPresent = (today?.in_kindergarten ?? 0) + (today?.checked_out ?? 0);
+  const totalAbsent = (today?.absent ?? 0) + (today?.on_vacation ?? 0) + (today?.sick ?? 0);
+  const totalAll = totalPresent + totalAbsent;
   const fillPct = totalAll > 0 ? Math.round((totalPresent / totalAll) * 100) : 0;
+
+  const statusFilters = useMemo(
+    () => ({ from: toISODate(new Date()), to: toISODate(new Date()), limit: 200 }),
+    [],
+  );
+  const dailyQuery = useDailyStatuses(statusFilters);
+
+  const childrenMap = useMemo(
+    () =>
+      new Map(
+        (childrenQuery.data?.data ?? []).map((c) => [
+          c.id,
+          { name: c.full_name, groupId: c.current_group_id },
+        ]),
+      ),
+    [childrenQuery.data],
+  );
+
+  const groupsMap = useMemo(
+    () => new Map((groupsQuery.data ?? []).map((g) => [g.id, g.name])),
+    [groupsQuery.data],
+  );
+
+  const groupStats = useMemo(() => {
+    const stats = new Map<string, { name: string; present: number; total: number }>();
+    for (const child of childrenQuery.data?.data ?? []) {
+      if (!child.current_group_id) continue;
+      const gName = groupsMap.get(child.current_group_id) ?? child.current_group_id.slice(0, 8);
+      const entry = stats.get(child.current_group_id) ?? { name: gName, present: 0, total: 0 };
+      entry.total++;
+      const ds = dailyQuery.data?.find((d) => d.childId === child.id);
+      if (ds && (ds.status === 'present' || ds.status === 'late')) {
+        entry.present++;
+      }
+      stats.set(child.current_group_id, entry);
+    }
+    return [...stats.values()];
+  }, [childrenQuery.data, groupsMap, dailyQuery.data]);
+
+  const childCells = useMemo(() => {
+    return (dailyQuery.data ?? []).map((ds) => {
+      const child = childrenMap.get(ds.childId);
+      const groupName = child?.groupId ? (groupsMap.get(child.groupId) ?? '—') : '—';
+      return {
+        id: ds.id,
+        name: child?.name ?? '—',
+        group: groupName,
+        status: ds.status as 'present' | 'late' | 'sick' | 'absent',
+      };
+    });
+  }, [dailyQuery.data, childrenMap, groupsMap]);
 
   return (
     <>
@@ -63,32 +309,6 @@ function MobileAttendance() {
         }
       />
 
-      {/* Date picker strip */}
-      <div className="mb-3.5 flex gap-1.5 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-        {WEEKDAYS.map((d, i) => {
-          const [dayName, dayNum] = d.split(' ');
-          const isActive = i === activeDay;
-          return (
-            <button
-              key={d}
-              type="button"
-              onClick={() => setActiveDay(i)}
-              className="flex flex-shrink-0 flex-col items-center rounded-[10px] border px-3 py-2 text-center"
-              style={{
-                minWidth: 54,
-                background: isActive ? 'var(--primary)' : 'var(--bg-elev)',
-                color: isActive ? 'white' : 'var(--text-2)',
-                borderColor: isActive ? 'var(--primary)' : 'var(--line)',
-              }}
-            >
-              <span className="text-[10px] opacity-75">{dayName}</span>
-              <span className="mt-0.5 text-[15px] font-bold">{dayNum}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Overall stats card */}
       <div className="m-card">
         <div className="flex items-center justify-between">
           <div>
@@ -107,42 +327,40 @@ function MobileAttendance() {
           </div>
         </div>
 
-        {/* Stat pills */}
         <div className="m-att-bar">
           <div className="m-att-pill">
             <div className="m-att-num" style={{ color: 'var(--success-fg)' }}>
-              {totalPresent}
+              {today?.in_kindergarten ?? 0}
             </div>
             <div className="m-att-cap">{t('mobile_stat_present')}</div>
           </div>
           <div className="m-att-pill">
             <div className="m-att-num" style={{ color: 'var(--warning-fg)' }}>
-              3
+              {dailyQuery.data?.filter((d) => d.status === 'late').length ?? 0}
             </div>
             <div className="m-att-cap">{t('mobile_stat_late')}</div>
           </div>
           <div className="m-att-pill">
             <div className="m-att-num" style={{ color: 'var(--info-fg)' }}>
-              2
+              {today?.sick ?? 0}
             </div>
             <div className="m-att-cap">{t('mobile_stat_sick')}</div>
           </div>
           <div className="m-att-pill">
             <div className="m-att-num" style={{ color: 'var(--text-3)' }}>
-              {totalAll - totalPresent}
+              {today?.absent ?? 0}
             </div>
             <div className="m-att-cap">{t('mobile_stat_absent')}</div>
           </div>
         </div>
       </div>
 
-      {/* Groups section */}
       <div className="m-section-h">
         <div className="m-section-title">{t('mobile_by_groups')}</div>
       </div>
       <div className="flex flex-col gap-2">
-        {PLACEHOLDER_GROUPS.map((g) => {
-          const pct = (g.present / g.total) * 100;
+        {groupStats.map((g) => {
+          const pct = g.total > 0 ? (g.present / g.total) * 100 : 0;
           return (
             <div key={g.name} className="m-card" style={{ padding: '12px 14px' }}>
               <div className="mb-2 flex items-center justify-between">
@@ -166,14 +384,13 @@ function MobileAttendance() {
         })}
       </div>
 
-      {/* Children grid */}
       <div className="m-section-h">
         <div className="m-section-title">{t('mobile_children_title')}</div>
         <div className="m-section-link">{t('mobile_all_count', { count: String(totalAll) })}</div>
       </div>
       <div className="m-att-grid">
-        {PLACEHOLDER_CELLS.map((c, i) => (
-          <div key={i} className="m-att-cell">
+        {childCells.map((c) => (
+          <div key={c.id} className="m-att-cell">
             <div className="relative">
               <div className="m-avatar child sm">{getInitials(c.name)}</div>
               <span className={`m-status-dot ${c.status}`} />
@@ -191,17 +408,286 @@ function MobileAttendance() {
   );
 }
 
+function DesktopJournal() {
+  const { t } = useTranslation('attendance');
+  const tz = DEFAULT_TIMEZONE;
+
+  const [childFilter, setChildFilter] = useState<string | null>(null);
+  const [methodFilter, setMethodFilter] = useState(ALL_METHODS);
+  const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
+  const [offset, setOffset] = useState(0);
+  const [correctionEvent, setCorrectionEvent] = useState<AttendanceEvent | null>(null);
+  const [correctionOpen, setCorrectionOpen] = useState(false);
+
+  const filters = useMemo(
+    () => ({
+      childId: childFilter ?? undefined,
+      from: dateRange.from ? toISODate(dateRange.from) : undefined,
+      to: dateRange.to ? toISODate(dateRange.to) : undefined,
+      limit: PAGE_SIZE,
+      offset,
+    }),
+    [childFilter, dateRange, offset],
+  );
+
+  const eventsQuery = useAttendanceEvents(filters);
+  const childrenQuery = useChildrenList({ limit: CHILDREN_FETCH_LIMIT, status: 'active' });
+
+  const childrenMap = useMemo(
+    () =>
+      new Map(
+        (childrenQuery.data?.data ?? []).map((c) => [
+          c.id,
+          { name: c.full_name, groupId: c.current_group_id },
+        ]),
+      ),
+    [childrenQuery.data],
+  );
+
+  const filteredData = useMemo(() => {
+    const events = eventsQuery.data ?? [];
+    if (methodFilter === ALL_METHODS) return events;
+    return events.filter((e) => e.method === methodFilter);
+  }, [eventsQuery.data, methodFilter]);
+
+  const hasMore = (eventsQuery.data?.length ?? 0) === PAGE_SIZE;
+  const isFiltered = !!childFilter || methodFilter !== ALL_METHODS || !!dateRange.from;
+
+  function resetFilters() {
+    setChildFilter(null);
+    setMethodFilter(ALL_METHODS);
+    setDateRange({});
+    setOffset(0);
+  }
+
+  function handleCorrect(event: AttendanceEvent) {
+    setCorrectionEvent(event);
+    setCorrectionOpen(true);
+  }
+
+  const fetchChildOptions = useCallback(
+    async (query: string): Promise<ComboboxOption[]> => {
+      const children = childrenQuery.data?.data ?? [];
+      const q = query.toLowerCase();
+      return children
+        .filter((c) => c.full_name.toLowerCase().includes(q))
+        .slice(0, 20)
+        .map((c) => ({
+          value: c.id,
+          label: c.full_name,
+        }));
+    },
+    [childrenQuery.data],
+  );
+
+  const columns: ColumnDef<AttendanceEvent, unknown>[] = useMemo(
+    () => [
+      {
+        id: 'recordedAt',
+        header: () => t('columns.recorded_at'),
+        cell: ({ row }) => (
+          <span className="font-mono text-[13px] tabular-nums text-[color:var(--text-2)]">
+            {formatTimeOnly(row.original.recordedAt, tz)}
+          </span>
+        ),
+        enableSorting: false,
+        size: 80,
+      },
+      {
+        id: 'child',
+        header: () => t('columns.child'),
+        cell: ({ row }) => {
+          const child = childrenMap.get(row.original.childId);
+          const name = child?.name ?? '—';
+          return (
+            <div className="flex items-center gap-2">
+              <Avatar className="size-7">
+                <AvatarFallback className="bg-[var(--primary-soft)] text-[11px] font-semibold text-[color:var(--primary)]">
+                  {getInitials(name)}
+                </AvatarFallback>
+              </Avatar>
+              <strong className="text-[13.5px]">{name}</strong>
+            </div>
+          );
+        },
+        enableSorting: false,
+      },
+      {
+        id: 'eventType',
+        header: () => t('columns.event_type'),
+        cell: ({ row }) => (
+          <Badge variant={EVENT_TYPE_BADGE[row.original.eventType]}>
+            {t(`event_type.${row.original.eventType}`)}
+          </Badge>
+        ),
+        enableSorting: false,
+        size: 100,
+      },
+      {
+        id: 'method',
+        header: () => t('columns.method'),
+        cell: ({ row }) => (
+          <Badge variant={METHOD_BADGE[row.original.method]}>
+            {t(`method.${row.original.method}`)}
+          </Badge>
+        ),
+        enableSorting: false,
+        size: 110,
+      },
+      {
+        id: 'recordedBy',
+        header: () => t('columns.recorded_by'),
+        cell: ({ row }) => (
+          <span className="text-[13px] text-[color:var(--text-3)]">
+            {row.original.recordedBy ?? '—'}
+          </span>
+        ),
+        enableSorting: false,
+        size: 120,
+      },
+      {
+        id: 'notes',
+        header: () => t('columns.notes'),
+        cell: ({ row }) => (
+          <span className="text-[13px] text-[color:var(--text-3)]">
+            {row.original.notes ?? '—'}
+          </span>
+        ),
+        enableSorting: false,
+      },
+    ],
+    [t, tz, childrenMap],
+  );
+
+  const correctionChildName = correctionEvent
+    ? (childrenMap.get(correctionEvent.childId)?.name ?? '—')
+    : '—';
+
+  const from = offset + 1;
+  const to = offset + filteredData.length;
+
+  return (
+    <div className="page">
+      <div className="page-header">
+        <div className="page-title-block">
+          <h1 className="h1">{t('title')}</h1>
+          <div className="page-sub">{t('events_title')}</div>
+        </div>
+      </div>
+
+      <DataTable<AttendanceEvent>
+        columns={columns}
+        data={filteredData}
+        isLoading={eventsQuery.isPending}
+        isError={eventsQuery.isError}
+        onRetry={() => void eventsQuery.refetch()}
+        isFiltered={isFiltered}
+        onResetFilters={resetFilters}
+        emptyTitle={t('empty.title')}
+        emptyDescription={t('empty.description')}
+        filteredEmptyTitle={t('empty.filtered_title')}
+        filteredEmptyDescription={t('empty.filtered_description')}
+        rowActions={[
+          {
+            label: t('correction_modal.title'),
+            icon: <PencilIcon className="size-3.5" />,
+            onClick: handleCorrect,
+          },
+        ]}
+        toolbar={
+          <>
+            <div style={{ width: 220 }}>
+              <EntityCombobox
+                value={childFilter}
+                onChange={(val) => {
+                  setChildFilter(val);
+                  setOffset(0);
+                }}
+                fetchOptions={fetchChildOptions}
+                placeholder={t('filters.child_placeholder')}
+              />
+            </div>
+            <Select
+              value={methodFilter}
+              onValueChange={(v) => {
+                setMethodFilter(v);
+                setOffset(0);
+              }}
+            >
+              <SelectTrigger className="w-[160px] border-[var(--border)] bg-[var(--bg-elev)]">
+                <SelectValue placeholder={t('filters.method_placeholder')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={ALL_METHODS}>{t('filters.method_placeholder')}</SelectItem>
+                <SelectItem value="face_id">{t('method.face_id')}</SelectItem>
+                <SelectItem value="manual">{t('method.manual')}</SelectItem>
+                <SelectItem value="otp_pickup">{t('method.otp_pickup')}</SelectItem>
+              </SelectContent>
+            </Select>
+            <div style={{ width: 260 }}>
+              <PeriodPicker
+                value={dateRange}
+                onChange={(v) => {
+                  setDateRange(v);
+                  setOffset(0);
+                }}
+              />
+            </div>
+            <div className="grow" />
+            {isFiltered && (
+              <Button variant="outline" size="sm" onClick={resetFilters}>
+                {t('filters.reset')}
+              </Button>
+            )}
+          </>
+        }
+      />
+
+      {!eventsQuery.isPending && !eventsQuery.isError && filteredData.length > 0 && (
+        <div className="mt-2 flex items-center justify-between">
+          <span className="text-xs text-[color:var(--text-3)]">
+            {t('pagination.showing', { from: String(from), to: String(to) })}
+          </span>
+          <div className="flex gap-2">
+            {offset > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setOffset(Math.max(0, offset - PAGE_SIZE))}
+              >
+                &larr;
+              </Button>
+            )}
+            {hasMore && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setOffset(offset + PAGE_SIZE)}
+                disabled={eventsQuery.isFetching}
+              >
+                &rarr;
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      <CorrectionModal
+        event={correctionEvent}
+        open={correctionOpen}
+        onOpenChange={setCorrectionOpen}
+        childName={correctionChildName}
+      />
+    </div>
+  );
+}
+
 export default function AttendancePage() {
-  const { t } = useTranslation();
   const { isMobile } = useBreakpoint();
 
   if (isMobile) {
     return <MobileAttendance />;
   }
 
-  return (
-    <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-      <h1 className="text-xl font-bold text-text-1">{t('shell.section_in_development')}</h1>
-    </div>
-  );
+  return <DesktopJournal />;
 }

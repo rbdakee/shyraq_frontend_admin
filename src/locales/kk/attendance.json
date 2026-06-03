@@ -1,5 +1,90 @@
 {
   "title": "Қатысу",
+  "events_title": "Оқиғалар журналы",
+  "daily_status_title": "Күндік мәртебелер",
+
+  "filters": {
+    "child": "Бала",
+    "child_placeholder": "Барлық балалар",
+    "group": "Топ",
+    "group_placeholder": "Барлық топтар",
+    "method": "Әдіс",
+    "method_placeholder": "Барлық әдістер",
+    "date_from": "Күні бастап",
+    "date_to": "Күні дейін",
+    "date": "Күні",
+    "reset": "Тазалау"
+  },
+
+  "columns": {
+    "child": "Бала",
+    "event_type": "Түрі",
+    "method": "Әдіс",
+    "recorded_at": "Уақыт",
+    "recorded_by": "Жазған",
+    "pickup_user": "Алып кеткен",
+    "notes": "Ескертпе",
+    "status": "Мәртебе",
+    "date": "Күні",
+    "set_by": "Белгілеген",
+    "updated_at": "Жаңартылды",
+    "note": "Ескертпе"
+  },
+
+  "event_type": {
+    "check_in": "Келу",
+    "check_out": "Кету"
+  },
+
+  "method": {
+    "face_id": "Face ID",
+    "manual": "Қолмен",
+    "otp_pickup": "OTP алып кету"
+  },
+
+  "status": {
+    "present": "Қатысады",
+    "absent": "Жоқ",
+    "sick": "Ауырады",
+    "late": "Кешікті",
+    "early_pickup": "Ерте кету",
+    "on_vacation": "Демалыста"
+  },
+
+  "correction_modal": {
+    "title": "Жазбаны түзету",
+    "recorded_at": "Жазу уақыты",
+    "notes": "Ескертпе",
+    "notes_placeholder": "Түзету себебі",
+    "pickup_user": "Алып кеткен",
+    "pickup_user_placeholder": "Пайдаланушыны таңдаңыз",
+    "save": "Сақтау",
+    "cancel": "Болдырмау",
+    "success": "Жазба жаңартылды"
+  },
+
+  "daily_board": {
+    "title": "Күнге арналған мәртебе тақтасы",
+    "summary": "Жиынтық",
+    "in_kindergarten": "Бақшада",
+    "checked_out": "Кетті",
+    "absent": "Жоқ",
+    "on_vacation": "Демалыста",
+    "sick": "Ауырады",
+    "no_data": "Таңдалған күнге деректер жоқ"
+  },
+
+  "empty": {
+    "title": "Жазбалар жоқ",
+    "description": "Балалар белгіленгеннен кейін қатысу жазбалары пайда болады.",
+    "filtered_title": "Ештеңе табылмады",
+    "filtered_description": "Сүзгі параметрлерін өзгертіп көріңіз."
+  },
+
+  "pagination": {
+    "showing": "Көрсетілуде {{from}}–{{to}}"
+  },
+
   "mobile_today_sub": "Бүгін",
   "mobile_total_today": "Бүгін барлығы",
   "mobile_fill_rate": "Толтырылу",

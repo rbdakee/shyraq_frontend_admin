@@ -103,6 +103,79 @@ export function getInitials(name: string | null | undefined): string {
   return (parts[0]?.[0] ?? '?').toUpperCase();
 }
 
+/**
+ * Formats a Date to `YYYY-MM-DD` (ISO 8601 date-only) using local calendar fields.
+ * Used for API query params (attendance filters, meal-plan date ranges, etc.).
+ */
+export function toISODate(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+const CYRILLIC_TRANSLIT: Record<string, string> = {
+  а: 'a',
+  б: 'b',
+  в: 'v',
+  г: 'g',
+  д: 'd',
+  е: 'e',
+  ё: 'e',
+  ж: 'zh',
+  з: 'z',
+  и: 'i',
+  й: 'i',
+  к: 'k',
+  л: 'l',
+  м: 'm',
+  н: 'n',
+  о: 'o',
+  п: 'p',
+  р: 'r',
+  с: 's',
+  т: 't',
+  у: 'u',
+  ф: 'f',
+  х: 'h',
+  ц: 'ts',
+  ч: 'ch',
+  ш: 'sh',
+  щ: 'sch',
+  ъ: '',
+  ы: 'y',
+  ь: '',
+  э: 'e',
+  ю: 'yu',
+  я: 'ya',
+  // Kazakh-specific letters
+  ә: 'a',
+  ғ: 'g',
+  қ: 'q',
+  ң: 'ng',
+  ө: 'o',
+  ұ: 'u',
+  ү: 'u',
+  һ: 'h',
+  і: 'i',
+};
+
+/**
+ * Derives a machine-safe snake_case key from a human label (diagnostic template
+ * field keys, when the user leaves the key blank). Transliterates RU/KK Cyrillic
+ * to Latin so Cyrillic labels don't collapse to an empty slug. Returns `''` only
+ * when the label has no usable characters — callers supply a fallback.
+ */
+export function slugifyKey(input: string): string {
+  let out = '';
+  for (const ch of input.trim().toLowerCase()) {
+    if (ch in CYRILLIC_TRANSLIT) out += CYRILLIC_TRANSLIT[ch];
+    else if (/[a-z0-9]/.test(ch)) out += ch;
+    else out += '_';
+  }
+  return out.replace(/_+/g, '_').replace(/^_+|_+$/g, '');
+}
+
 export function formatPhone(phone: string | null | undefined): string {
   if (!phone) return '';
   if (!E164_RE.test(phone)) return phone;

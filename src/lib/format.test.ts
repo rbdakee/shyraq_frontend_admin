@@ -8,6 +8,8 @@ import {
   formatIinDisplay,
   formatIinMasked,
   getInitials,
+  toISODate,
+  slugifyKey,
 } from './format';
 
 describe('getInitials', () => {
@@ -41,6 +43,25 @@ describe('getInitials', () => {
 
   it('uppercases lowercase names', () => {
     expect(getInitials('anna smith')).toBe('AS');
+  });
+});
+
+describe('toISODate', () => {
+  it('formats a date to YYYY-MM-DD', () => {
+    expect(toISODate(new Date(2026, 0, 5))).toBe('2026-01-05');
+  });
+
+  it('zero-pads single-digit month and day', () => {
+    expect(toISODate(new Date(2026, 2, 7))).toBe('2026-03-07');
+  });
+
+  it('handles double-digit month and day', () => {
+    expect(toISODate(new Date(2026, 11, 25))).toBe('2026-12-25');
+  });
+
+  it('handles year boundaries', () => {
+    expect(toISODate(new Date(2025, 11, 31))).toBe('2025-12-31');
+    expect(toISODate(new Date(2026, 0, 1))).toBe('2026-01-01');
   });
 });
 
@@ -217,5 +238,27 @@ describe('formatIinDisplay', () => {
     const result = formatIinDisplay('123456789012');
     expect(result).not.toContain(' ');
     expect(result.charCodeAt(6)).toBe(0x00a0);
+  });
+});
+
+describe('slugifyKey', () => {
+  it('keeps latin alphanumerics, lowercases', () => {
+    expect(slugifyKey('Articulation Score')).toBe('articulation_score');
+    expect(slugifyKey('field1')).toBe('field1');
+  });
+
+  it('transliterates RU/KK Cyrillic to latin', () => {
+    expect(slugifyKey('Артикуляция')).toBe('artikulyatsiya');
+    expect(slugifyKey('Сөйлеу')).toBe('soileu');
+  });
+
+  it('collapses separators and trims edges', () => {
+    expect(slugifyKey('  Hello,  World!  ')).toBe('hello_world');
+    expect(slugifyKey('a---b')).toBe('a_b');
+  });
+
+  it('returns empty string when no usable characters', () => {
+    expect(slugifyKey('   ')).toBe('');
+    expect(slugifyKey('!!!')).toBe('');
   });
 });

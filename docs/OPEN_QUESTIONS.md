@@ -226,6 +226,12 @@ Multipart-контракт **`files`** (множественное число), 
 
 Live OpenAPI inspection during manual QA showed `ContentListResponseDto = {items, cursor}`. Pre-B12 HANDOFF §12 drafted as `next_cursor` (drift from §A15 parent-requests precedent which DOES use `next_cursor` — content module is different). Fixed Zod schema + UI consumer + HANDOFF §12 to match live. Connected to: §A8 first-document rule (live = fact).
 
+### A23 — Attendance daily-status: нет `/admin/daily-status/summary`, сводка из `attendance-today` · resolved (2026-06-03, live-confirmed pre-B13)
+
+**Контекст:** HANDOFF §20 (pre-B13) декларировал два эндпоинта дневного статуса: `GET /admin/daily-status` (список) и `GET /admin/daily-status/summary` (агрегированная сводка отсутствий). Сверка live `/docs-json` (2026-06-03) показала: существует **только** `GET /admin/daily-status` (paged `child_daily_status`). `/summary` на backend нет.
+
+**Решение** (прецедент §A8 live = факт, first-document): агрегированная сводка отсутствий на daily-status доске берётся из уже существующего `GET /admin/dashboard/attendance-today` → `{in_kindergarten, checked_out, absent, on_vacation, sick}` (+опц. `?group_id=`). HANDOFF §20 правлен под факт (убрана строка `/summary`, добавлена врезка про reuse). Backend-need **не заводим** — данных достаточно. Trade-off: сводка по садику/группе, не по произвольному фильтру; для MVP достаточно. Revert path: если потребуется сводка по сложному фильтру — backend-ask на dedicated `/summary`, отдельный батч.
+
 ### A15 — Parent-requests: list `/admin/*` vs detail/actions `/staff/*`, `type` filter, snake_case, cursor · resolved (2026-05-19)
 
 Контекст: при B8 (parent-requests data+UI) сверка live `/docs-json` выявила существенное расхождение HANDOFF §19 ↔ факт. Решение: прецедент §A7/§A8 — live = факт. Зафиксировано (HANDOFF §19 правлен под факт в wave-коммите B7+B8 — first-document):

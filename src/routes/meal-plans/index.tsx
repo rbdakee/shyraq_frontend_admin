@@ -57,6 +57,7 @@ import type { MealPlan, MealItem, MultiLangText, CreateMealItemBody } from '@/ho
 import { resolveJsonbI18n } from '@/lib/jsonb-i18n';
 import { toI18nKey, isAppError } from '@/lib/error-map';
 import { cn } from '@/lib/cn';
+import { toISODate } from '@/lib/format';
 
 const MEAL_TYPES = ['breakfast', 'snack_am', 'lunch', 'snack_pm', 'dinner'] as const;
 type MealType = (typeof MEAL_TYPES)[number];
@@ -72,10 +73,6 @@ function getWeekMonday(d: Date): Date {
 
 function getWeekDays(monday: Date): Date[] {
   return Array.from({ length: 5 }, (_, i) => addDays(monday, i));
-}
-
-function toISODate(d: Date): string {
-  return format(d, 'yyyy-MM-dd');
 }
 
 function formatDayMonth(d: Date, locale: string): string {

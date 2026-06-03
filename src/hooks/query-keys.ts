@@ -1,6 +1,8 @@
+import type { AttendanceEventListFilters, DailyStatusListFilters } from '@/api/attendance';
 import type { ChildListFilters, OffsetPaginationParams } from '@/api/children';
 import type { ContentListFilters } from '@/api/content';
 import type { CustomDiscountListFilters, ApplicationListFilters } from '@/api/custom-discounts';
+import type { DiagnosticTemplateListFilters } from '@/api/diagnostic-templates';
 import type { EnrollmentListFilters } from '@/api/enrollments';
 import type { GroupListFilters } from '@/api/groups';
 import type { InvoiceListFilters } from '@/api/invoices';
@@ -122,5 +124,19 @@ export const qk = {
     all: ['content'] as const,
     list: (filters: ContentListFilters = {}) => ['content', 'list', filters] as const,
     detail: (id: string) => ['content', 'detail', id] as const,
+  },
+  attendance: {
+    all: ['attendance'] as const,
+    events: (filters: AttendanceEventListFilters = {}) =>
+      ['attendance', 'events', 'list', filters] as const,
+    eventDetail: (id: string) => ['attendance', 'events', 'detail', id] as const,
+    dailyStatuses: (filters: DailyStatusListFilters = {}) =>
+      ['attendance', 'daily-statuses', 'list', filters] as const,
+  },
+  diagnosticTemplates: {
+    all: ['diagnostic-templates'] as const,
+    list: (filters: Omit<DiagnosticTemplateListFilters, 'cursor'> = {}) =>
+      ['diagnostic-templates', 'list', filters] as const,
+    detail: (id: string) => ['diagnostic-templates', 'detail', id] as const,
   },
 } as const;

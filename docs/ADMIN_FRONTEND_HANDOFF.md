@@ -709,16 +709,17 @@ Cursor: `{items, cursor: string|null}` — поле называется **`curs
 
 **Назначение:** журнал посещаемости, корректировки, сводка дневных статусов. BP §5.
 
-| Метод | Путь                           | Назначение                                                      |
-| ----- | ------------------------------ | --------------------------------------------------------------- |
-| GET   | `/admin/attendance-events`     | Лог check-in/out. Фильтр `child_id, method, диапазон дат`.      |
-| PATCH | `/admin/attendance-events/:id` | Корректировка `recorded_at, notes, pickup_user_id`.             |
-| GET   | `/admin/daily-status`          | Сводка `child_daily_status` на дату по садику.                  |
-| GET   | `/admin/daily-status/summary`  | Агрегированная сводка отсутствий (для заявок vacation/day_off). |
+| Метод | Путь                           | Назначение                                                                              |
+| ----- | ------------------------------ | --------------------------------------------------------------------------------------- |
+| GET   | `/admin/attendance-events`     | Лог check-in/out. Фильтр `child_id, method, диапазон дат`.                              |
+| PATCH | `/admin/attendance-events/:id` | Корректировка `recorded_at, notes, pickup_user_id`.                                     |
+| GET   | `/admin/daily-status`          | Список `child_daily_status` (paged, фильтр `child_id`, диапазон дат) на дату по садику. |
 
 `attendance_method`: `face_id|manual|otp_pickup`. `child_intraday_status`: `present|absent|sick|late|early_pickup|on_vacation`.
 
-**Страница:** журнал событий (фильтр по ребёнку/методу/дате), редактирование записи (модал: время, заметка, кто забрал). Доска дневного статуса на дату (по группам), сводка отсутствий.
+> **Расхождение docs↔live (resolved 2026-06-03, B13):** отдельного `GET /admin/daily-status/summary` на backend **нет** (live `/docs-json` подтверждён). Агрегированная сводка отсутствий в Admin берётся из существующего `GET /admin/dashboard/attendance-today` → `{in_kindergarten, checked_out, absent, on_vacation, sick}` (+опц. `?group_id=`). См. OPEN_QUESTIONS §A23. Backend-need не заводим.
+
+**Страница:** журнал событий (фильтр по ребёнку/методу/дате), редактирование записи (модал: время, заметка, кто забрал). Доска дневного статуса на дату (по группам); сводка отсутствий — из `attendance-today`.
 
 ---
 

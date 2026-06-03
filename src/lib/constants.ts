@@ -7,6 +7,21 @@ export const OTP_LOCK_SECONDS = 15 * 60;
 export const ENTITY_COMBOBOX_DEBOUNCE_MS = 300;
 export const SEARCH_DEBOUNCE_MS = 300;
 
+export type SpecialistType =
+  | 'psychologist'
+  | 'speech_therapist'
+  | 'music_teacher'
+  | 'physical_ed'
+  | 'nutritionist';
+
+export const SPECIALIST_TYPES: SpecialistType[] = [
+  'psychologist',
+  'speech_therapist',
+  'music_teacher',
+  'physical_ed',
+  'nutritionist',
+];
+
 // Mobile tab-bar badge: display max before falling back to "99+".
 export const MOBILE_BADGE_MAX = 99;
 // Time mobile-shell badge queries stay fresh before TanStack Query refetches.

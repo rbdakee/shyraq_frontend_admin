@@ -1,0 +1,119 @@
+{
+  "title": "Диагностика",
+  "templates_title": "Диагностика үлгілері",
+  "create_button": "Үлгі жасау",
+  "active_count_suffix": "белсенді үлгілер",
+
+  "filters": {
+    "specialist_type": "Маман түрі",
+    "specialist_type_placeholder": "Барлық мамандар",
+    "status": "Мәртебе",
+    "status_placeholder": "Барлығы",
+    "active": "Белсенді",
+    "inactive": "Белсенді емес"
+  },
+
+  "columns": {
+    "name": "Атауы",
+    "specialist_type": "Маман",
+    "version": "Нұсқа",
+    "is_active": "Мәртебе",
+    "created_at": "Жасалды",
+    "updated_at": "Жаңартылды",
+    "actions": ""
+  },
+
+  "status": {
+    "active": "Белсенді",
+    "inactive": "Белсенді емес"
+  },
+
+  "form": {
+    "create_title": "Үлгі жасау",
+    "edit_title": "Үлгіні өңдеу",
+    "name": "Үлгі атауы",
+    "name_placeholder": "Мысалы: Сөйлеу тексерісі 3–5 жас",
+    "specialist_type": "Маман түрі",
+    "specialist_type_placeholder": "Маман түрін таңдаңыз",
+    "description": "Сипаттама",
+    "description_placeholder": "Үлгі мақсатының қысқаша сипаттамасы",
+    "save": "Сақтау",
+    "cancel": "Болдырмау",
+    "create_success": "Үлгі жасалды",
+    "update_success": "Үлгі жаңартылды"
+  },
+
+  "constructor": {
+    "title": "Форма конструкторы",
+    "add_section": "Секция қосу",
+    "section_title": "Секция атауы",
+    "section_title_placeholder": "Мысалы: Сөйлеу",
+    "remove_section": "Секцияны жою",
+    "add_field": "Өріс қосу",
+    "remove_field": "Өрісті жою",
+    "field_key": "Өріс кілті",
+    "field_key_placeholder": "кілт — атауынан авто",
+    "field_label": "Өріс атауы",
+    "field_label_placeholder": "Мысалы: Артикуляция",
+    "field_type": "Өріс түрі",
+    "field_required": "Міндетті",
+    "field_options": "Жауап нұсқалары",
+    "field_options_placeholder": "Нұсқа мәтіні",
+    "option_placeholder": "Нұсқа мәтіні",
+    "add_option": "Нұсқа қосу",
+    "remove_option": "Нұсқаны жою",
+    "no_options": "Әзірге нұсқалар жоқ — кемінде біреуін қосыңыз.",
+    "field_min": "Минимум",
+    "field_max": "Максимум",
+    "fields_count": "{{count}} өріс",
+    "duplicate_keys": "Өріс кілттері бірегей болуы керек",
+    "field_types_ref": "Өріс түрлері"
+  },
+
+  "field_type": {
+    "text": "Мәтін",
+    "number": "Сан",
+    "boolean": "Иә/Жоқ",
+    "select": "Таңдау",
+    "multiselect": "Көптік таңдау",
+    "date": "Күні",
+    "scale": "Шкала"
+  },
+
+  "field_type_hint": {
+    "text": "қысқа жауап",
+    "number": "min/max",
+    "boolean": "бинарлық",
+    "select": "нұсқалар",
+    "multiselect": "көптік таңдау",
+    "date": "күнтаңдағыш",
+    "scale": "1–5 / 1–10"
+  },
+
+  "template_has_entries_banner_title": "Үлгі қолданыста",
+  "template_has_entries_warning": "Бұл үлгіге диагностика жазбалары тіркелген. Өріс схемасын өзгерту мүмкін емес — тек атауын, сипаттамасын және мәртебесін өңдеуге болады. Жаңа схема үшін жаңа үлгі жасаңыз.",
+
+  "deactivate": {
+    "title": "Үлгіні өшіру",
+    "description": "Өшірілген үлгі мамандарға жаңа жазбалар жасау үшін қолжетімді болмайды. Бар жазбалар сақталады.",
+    "confirm": "Өшіру",
+    "cancel": "Болдырмау",
+    "success": "Үлгі өшірілді"
+  },
+
+  "empty": {
+    "title": "Үлгілер әлі жоқ",
+    "description": "Мамандар үшін бірінші диагностика үлгісін жасаңыз.",
+    "filtered_title": "Ештеңе табылмады",
+    "filtered_description": "Сүзгі параметрлерін өзгертіп көріңіз."
+  },
+
+  "detail": {
+    "breadcrumb": "Диагностика үлгілері",
+    "version_label": "Нұсқа {{version}}",
+    "created_by": "Жасаған",
+    "schema_preview": "Форманы алдын ала қарау",
+    "edit": "Өңдеу",
+    "deactivate": "Өшіру"
+  }
+}

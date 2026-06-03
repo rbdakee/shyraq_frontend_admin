@@ -1,0 +1,119 @@
+{
+  "title": "Диагностика",
+  "templates_title": "Шаблоны диагностики",
+  "create_button": "Создать шаблон",
+  "active_count_suffix": "активных шаблонов",
+
+  "filters": {
+    "specialist_type": "Тип специалиста",
+    "specialist_type_placeholder": "Все специалисты",
+    "status": "Статус",
+    "status_placeholder": "Все",
+    "active": "Активные",
+    "inactive": "Неактивные"
+  },
+
+  "columns": {
+    "name": "Название",
+    "specialist_type": "Специалист",
+    "version": "Версия",
+    "is_active": "Статус",
+    "created_at": "Создан",
+    "updated_at": "Обновлён",
+    "actions": ""
+  },
+
+  "status": {
+    "active": "Активен",
+    "inactive": "Неактивен"
+  },
+
+  "form": {
+    "create_title": "Создание шаблона",
+    "edit_title": "Редактирование шаблона",
+    "name": "Название шаблона",
+    "name_placeholder": "Например: Речевое обследование 3–5 лет",
+    "specialist_type": "Тип специалиста",
+    "specialist_type_placeholder": "Выберите тип специалиста",
+    "description": "Описание",
+    "description_placeholder": "Краткое описание назначения шаблона",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "create_success": "Шаблон создан",
+    "update_success": "Шаблон обновлён"
+  },
+
+  "constructor": {
+    "title": "Конструктор формы",
+    "add_section": "Добавить секцию",
+    "section_title": "Название секции",
+    "section_title_placeholder": "Например: Речь",
+    "remove_section": "Удалить секцию",
+    "add_field": "Добавить поле",
+    "remove_field": "Удалить поле",
+    "field_key": "Ключ поля",
+    "field_key_placeholder": "ключ — авто из названия",
+    "field_label": "Название поля",
+    "field_label_placeholder": "Например: Артикуляция",
+    "field_type": "Тип поля",
+    "field_required": "Обязательное",
+    "field_options": "Варианты ответа",
+    "field_options_placeholder": "Текст варианта",
+    "option_placeholder": "Текст варианта",
+    "add_option": "Добавить вариант",
+    "remove_option": "Удалить вариант",
+    "no_options": "Пока нет вариантов — добавьте хотя бы один.",
+    "field_min": "Минимум",
+    "field_max": "Максимум",
+    "fields_count": "{{count}} полей",
+    "duplicate_keys": "Ключи полей должны быть уникальными",
+    "field_types_ref": "Типы полей"
+  },
+
+  "field_type": {
+    "text": "Текст",
+    "number": "Число",
+    "boolean": "Да/Нет",
+    "select": "Выбор",
+    "multiselect": "Множественный выбор",
+    "date": "Дата",
+    "scale": "Шкала"
+  },
+
+  "field_type_hint": {
+    "text": "короткий ответ",
+    "number": "min/max",
+    "boolean": "бинарный",
+    "select": "варианты",
+    "multiselect": "множественный выбор",
+    "date": "datepicker",
+    "scale": "1–5 / 1–10"
+  },
+
+  "template_has_entries_banner_title": "Шаблон используется",
+  "template_has_entries_warning": "К этому шаблону уже привязаны записи диагностики. Изменение схемы полей невозможно — можно редактировать только название, описание и статус. Для новой схемы создайте новый шаблон.",
+
+  "deactivate": {
+    "title": "Деактивировать шаблон",
+    "description": "Деактивированный шаблон не будет доступен специалистам для создания новых записей. Существующие записи сохранятся.",
+    "confirm": "Деактивировать",
+    "cancel": "Отмена",
+    "success": "Шаблон деактивирован"
+  },
+
+  "empty": {
+    "title": "Шаблонов пока нет",
+    "description": "Создайте первый шаблон диагностики для специалистов.",
+    "filtered_title": "Ничего не найдено",
+    "filtered_description": "Попробуйте изменить параметры фильтрации."
+  },
+
+  "detail": {
+    "breadcrumb": "Шаблоны диагностики",
+    "version_label": "Версия {{version}}",
+    "created_by": "Создал",
+    "schema_preview": "Предпросмотр формы",
+    "edit": "Редактировать",
+    "deactivate": "Деактивировать"
+  }
+}

@@ -326,6 +326,20 @@ export const router = createBrowserRouter([
             },
           },
           {
+            path: 'diagnostics/templates/new',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/diagnostics/templates/new');
+              return { Component };
+            },
+          },
+          {
+            path: 'diagnostics/templates/:id',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/diagnostics/templates/$id');
+              return { Component };
+            },
+          },
+          {
             path: 'face',
             lazy: async () => {
               const { default: Component } = await import('@/routes/face/index');

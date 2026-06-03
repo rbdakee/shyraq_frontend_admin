@@ -50,24 +50,11 @@ import MobileTopBar from '@/components/layout/mobile-top-bar';
 import { mapValidationErrors } from '@/components/forms/map-validation-errors';
 import { formatDate, formatPhone, getInitials } from '@/lib/format';
 import { toI18nKey } from '@/lib/error-map';
-import { DEFAULT_TIMEZONE } from '@/lib/constants';
+import { DEFAULT_TIMEZONE, SPECIALIST_TYPES } from '@/lib/constants';
+import type { SpecialistType } from '@/lib/constants';
 
 type StaffData = NonNullable<ReturnType<typeof useStaff>['data']>;
 type StaffRole = StaffData['role'];
-type SpecialistType =
-  | 'psychologist'
-  | 'speech_therapist'
-  | 'music_teacher'
-  | 'physical_ed'
-  | 'nutritionist';
-
-const SPECIALIST_TYPES: SpecialistType[] = [
-  'psychologist',
-  'speech_therapist',
-  'music_teacher',
-  'physical_ed',
-  'nutritionist',
-];
 
 const SPECIALIST_NONE = '__none__';
 

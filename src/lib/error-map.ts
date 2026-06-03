@@ -111,7 +111,10 @@ export const KNOWN_ERROR_CODES = [
   'parent_request_already_processed',
   'parent_request_cursor_invalid',
   'parent_request_forbidden',
+  // attendance §20
+  'attendance_event_not_found',
   // diagnostic templates §21
+  'diagnostic_template_not_found',
   'template_has_entries',
   // lifecycle DLQ §24
   'lifecycle_job_not_found',

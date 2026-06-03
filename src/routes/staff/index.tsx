@@ -38,26 +38,14 @@ import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { cn } from '@/lib/cn';
 import { formatPhone, getInitials } from '@/lib/format';
 import { toI18nKey } from '@/lib/error-map';
-import { SEARCH_DEBOUNCE_MS } from '@/lib/constants';
+import { SEARCH_DEBOUNCE_MS, SPECIALIST_TYPES } from '@/lib/constants';
+import type { SpecialistType } from '@/lib/constants';
 
 type StaffListData = NonNullable<ReturnType<typeof useStaffList>['data']>;
 type StaffMember = StaffListData[number];
 type StaffRole = StaffMember['role'];
-type SpecialistType =
-  | 'psychologist'
-  | 'speech_therapist'
-  | 'music_teacher'
-  | 'physical_ed'
-  | 'nutritionist';
 
 const GROUP_NONE = '__none__';
-const SPECIALIST_TYPES: SpecialistType[] = [
-  'psychologist',
-  'speech_therapist',
-  'music_teacher',
-  'physical_ed',
-  'nutritionist',
-];
 
 function statusVariant(isActive: boolean): 'success' | 'neutral' {
   return isActive ? 'success' : 'neutral';
