@@ -18,6 +18,9 @@ export default defineConfig({
   },
   server: {
     host: true,
-    proxy: { '/api': { target: 'http://194.32.140.219:5678', changeOrigin: true } },
+    proxy: {
+      '/api': { target: 'http://194.32.140.219:5678', changeOrigin: true },
+      '/ws': { target: 'http://194.32.140.219:5678', changeOrigin: true, ws: true },
+    },
   },
 });

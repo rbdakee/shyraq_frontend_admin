@@ -19,6 +19,9 @@ import ruSchedule from '@/locales/ru/schedule.json';
 import ruMealPlans from '@/locales/ru/meal-plans.json';
 import ruContent from '@/locales/ru/content.json';
 import ruDiagnostics from '@/locales/ru/diagnostics.json';
+import ruStructure from '@/locales/ru/structure.json';
+import ruNotifications from '@/locales/ru/notifications.json';
+import ruProfile from '@/locales/ru/profile.json';
 import kkCommon from '@/locales/kk/common.json';
 import kkErrors from '@/locales/kk/errors.json';
 import kkAuth from '@/locales/kk/auth.json';
@@ -37,6 +40,9 @@ import kkSchedule from '@/locales/kk/schedule.json';
 import kkMealPlans from '@/locales/kk/meal-plans.json';
 import kkContent from '@/locales/kk/content.json';
 import kkDiagnostics from '@/locales/kk/diagnostics.json';
+import kkStructure from '@/locales/kk/structure.json';
+import kkNotifications from '@/locales/kk/notifications.json';
+import kkProfile from '@/locales/kk/profile.json';
 
 const initialLocale = useUiStore.getState().locale;
 
@@ -61,6 +67,9 @@ void i18n.use(initReactI18next).init({
       'meal-plans': ruMealPlans,
       content: ruContent,
       diagnostics: ruDiagnostics,
+      structure: ruStructure,
+      notifications: ruNotifications,
+      profile: ruProfile,
     },
     kk: {
       common: kkCommon,
@@ -81,6 +90,9 @@ void i18n.use(initReactI18next).init({
       'meal-plans': kkMealPlans,
       content: kkContent,
       diagnostics: kkDiagnostics,
+      structure: kkStructure,
+      notifications: kkNotifications,
+      profile: kkProfile,
     },
   },
   lng: initialLocale,

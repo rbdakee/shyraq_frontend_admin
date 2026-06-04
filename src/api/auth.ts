@@ -105,3 +105,29 @@ export async function getMe(): Promise<UserResponse> {
   const raw: unknown = await apiClient.get('users/me').json();
   return UserResponseSchema.parse(raw);
 }
+
+export interface UpdateMeBody {
+  fullName?: string;
+  avatarUrl?: string;
+  dateOfBirth?: string;
+  iin?: string;
+  locale?: 'ru' | 'kk';
+}
+
+export async function updateMe(body: UpdateMeBody): Promise<UserResponse> {
+  const raw: unknown = await apiClient.patch('users/me', { json: body }).json();
+  return UserResponseSchema.parse(raw);
+}
+
+const MyQrResponseSchema = z.object({
+  token: z.string(),
+  issuedAt: z.string(),
+  expiresAt: z.string(),
+});
+
+export type MyQrResponse = z.infer<typeof MyQrResponseSchema>;
+
+export async function getMyQr(): Promise<MyQrResponse> {
+  const raw: unknown = await apiClient.get('users/me/qr').json();
+  return MyQrResponseSchema.parse(raw);
+}

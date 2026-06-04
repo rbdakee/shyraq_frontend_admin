@@ -1,6 +1,16 @@
 const REFRESH_KEY = 'shyraq_admin_refresh';
 let accessToken: string | null = null;
 
+type TokenRefreshListener = (token: string) => void;
+const refreshListeners = new Set<TokenRefreshListener>();
+
+export function onTokenRefresh(listener: TokenRefreshListener): () => void {
+  refreshListeners.add(listener);
+  return () => {
+    refreshListeners.delete(listener);
+  };
+}
+
 export const tokenStorage = {
   getAccess: (): string | null => accessToken,
 
@@ -31,6 +41,9 @@ export const tokenStorage = {
       localStorage.setItem(REFRESH_KEY, refresh);
     } catch {
       /* localStorage unavailable */
+    }
+    for (const listener of refreshListeners) {
+      listener(access);
     }
   },
 

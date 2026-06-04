@@ -19,7 +19,7 @@ function coerceLang(lang: string): 'ru' | 'kk' {
 // to avoid infinite 401-to-refresh recursion.
 let refreshPromise: Promise<void> | null = null;
 
-async function tryRefreshOnce(): Promise<void> {
+export async function tryRefreshOnce(): Promise<void> {
   if (refreshPromise) return refreshPromise;
 
   refreshPromise = (async () => {
@@ -57,6 +57,11 @@ function redirectToLogin(): void {
   if (typeof window !== 'undefined' && typeof window.location !== 'undefined') {
     window.location.assign('/login?reason=session_expired');
   }
+}
+
+export function forceLogout(): void {
+  tokenStorage.clear();
+  redirectToLogin();
 }
 
 async function refreshOrRedirect(): Promise<void> {

@@ -30,7 +30,7 @@ const localStorageMock = makeLocalStorageShim();
 vi.stubGlobal('localStorage', localStorageMock);
 
 // Re-import AFTER stubbing so the module picks up the shim.
-const { tokenStorage } = await import('./token-storage');
+const { tokenStorage, onTokenRefresh } = await import('./token-storage');
 
 describe('tokenStorage', () => {
   beforeEach(() => {
@@ -117,6 +117,37 @@ describe('tokenStorage', () => {
           expect(localStorageMock.getItem(key)).not.toBe('acc-no-persist');
         }
       }
+    });
+  });
+
+  describe('onTokenRefresh', () => {
+    it('listener is called when setBoth fires', () => {
+      const listener = vi.fn();
+      const unsub = onTokenRefresh(listener);
+      tokenStorage.setBoth({ access: 'new-acc', refresh: 'new-ref' });
+      expect(listener).toHaveBeenCalledWith('new-acc');
+      expect(listener).toHaveBeenCalledTimes(1);
+      unsub();
+    });
+
+    it('unsubscribed listener is not called', () => {
+      const listener = vi.fn();
+      const unsub = onTokenRefresh(listener);
+      unsub();
+      tokenStorage.setBoth({ access: 'acc-2', refresh: 'ref-2' });
+      expect(listener).not.toHaveBeenCalled();
+    });
+
+    it('multiple listeners all fire', () => {
+      const listener1 = vi.fn();
+      const listener2 = vi.fn();
+      const unsub1 = onTokenRefresh(listener1);
+      const unsub2 = onTokenRefresh(listener2);
+      tokenStorage.setBoth({ access: 'acc-3', refresh: 'ref-3' });
+      expect(listener1).toHaveBeenCalledWith('acc-3');
+      expect(listener2).toHaveBeenCalledWith('acc-3');
+      unsub1();
+      unsub2();
     });
   });
 

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/cn';
 import { useUiStore } from '@/stores/ui-store';
 import { useSessionStore } from '@/stores/session-store';
+import { useUnreadCount } from '@/hooks/use-notifications';
 import { iconRegistry } from '@/components/ui/icon';
 import { ChevronDownIcon } from 'lucide-react';
 import Breadcrumbs from './breadcrumbs';
@@ -27,6 +28,7 @@ export default function Topbar() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
 
+  const { count: unreadCount } = useUnreadCount();
   const displayName = user?.full_name?.split(' ')[0] ?? '';
   const avatarInitials = initials(user?.full_name ?? '');
 
@@ -82,6 +84,11 @@ export default function Topbar() {
             title={t('shell.notifications')}
           >
             <BellIcon className="h-4 w-4" />
+            {unreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-on-primary">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
           </button>
 
           <button

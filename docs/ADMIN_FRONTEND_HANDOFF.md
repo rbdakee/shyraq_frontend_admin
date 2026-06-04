@@ -341,30 +341,39 @@
 
 ## 9. Структура садика — Локации и Камеры
 
-### 9.1 Локации — `/admin/locations/*`
+> **⚠️ Live-verified pre-B14 (2026-06-04, OPEN_QUESTIONS §A24, прецедент §A8/§A12 live=факт):** префикс **без `/admin`** (`/locations/*`, `/cameras/*`); casing **snake_case**; вместо hard-`DELETE` — **`archive`/`restore`** (как группы §A12); камера: `rtsp_url`+`hls_url` (не `stream_url`) + `link-location`. Списки — **bare-array, без пагинации** (defensive `z.array(Schema)`). Ниже — фактический контракт.
 
-| Метод  | Путь                   | Назначение                                                                    |
-| ------ | ---------------------- | ----------------------------------------------------------------------------- |
-| GET    | `/admin/locations`     | Список.                                                                       |
-| POST   | `/admin/locations`     | `{name, description?}`.                                                       |
-| PATCH  | `/admin/locations/:id` | `name?, description?`.                                                        |
-| DELETE | `/admin/locations/:id` | Hard delete. Пречек FK (группы/камеры/события/слоты) → 409 `location_in_use`. |
+### 9.1 Локации — `/locations/*`
 
-Ошибки: `location_not_found`(404), `location_in_use`(409).
+| Метод | Путь                     | Назначение                                                                                               |
+| ----- | ------------------------ | -------------------------------------------------------------------------------------------------------- |
+| GET   | `/locations`             | `LocationDto[]` (bare array).                                                                            |
+| POST  | `/locations`             | `CreateLocationDto {name*(1..255), description?}`.                                                       |
+| PATCH | `/locations/:id`         | `UpdateLocationDto {name?, description?}`.                                                               |
+| POST  | `/locations/:id/archive` | Архивировать (set `archived_at`). Возможен 409 `location_in_use` (defensive — FK группы/камеры/события). |
+| POST  | `/locations/:id/restore` | Снять архив.                                                                                             |
 
-### 9.2 Камеры (CCTV-конфиг) — `/admin/cameras/*`
+`LocationDto` (snake_case) = `{id, kindergarten_id, name, description, archived_at(nullable), created_at, updated_at}`. `description` — **JSONB-object nullable** (резолв через `lib/jsonb-i18n.ts` defensive: i18n `{ru,kk}` ИЛИ plain — backend пример строкой, тип `object`; читать через jsonb-i18n с fallback). Hard-DELETE на live **нет** — «удалить» в UI = archive (прецедент §A12/§C10). Фильтр `?archived=` (boolean) — как группы.
 
-| Метод  | Путь                      | Назначение                                                                      |
-| ------ | ------------------------- | ------------------------------------------------------------------------------- |
-| GET    | `/admin/cameras`          | Список (+ relation `location`). Фильтр `?location_id=`.                         |
-| POST   | `/admin/cameras`          | `{location_id, name, stream_url?}` (RTSP формируется backend, если не передан). |
-| PATCH  | `/admin/cameras/:id`      | `name?, stream_url?, location_id?`.                                             |
-| DELETE | `/admin/cameras/:id`      | Hard delete.                                                                    |
-| POST   | `/admin/cameras/:id/test` | **Отложено (Phase C / B20)** — не реализовано, в Swagger нет.                   |
+Ошибки: `location_not_found`(404), `location_in_use`(409 — обрабатывать defensive на archive).
+
+### 9.2 Камеры (CCTV-конфиг) — `/cameras/*`
+
+| Метод    | Путь                         | Назначение                                                                      |
+| -------- | ---------------------------- | ------------------------------------------------------------------------------- |
+| GET      | `/cameras`                   | `CameraDto[]` (bare array). Фильтр `?location_id=`.                             |
+| POST     | `/cameras`                   | `CreateCameraDto {location_id*, name*, rtsp_url?, hls_url?}`.                   |
+| PATCH    | `/cameras/:id`               | `UpdateCameraDto {location_id?, name?, rtsp_url?, hls_url?}`.                   |
+| POST     | `/cameras/:id/archive`       | Архивировать.                                                                   |
+| POST     | `/cameras/:id/restore`       | Снять архив.                                                                    |
+| POST     | `/cameras/:id/link-location` | `LinkLocationDto {location_id*}` — перепривязка к локации.                      |
+| ~~POST~~ | ~~`/cameras/:id/test`~~      | **Отложено (Phase C)** — не реализовано, в Swagger нет. UI — disabled-заглушка. |
+
+`CameraDto` (snake_case) = `{id, kindergarten_id, location_id, name, rtsp_url, hls_url(nullable), is_active, archived_at(nullable), created_at, updated_at}`.
 
 Ошибки: `camera_not_found`(404), `location_not_found`(404).
 
-**Страницы:** CRUD-таблицы Локаций и Камер (можно одной страницей «Структура садика» с двумя вкладками). Камеры группируются по локациям. Кнопку «Тест камеры» спроектировать как заглушку с подписью «доступно позже» (Phase C).
+**Страницы:** CRUD-таблицы Локаций и Камер (одна страница «Структура садика» с двумя вкладками `/structure/locations` + `/structure/cameras`). Камеры группируются по локациям (имя локации резолвится из `useLocations` — закрывает §C8). Кнопку «Тест камеры» — заглушка «доступно позже» (Phase C, disabled+tooltip).
 
 ---
 
@@ -813,16 +822,20 @@ Cursor: `{items, cursor: string|null}` — поле называется **`curs
 
 ## 27. Профиль и уведомления (cross-cutting)
 
-| Метод     | Путь                                                  | Назначение                                         |
-| --------- | ----------------------------------------------------- | -------------------------------------------------- |
-| GET/PATCH | `/users/me`                                           | Профиль (ФИО, avatar, locale, iin, dob).           |
-| GET       | `/users/me/qr`                                        | Личный Identity QR.                                |
-| POST      | `/push-tokens` / DELETE `/push-tokens/:id`            | Регистрация web-push токена (опц. для админки).    |
-| GET       | `/notifications`                                      | История `?unread_only=&limit=&cursor=&event_key=`. |
-| POST      | `/notifications/:id/read` / `/notifications/read-all` | Прочитано.                                         |
-| GET/PATCH | `/notifications/preferences`                          | Per-event push/in-app настройки.                   |
+> **⚠️ Live-verified pre-B14 (2026-06-04, OPEN_QUESTIONS §A24):** notifications **backend готов** (не mock) — список cursor `{items, next_cursor?}`, preferences `{preferences[]}`, mark-read. QR-response **camelCase**. `/users/me` GET/PATCH уже подключён (B2/B3, `api/auth.ts`).
 
-**UI:** меню пользователя (профиль, смена локали, выход), колокол уведомлений (счётчик непрочитанных, список, read-all), реал-тайм через WS (тосты на важные события садика: новая заявка, оплата, и т.д.).
+| Метод     | Путь                                                  | Назначение                                                                                                                        |
+| --------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| GET/PATCH | `/users/me`                                           | Профиль (ФИО, avatar, locale, iin, dob). PATCH camelCase `{fullName, avatarUrl, dateOfBirth, iin, locale}` (§A7).                 |
+| GET       | `/users/me/qr`                                        | `GetMyQrResponseDto {token, issuedAt, expiresAt}` (**camelCase**). `token` → рендер QR на клиенте.                                |
+| GET       | `/notifications`                                      | `ListNotificationsResponseDto {items: NotificationResponseDto[], next_cursor?}`. Query `?unread_only=&limit=&cursor=&event_key=`. |
+| POST      | `/notifications/:id/read` / `/notifications/read-all` | Пометить прочитанным / всё прочитано.                                                                                             |
+| GET       | `/notifications/preferences`                          | `ListPreferencesResponseDto {preferences: NotificationPreferenceItemDto[]}`.                                                      |
+| PATCH     | `/notifications/preferences`                          | `UpdatePreferencesDto {preferences: [{event_key*, push_enabled?, in_app_enabled?}]}`.                                             |
+
+`NotificationResponseDto` (snake_case) = `{id, event_key, title_i18n{ru,kk}, body_i18n{ru,kk}, data(object), read_at(nullable), created_at}`. `NotificationPreferenceItemDto` = `{event_key, push_enabled, in_app_enabled}`. `event_key` — enum (35 значений: `attendance.checkin`, `invoice.overdue`, `request.accepted`, … полный список в `UpdateNotificationPreferenceItemDto`). Текст уведомления резолвится `title_i18n[locale]`/`body_i18n[locale]` через `lib/jsonb-i18n.ts`. `push-tokens` — web-push, опц. для админки (вне B14 scope).
+
+**UI:** меню пользователя (профиль, смена локали, выход), колокол уведомлений (счётчик непрочитанных, список, read-all), реал-тайм через WS (тосты на важные события садика: новая заявка, оплата, и т.д.). Mobile — full-screen route `/notifications` (M10).
 
 ---
 

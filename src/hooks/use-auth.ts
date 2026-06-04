@@ -1,6 +1,6 @@
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { requestOtp, verifyOtp, selectRole, logout, getMe } from '@/api/auth';
-import type { AuthResponse } from '@/api/auth';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { requestOtp, verifyOtp, selectRole, logout, getMe, updateMe, getMyQr } from '@/api/auth';
+import type { AuthResponse, UpdateMeBody } from '@/api/auth';
 import { tokenStorage } from '@/lib/token-storage';
 import { useSessionStore } from '@/stores/session-store';
 import { qk } from './query-keys';
@@ -96,6 +96,27 @@ export function useMe(enabled = true) {
     enabled,
     staleTime: 5 * 60 * 1000,
     retry: false,
+  });
+}
+
+export function useUpdateMe() {
+  const queryClient = useQueryClient();
+  const setFromMe = useSessionStore((s) => s.setFromMe);
+
+  return useMutation({
+    mutationFn: (body: UpdateMeBody) => updateMe(body),
+    onSuccess: (data) => {
+      setFromMe(data);
+      void queryClient.invalidateQueries({ queryKey: qk.auth.me });
+    },
+  });
+}
+
+export function useMyQr() {
+  return useQuery({
+    queryKey: qk.myQr,
+    queryFn: getMyQr,
+    staleTime: 5 * 60 * 1000,
   });
 }
 

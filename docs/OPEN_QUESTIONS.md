@@ -232,6 +232,21 @@ Live OpenAPI inspection during manual QA showed `ContentListResponseDto = {items
 
 **Решение** (прецедент §A8 live = факт, first-document): агрегированная сводка отсутствий на daily-status доске берётся из уже существующего `GET /admin/dashboard/attendance-today` → `{in_kindergarten, checked_out, absent, on_vacation, sick}` (+опц. `?group_id=`). HANDOFF §20 правлен под факт (убрана строка `/summary`, добавлена врезка про reuse). Backend-need **не заводим** — данных достаточно. Trade-off: сводка по садику/группе, не по произвольному фильтру; для MVP достаточно. Revert path: если потребуется сводка по сложному фильтру — backend-ask на dedicated `/summary`, отдельный батч.
 
+### A24 — Structure (locations/cameras) archive-not-delete + no `/admin` prefix; notifications backend ready; QR camelCase · resolved (2026-06-04, live-verified pre-B14)
+
+Контекст: при подготовке к B14 (Структура + Профиль/Уведомления/WS) сверка live `/docs-json` (2026-06-04) выявила расхождения HANDOFF §9/§27 ↔ факт. Решение: прецедент §A8/§A12 — live = факт; HANDOFF §9+§27 правлены под факт в pre-B14 docs-fixup (first-document). Зафиксировано:
+
+1. **Locations/Cameras префикс без `/admin`:** `/api/v1/locations/*`, `/api/v1/cameras/*` (HANDOFF §9 декларировал `/admin/*`). Casing **snake_case** (request + response). Per-module, не экстраполировать.
+2. **Archive/restore вместо hard-DELETE** (прецедент групп §A12.1): `POST /locations/:id/archive|restore`, `POST /cameras/:id/archive|restore`. Hard-`DELETE` на live нет. UI «удалить» = archive. 409 `location_in_use` обрабатывать **defensive** на archive (прецедент §C10 — реальный enforcement подтвердить ручным QA).
+3. **Lists bare-array, без пагинации** (прецедент §A12.2/§A14.3): `GET /locations` → `LocationDto[]`, `GET /cameras` → `CameraDto[]` (фильтр `?location_id=`). Defensive `z.array(Schema)`.
+4. **`LocationDto.description` — JSONB-object nullable** (live тип `object`, пример строкой): читать через `lib/jsonb-i18n.ts` defensive (i18n `{ru,kk}` или plain). `CreateLocationDto {name*(1..255), description?}`, `UpdateLocationDto {name?, description?}`.
+5. **Camera поля `rtsp_url`+`hls_url`** (не `stream_url` как §9): `CameraDto {id, kindergarten_id, location_id, name, rtsp_url, hls_url(nullable), is_active, archived_at(nullable), created_at, updated_at}`. `CreateCameraDto {location_id*, name*, rtsp_url?, hls_url?}`. `+ POST /cameras/:id/link-location {location_id*}`. `/cameras/:id/test` отсутствует → Phase C disabled-заглушка (C1). Имя локации резолвится из `useLocations` — **закрывает §C8**.
+6. **Notifications backend ГОТОВ** (не mock — переворачивает допущение TODO-backlog «once backend endpoint is available»): `GET /notifications` cursor `{items, next_cursor?}` (query `unread_only/limit/cursor/event_key`); `POST /notifications/:id/read`, `/notifications/read-all`; `GET/PATCH /notifications/preferences {preferences:[{event_key, push_enabled, in_app_enabled}]}`. `NotificationResponseDto` snake_case `{id, event_key, title_i18n, body_i18n, data, read_at?, created_at}`. → mobile `routes/notifications.tsx` (mock B18) + Topbar колокол подключаются к реальному `useNotifications` в B14.
+7. **My QR `GetMyQrResponseDto {token, issuedAt, expiresAt}` — camelCase** (per-module, как §A11). `token` рендерится в QR-код на клиенте (нужна QR-render зависимость — добавить в B14). `/users/me` GET/PATCH уже подключён (B2/B3, `api/auth.ts`) — `api/users.ts` не нужен, профиль использует существующий слой auth/users.
+8. **WS готов (§29, B9):** `wss://<host>/ws`, JWT в `socket.handshake.auth.token`, `auth_error` → refresh/logout, события по `event_key` payload `{title_i18n, body_i18n, data}` в `user:{id}` → тосты + инвалидация. `socket.io-client` уже в deps.
+
+Код B14 conform к live с defensive Zod. Не блокирует — все эндпоинты существуют.
+
 ### A15 — Parent-requests: list `/admin/*` vs detail/actions `/staff/*`, `type` filter, snake_case, cursor · resolved (2026-05-19)
 
 Контекст: при B8 (parent-requests data+UI) сверка live `/docs-json` выявила существенное расхождение HANDOFF §19 ↔ факт. Решение: прецедент §A7/§A8 — live = факт. Зафиксировано (HANDOFF §19 правлен под факт в wave-коммите B7+B8 — first-document):
@@ -546,6 +561,14 @@ HANDOFF §24: исторически `/admin/*` мог быть заскопле
 Контекст: при ручном QA волны B9 (страница `/staff` в проде Vercel) обнаружено — у staff-записей таблица показывает ФИО `—`, телефон `—`, аватар-инициалы пустые (`?`). Соседний клиент SuperAdmin (того же backend) на `/admins` для тех же `user_id` показывает реальные `phone` (`+7 (777) 227-00-88`) и `full_name` (`asda qweq`) — то есть значения **есть** в таблице `users`, но `staff_members.full_name|phone` пусты, и `/admin/staff/*` JOIN на `users` не делает. `StaffMemberDto` (§A13.5) официально допускает оба поля nullable. Прямой аналог §C4 (Guardians: только UUID, нет user-display) и §C15 (Parent-requests). FE B6 не виноват — Zod корректно парсит nullable, колонки честно рендерят `—` (CLAUDE §6 / §C4-прецедент: не фабриковать имя из phone/UUID, иначе путаница «Имя: +77772270088»).
 
 Решение (CLAUDE §6 — честная деградация, без фабрикации; прецедент §C4/§C11/§C15): фронт **остаётся как есть** — `full_name ?? '—'`, `phone ? formatPhone : '—'`, аватар fallback по initials (пустой при null). Лейаут таблицы сохранён, реальные поля (роль/статус/specialist_type) корректны. **Не подмешивать phone в колонку «Имя»** (как делает SuperAdmin fallback'ом) — это не имя, путает оператора. Каталог backend-need — [`BACKEND_NEEDINGS_HANDOFF.md`](BACKEND_NEEDINGS_HANDOFF.md) **N8**. Не блокирует B6/B9 (acceptance оба закрыты). Пересмотр: backend сделает JOIN на `users` в `StaffMemberDto` (как просит N2 для GuardianDto) ИЛИ заполнит `staff_members.full_name|phone` при INSERT из `users` ИЛИ даст общий users-lookup `GET /users?ids=…` (как просят N2/N7) → имя/телефон появятся, обновить HANDOFF §8.
+
+### C17 — Profile: блок «Активные сессии» удалён — нет backend session-management · parked/watch (2026-06-04, B14 manual QA)
+
+Контекст: при ручном QA B14 владелец заметил в `/profile` блок «Безопасность → Активные сессии» (VIS Profile): строка «Web · Chrome · сейчас» + красная кнопка «Завершить другие сессии». Это был **статический мок прототипа** — строка захардкожена, кнопка без `onClick`. Сверка live `/docs-json` (2026-06-04): эндпоинтов листинга/управления сессиями/устройствами **нет** (есть только `POST /auth/logout` — выход текущей сессии, и `POST /admin/qr/revoke-all/{userId}` — отзыв QR, не веб-сессий).
+
+Решение владельца (B14 QA): **блок удалён целиком** из `routes/profile.tsx` (+ 4 i18n-ключа `section_security/active_sessions/session_info/end_other_sessions` из `profile.json` ru/kk). Прецедент честной деградации §C4/§C14 — не оставлять мёртвый контрол, выглядящий рабочим, и не показывать выдуманные данные сессии. Не блокирует B14.
+
+Пересмотр: если backend добавит session-management (`GET /auth/sessions` + `POST /auth/sessions/revoke` / `revoke-others`) → вернуть блок 1:1 по VIS Profile, обновить HANDOFF §27 + DESIGN §6.17 (first-document). Каталогизировать в [`BACKEND_NEEDINGS_HANDOFF.md`](BACKEND_NEEDINGS_HANDOFF.md) при необходимости.
 
 ---
 

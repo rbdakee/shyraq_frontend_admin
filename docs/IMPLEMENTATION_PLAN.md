@@ -469,9 +469,9 @@ src/
 
 **Acceptance:**
 
-- [ ] Locations/Cameras CRUD; location_in_use 409 блокирует удаление; тест-камеры заглушка.
-- [ ] Профиль + Мой QR + notification prefs; колокол показывает историю/непрочитанные.
-- [ ] WS: событие в `user:{id}` → тост + инвалидация; `auth_error` → refresh/logout. Gate exit 0.
+- [x] Locations/Cameras CRUD; location*in_use 409 блокирует удаление (defensive); тест-камеры заглушка. *(B14 wave 2026-06-04: live-факт §A24 — префикс `/locations`,`/cameras` без `/admin`, snake*case, archive/restore вместо DELETE, bare-array списки, camera `rtsp_url`/`hls_url`. Имя локации резолвится из `useLocations` → закрывает §C8. HANDOFF §9 правлен под факт.)*
+- [x] Профиль + Мой QR + notification prefs; колокол показывает историю/непрочитанные. _(QR-рендер через `qrcode.react` из camelCase `{token}`; notifications backend готов — mobile-mock B18 снят, подключён реальный `useNotifications`; event_key labels i18n.)_
+- [x] WS: событие в `user:{id}` → тост + инвалидация; `auth_error` → refresh/logout (active `tryRefreshOnce`/`forceLogout`, event-based token sync, guard от петли). Gate exit 0 (384 tests). _(Dual-review: reviewer-opus поймал пассивный auth_error + raw-message leak + raw event_key — исправлено в fixup. **Требуется ручной браузер-QA:** WS live-флоу (connect/auth_error/toast), QR-рендер, сохранение профиля, реактивность бейджа — браузерные пути, юнитами не покрываются.)_
 
 ---
 
@@ -870,7 +870,7 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 | B11  | Расписание + Меню                           | P1        | [x]    |
 | B12  | Контент + Qundylyq                          | P1        | [x]    |
 | B13  | Посещаемость + Диагностика                  | P1        | [x]    |
-| B14  | Структура + Профиль/Уведомления/WS          | P1        | [ ]    |
+| B14  | Структура + Профиль/Уведомления/WS          | P1        | [x]    |
 | B15  | Праздники/Фискальные/DLQ/Настройки/Face     | P2        | [ ]    |
 | B16  | Mobile foundation (shell)                   | mobile    | [x]    |
 | B17  | Mobile DataTable + forms infra              | mobile    | [x]    |
@@ -890,11 +890,11 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 | ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ----- | ------ |
 | ~~expand groups domain (CRUD, mentors, children, deactivate) — minimal read created in B4 for child list filter/transfer/create select~~ | `src/api/groups.ts:25`                             | B6    | done   |
 | child_photo storage: presigned backend не готов — 404 оставлен как есть (обработанная ошибка), переписать по факту когда backend выкатит | `src/api/storage.ts:1`                             | C5    | parked |
-| Replace useMockNotifications with real useNotifications hook once backend endpoint is available                                          | `src/routes/notifications.tsx:39`                  | B18   | open   |
+| ~~Replace useMockNotifications with real useNotifications hook once backend endpoint is available~~                                      | ~~`src/routes/notifications.tsx:39`~~              | B14   | done   |
 | ~~wire useAttendance hook to backend GET /api/v1/attendance/daily-status when B13 desktop batch runs~~                                   | ~~`src/routes/attendance/index.tsx:1`~~            | B13   | done   |
 | ~~wire useAttendance hook to backend GET /api/v1/attendance/daily-status when B13 desktop batch runs~~                                   | ~~`src/routes/attendance/daily-status.tsx:1`~~     | B13   | done   |
-| wire useStructure hook when B14 (Structure desktop) is built                                                                             | `src/routes/structure/locations/index.tsx:1`       | B14   | open   |
-| wire useStructure hook when B14 (Structure desktop) is built                                                                             | `src/routes/structure/cameras/index.tsx:1`         | B14   | open   |
+| ~~wire useStructure hook when B14 (Structure desktop) is built~~                                                                         | ~~`src/routes/structure/locations/index.tsx:1`~~   | B14   | done   |
+| ~~wire useStructure hook when B14 (Structure desktop) is built~~                                                                         | ~~`src/routes/structure/cameras/index.tsx:1`~~     | B14   | done   |
 | ~~wire useSchedule hook when B11 (Schedule desktop) is built~~                                                                           | ~~`src/routes/schedule/templates/$id.tsx:1`~~      | B11   | done   |
 | ~~wire useMealPlans hook when B11 (Schedule + Meals desktop) is built~~                                                                  | ~~`src/routes/meal-plans/index.tsx:1`~~            | B11   | done   |
 | ~~wire useContent hook when B12 (Content desktop) is built~~                                                                             | ~~`src/routes/content/index.tsx:1`~~               | B12   | done   |

@@ -3,10 +3,6 @@ import AuthGuard from '@/components/layout/auth-guard';
 import App from '@/App';
 import ServerError from '@/routes/_500';
 
-const lazyStub = async () => {
-  const { default: Component } = await import('@/routes/_stub');
-  return { Component };
-};
 const lazy403 = async () => {
   const { default: Component } = await import('@/routes/_403');
   return { Component };
@@ -361,7 +357,13 @@ export const router = createBrowserRouter([
               return { Component };
             },
           },
-          { path: 'profile', lazy: lazyStub },
+          {
+            path: 'profile',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/profile');
+              return { Component };
+            },
+          },
           { path: '_403', lazy: lazy403 },
           { path: '_500', lazy: lazy500 },
           { path: '*', lazy: lazy404 },

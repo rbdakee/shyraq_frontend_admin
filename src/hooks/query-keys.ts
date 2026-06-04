@@ -1,4 +1,6 @@
 import type { AttendanceEventListFilters, DailyStatusListFilters } from '@/api/attendance';
+import type { CameraListFilters } from '@/api/cameras';
+import type { NotificationListFilters } from '@/api/notifications';
 import type { ChildListFilters, OffsetPaginationParams } from '@/api/children';
 import type { ContentListFilters } from '@/api/content';
 import type { CustomDiscountListFilters, ApplicationListFilters } from '@/api/custom-discounts';
@@ -6,6 +8,7 @@ import type { DiagnosticTemplateListFilters } from '@/api/diagnostic-templates';
 import type { EnrollmentListFilters } from '@/api/enrollments';
 import type { GroupListFilters } from '@/api/groups';
 import type { InvoiceListFilters } from '@/api/invoices';
+import type { LocationListFilters } from '@/api/locations';
 import type { MealPlanListFilters } from '@/api/meal-plans';
 import type { ParentRequestListFilters } from '@/api/parent-requests';
 import type { PaymentListFilters } from '@/api/payments';
@@ -139,4 +142,21 @@ export const qk = {
       ['diagnostic-templates', 'list', filters] as const,
     detail: (id: string) => ['diagnostic-templates', 'detail', id] as const,
   },
+  locations: {
+    all: ['locations'] as const,
+    list: (filters: LocationListFilters = {}) => ['locations', 'list', filters] as const,
+    detail: (id: string) => ['locations', 'detail', id] as const,
+  },
+  cameras: {
+    all: ['cameras'] as const,
+    list: (filters: CameraListFilters = {}) => ['cameras', 'list', filters] as const,
+    detail: (id: string) => ['cameras', 'detail', id] as const,
+  },
+  notifications: {
+    all: ['notifications'] as const,
+    list: (filters: Omit<NotificationListFilters, 'cursor'> = {}) =>
+      ['notifications', 'list', filters] as const,
+    preferences: ['notifications', 'preferences'] as const,
+  },
+  myQr: ['users', 'me', 'qr'] as const,
 } as const;
