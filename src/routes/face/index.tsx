@@ -1,14 +1,26 @@
-// TODO(B15): wire useFace hooks when B15 (Face ID desktop) is built
+// Phase-C stub: no backend endpoints exist for face/consent/enrollment; local mock data only
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { EllipsisIcon, TriangleAlertIcon } from 'lucide-react';
+import {
+  TriangleAlertIcon,
+  ScanIcon,
+  EyeIcon,
+  CameraIcon,
+  EllipsisIcon,
+  MoreHorizontalIcon,
+} from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { EmptyState } from '@/components/feedback/empty-state';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { getInitials } from '@/lib/format';
 
-type FaceTab = 'consents' | 'profiles' | 'cameras';
+type FaceTab = 'consents' | 'profiles' | 'events';
 
 interface MockConsent {
   id: string;
@@ -62,20 +74,341 @@ const statusVariant: Record<MockConsent['status'], 'success' | 'warning' | 'erro
   rejected: 'error',
 };
 
+interface MockDesktopConsent {
+  id: string;
+  code: string;
+  name: string;
+  type: 'child' | 'guardian' | 'staff';
+  hasScan: boolean;
+  recordedAt: string;
+  status: 'active' | 'revoked';
+}
+
+const MOCK_DESKTOP_CONSENTS: MockDesktopConsent[] = [
+  {
+    id: '1',
+    code: 'F-0920',
+    name: 'Дана Касенова',
+    type: 'child',
+    hasScan: true,
+    recordedAt: '14.09.2024',
+    status: 'active',
+  },
+  {
+    id: '2',
+    code: 'F-0921',
+    name: 'Темирлан Бекмурат',
+    type: 'child',
+    hasScan: true,
+    recordedAt: '14.09.2024',
+    status: 'active',
+  },
+  {
+    id: '3',
+    code: 'F-0922',
+    name: 'Аяна Сатпаева',
+    type: 'child',
+    hasScan: true,
+    recordedAt: '14.09.2024',
+    status: 'active',
+  },
+  {
+    id: '4',
+    code: 'F-0923',
+    name: 'Айгерим Касенова',
+    type: 'guardian',
+    hasScan: true,
+    recordedAt: '14.09.2024',
+    status: 'active',
+  },
+  {
+    id: '5',
+    code: 'F-0924',
+    name: 'Марат Касенов',
+    type: 'guardian',
+    hasScan: true,
+    recordedAt: '14.09.2024',
+    status: 'revoked',
+  },
+  {
+    id: '6',
+    code: 'F-0925',
+    name: 'Дина Жакыпова',
+    type: 'staff',
+    hasScan: false,
+    recordedAt: '14.09.2024',
+    status: 'active',
+  },
+];
+
+interface MockProfile {
+  id: string;
+  name: string;
+  type: 'child' | 'guardian' | 'staff';
+  consentCode: string;
+  videoDuration: number;
+  registeredAt: string;
+  status: 'active';
+}
+
+const MOCK_PROFILES: MockProfile[] = [
+  {
+    id: '1',
+    name: 'Дана Касенова',
+    type: 'child',
+    consentCode: 'F-0920',
+    videoDuration: 10,
+    registeredAt: '14.09.2024',
+    status: 'active',
+  },
+  {
+    id: '2',
+    name: 'Темирлан Бекмурат',
+    type: 'child',
+    consentCode: 'F-0921',
+    videoDuration: 10,
+    registeredAt: '14.09.2024',
+    status: 'active',
+  },
+  {
+    id: '3',
+    name: 'Аяна Сатпаева',
+    type: 'child',
+    consentCode: 'F-0922',
+    videoDuration: 10,
+    registeredAt: '14.09.2024',
+    status: 'active',
+  },
+  {
+    id: '4',
+    name: 'Айгерим Касенова',
+    type: 'guardian',
+    consentCode: 'F-0923',
+    videoDuration: 10,
+    registeredAt: '14.09.2024',
+    status: 'active',
+  },
+  {
+    id: '5',
+    name: 'Марат Касенов',
+    type: 'guardian',
+    consentCode: 'F-0924',
+    videoDuration: 10,
+    registeredAt: '14.09.2024',
+    status: 'active',
+  },
+];
+
+const hasActiveConsent = MOCK_DESKTOP_CONSENTS.some((c) => c.status === 'active');
+
+const CONSENT_TYPE_KEY: Record<MockDesktopConsent['type'], string> = {
+  child: 'type_child',
+  guardian: 'type_guardian',
+  staff: 'type_staff',
+};
+
 export default function FaceIdPage() {
-  const { t } = useTranslation('common');
+  const { t } = useTranslation(['face', 'common']);
   const { isMobile } = useBreakpoint();
   const [tab, setTab] = useState<FaceTab>('consents');
 
   if (!isMobile) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-        <h1 className="text-xl font-bold text-[color:var(--text-1)]">
-          {t('shell.section_in_development')}
-        </h1>
+      <div className="page">
+        <div className="page-header">
+          <div className="page-title-block">
+            <h1 className="h1">{t('face:title')}</h1>
+            <div className="page-sub">{t('face:subtitle')}</div>
+          </div>
+          {tab === 'consents' && <Button disabled>{t('face:action_create_consent')}</Button>}
+          {tab === 'profiles' && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span tabIndex={0}>
+                    <Button disabled={!hasActiveConsent}>
+                      {t('face:action_create_enrollment')}
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                {!hasActiveConsent && (
+                  <TooltipContent>{t('face:enrollment_disabled_tooltip')}</TooltipContent>
+                )}
+              </Tooltip>
+            </TooltipProvider>
+          )}
+        </div>
+
+        {/* Phase C warning banner */}
+        <div className="mb-4 flex items-start gap-2.5 rounded-[var(--r-md)] border border-[color-mix(in_oklab,var(--warning)_40%,transparent)] bg-[var(--warning-soft)] p-3 text-[13px] text-[color:var(--warning-fg)]">
+          <TriangleAlertIcon className="mt-0.5 size-4 shrink-0" />
+          <div>
+            <div className="font-bold">{t('face:phase_c_banner_title')}</div>
+            <div>{t('face:phase_c_banner_body')}</div>
+          </div>
+        </div>
+
+        <Tabs value={tab} onValueChange={(v) => setTab(v as FaceTab)}>
+          <TabsList variant="line">
+            <TabsTrigger value="consents">{t('face:tab_consents')}</TabsTrigger>
+            <TabsTrigger value="profiles">{t('face:tab_profiles')}</TabsTrigger>
+            <TabsTrigger value="events">{t('face:tab_events')}</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="consents">
+            <ConsentsTab />
+          </TabsContent>
+          <TabsContent value="profiles">
+            <ProfilesTab />
+          </TabsContent>
+          <TabsContent value="events">
+            <EventsTab />
+          </TabsContent>
+        </Tabs>
       </div>
     );
   }
+
+  return <MobileFaceView />;
+}
+
+function ConsentsTab() {
+  const { t } = useTranslation('face');
+
+  return (
+    <div className="table-wrap">
+      <table className="table">
+        <thead>
+          <tr>
+            <th>{t('col_number')}</th>
+            <th>{t('col_subject')}</th>
+            <th>{t('col_type')}</th>
+            <th>{t('col_scan_signed')}</th>
+            <th>{t('col_recorded_at')}</th>
+            <th>{t('col_status')}</th>
+            <th className="w-10" />
+          </tr>
+        </thead>
+        <tbody>
+          {MOCK_DESKTOP_CONSENTS.map((c) => (
+            <tr key={c.id}>
+              <td className="font-mono text-xs text-[color:var(--text-3)]">{c.code}</td>
+              <td>
+                <div className="flex items-center gap-2">
+                  <Avatar size="sm">
+                    <AvatarFallback>{getInitials(c.name)}</AvatarFallback>
+                  </Avatar>
+                  <strong>{c.name}</strong>
+                </div>
+              </td>
+              <td>
+                <Badge variant="neutral">{t(CONSENT_TYPE_KEY[c.type])}</Badge>
+              </td>
+              <td>
+                {c.hasScan ? (
+                  <Button variant="outline" size="sm" disabled>
+                    <EyeIcon className="size-3.5" />
+                    {t('scan_open_pdf')}
+                  </Button>
+                ) : (
+                  <Badge variant="warning">{t('scan_not_uploaded')}</Badge>
+                )}
+              </td>
+              <td>{c.recordedAt}</td>
+              <td>
+                {c.status === 'active' ? (
+                  <Badge variant="success">{t('status_active')}</Badge>
+                ) : (
+                  <Badge variant="neutral">{t('status_revoked')}</Badge>
+                )}
+              </td>
+              <td>
+                <Button variant="ghost" size="icon" className="size-7" disabled>
+                  <MoreHorizontalIcon className="size-4" />
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ProfilesTab() {
+  const { t } = useTranslation('face');
+
+  return (
+    <div className="table-wrap">
+      <table className="table">
+        <thead>
+          <tr>
+            <th>{t('col_subject')}</th>
+            <th>{t('col_type')}</th>
+            <th>{t('col_consent')}</th>
+            <th>{t('col_video')}</th>
+            <th>{t('col_registered_at')}</th>
+            <th>{t('col_status')}</th>
+            <th className="w-10" />
+          </tr>
+        </thead>
+        <tbody>
+          {MOCK_PROFILES.map((p) => (
+            <tr key={p.id}>
+              <td>
+                <div className="flex items-center gap-2">
+                  <Avatar size="sm">
+                    <AvatarFallback>{getInitials(p.name)}</AvatarFallback>
+                  </Avatar>
+                  <strong>{p.name}</strong>
+                </div>
+              </td>
+              <td>
+                <Badge variant="neutral">{t(CONSENT_TYPE_KEY[p.type])}</Badge>
+              </td>
+              <td className="font-mono text-xs text-[color:var(--text-3)]">{p.consentCode}</td>
+              <td>
+                <span className="inline-flex items-center gap-1 text-[color:var(--text-3)]">
+                  <CameraIcon className="size-3.5" />
+                  <span className="text-xs">
+                    {t('profile_video_duration', { seconds: p.videoDuration })}
+                  </span>
+                </span>
+              </td>
+              <td>{p.registeredAt}</td>
+              <td>
+                <Badge variant="success">{t('profile_status_active')}</Badge>
+              </td>
+              <td>
+                <Button variant="ghost" size="icon" className="size-7" disabled>
+                  <MoreHorizontalIcon className="size-4" />
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function EventsTab() {
+  const { t } = useTranslation('face');
+
+  return (
+    <div className="table-wrap">
+      <EmptyState
+        icon={<ScanIcon className="size-9 text-[color:var(--text-4)]" />}
+        title={t('events_empty_title')}
+        text={t('events_empty_text')}
+      />
+    </div>
+  );
+}
+
+function MobileFaceView() {
+  const { t } = useTranslation('common');
+  const [tab, setTab] = useState<'consents' | 'profiles' | 'cameras'>('consents');
 
   return (
     <>

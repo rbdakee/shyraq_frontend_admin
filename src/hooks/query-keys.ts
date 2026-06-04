@@ -6,7 +6,10 @@ import type { ContentListFilters } from '@/api/content';
 import type { CustomDiscountListFilters, ApplicationListFilters } from '@/api/custom-discounts';
 import type { DiagnosticTemplateListFilters } from '@/api/diagnostic-templates';
 import type { EnrollmentListFilters } from '@/api/enrollments';
+import type { FiscalReceiptListFilters } from '@/api/fiscal-receipts';
+import type { LifecycleFailedJobListFilters } from '@/api/lifecycle-jobs';
 import type { GroupListFilters } from '@/api/groups';
+import type { HolidayListFilters } from '@/api/holidays';
 import type { InvoiceListFilters } from '@/api/invoices';
 import type { LocationListFilters } from '@/api/locations';
 import type { MealPlanListFilters } from '@/api/meal-plans';
@@ -30,6 +33,7 @@ export const qk = {
   },
   kindergarten: {
     me: ['kindergarten', 'me'] as const,
+    full: ['kindergarten', 'full'] as const,
   },
   dashboard: {
     summary: ['dashboard', 'summary'] as const,
@@ -151,6 +155,21 @@ export const qk = {
     all: ['cameras'] as const,
     list: (filters: CameraListFilters = {}) => ['cameras', 'list', filters] as const,
     detail: (id: string) => ['cameras', 'detail', id] as const,
+  },
+  holidays: {
+    all: ['holidays'] as const,
+    list: (filters: HolidayListFilters = {}) => ['holidays', 'list', filters] as const,
+    detail: (id: string) => ['holidays', 'detail', id] as const,
+  },
+  fiscalReceipts: {
+    all: ['fiscal-receipts'] as const,
+    list: (filters: FiscalReceiptListFilters = {}) => ['fiscal-receipts', 'list', filters] as const,
+    detail: (id: string) => ['fiscal-receipts', 'detail', id] as const,
+  },
+  lifecycleJobs: {
+    all: ['lifecycle-jobs'] as const,
+    list: (filters: Omit<LifecycleFailedJobListFilters, 'cursor'> = {}) =>
+      ['lifecycle-jobs', 'list', filters] as const,
   },
   notifications: {
     all: ['notifications'] as const,

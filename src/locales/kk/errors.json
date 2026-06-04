@@ -66,6 +66,7 @@
   "tariff_plan_overlap": "Тариф жоспарлары қайшы келеді",
   "holiday_already_exists": "Мереке бұрын бар",
   "holiday_not_found": "Мереке табылмады",
+  "fiscal_settings_forbidden": "Фискалдық параметрлер платформамен басқарылады",
   "refund_not_found": "Қайтарым табылмады",
   "payment_not_found": "Төлем табылмады",
   "refund_already_processed": "Қайтарым бұрын өңделген",

@@ -696,5 +696,71 @@
     "fiscal_status_sent": "Жіберілді",
     "fiscal_status_failed": "Қате",
     "fiscal_status_queued": "Кезекте"
+  },
+
+  "holidays": {
+    "title": "Мерекелер",
+    "subtitle": "{{year}} жылда {{count}} күн · тарифтеуге әсер етеді",
+    "add_button": "Мереке қосу",
+    "empty_title": "Бұл айда мерекелер жоқ",
+    "empty_description": "Тарифтелмейтін күнді қосыңыз",
+    "not_billable": "Тариф емес",
+    "not_billable_short": "тариф емес",
+    "billable_label": "Тарифтеледі",
+    "list_title": "{{month}} мерекелері",
+    "edit_action": "Өңдеу",
+    "delete_action": "Жою",
+    "create_title": "Мереке қосу",
+    "create_submit": "Қосу",
+    "create_success": "Мереке қосылды",
+    "edit_title": "Мерекені өңдеу",
+    "edit_submit": "Сақтау",
+    "edit_success": "Мереке жаңартылды",
+    "delete_title": "Мерекені жою",
+    "delete_description": "Мереке жойылады. Бұл әрекетті болдырмау мүмкін емес.",
+    "delete_confirm": "Жою",
+    "delete_success": "Мереке жойылды",
+    "form_description": "Мерекенің күні мен атауын екі тілде көрсетіңіз.",
+    "date_label": "Күні",
+    "date_required": "Күні міндетті",
+    "name_label": "Атауы",
+    "name_required": "Орысша атауы міндетті",
+    "name_placeholder": "Мереке атауы",
+    "is_billable_label": "Тарифтелетін күн"
+  },
+
+  "fiscal": {
+    "title": "Фискалдық чектер",
+    "subtitle": "ОФД Қазақстан Республикасы · {{count}} чек",
+    "empty_title": "Фискалдық чектер жоқ",
+    "empty_description": "Чектер төлемдер жүргізілгеннен кейін пайда болады.",
+    "filtered_empty_title": "Ештеңе табылмады",
+    "filtered_empty_description": "Сүзгі параметрлерін өзгертіп көріңіз.",
+    "phase_a_title": "Phase A: тек оқу",
+    "phase_a_description": "Қазір тек чектерді қарау қолжетімді. Қайта жіберу, сәтсіздіктер кезегі және ай сайынғы есептер Phase B-де пайда болады.",
+    "retry_selected": "Таңдалғандарды қайталау",
+    "phase_b_tooltip": "Phase B-де қолжетімді",
+    "columns": {
+      "id": "ID",
+      "payment": "Төлем",
+      "provider": "Провайдер",
+      "fiscal_sign": "Фискалдық белгі",
+      "status": "Күйі",
+      "date": "Күні"
+    },
+    "filters": {
+      "all_statuses": "Барлық күйлер"
+    },
+    "status": {
+      "queued": "Кезекте",
+      "sent": "Жіберілді",
+      "failed": "Қате"
+    },
+    "stub_queue_title": "Сәтсіздіктер кезегі",
+    "stub_queue_description": "Ретрайларды басқару және ОФД қателерін талдау.",
+    "stub_report_title": "Ай сайынғы есеп",
+    "stub_report_description": "ОФД ҚР қабылдаған пішімге экспорт.",
+    "stub_audit_title": "Чектерді аудит",
+    "stub_audit_description": "ОФД-ден жіберу әрекеттері мен payload тарихы."
   }
 }

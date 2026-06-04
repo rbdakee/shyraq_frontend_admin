@@ -66,6 +66,7 @@
   "tariff_plan_overlap": "Тарифные планы пересекаются",
   "holiday_already_exists": "Праздник уже существует",
   "holiday_not_found": "Праздник не найден",
+  "fiscal_settings_forbidden": "Фискальные настройки управляются платформой",
   "refund_not_found": "Возврат не найден",
   "payment_not_found": "Платёж не найден",
   "refund_already_processed": "Возврат уже обработан",

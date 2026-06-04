@@ -22,6 +22,9 @@ import ruDiagnostics from '@/locales/ru/diagnostics.json';
 import ruStructure from '@/locales/ru/structure.json';
 import ruNotifications from '@/locales/ru/notifications.json';
 import ruProfile from '@/locales/ru/profile.json';
+import ruOperations from '@/locales/ru/operations.json';
+import ruSettings from '@/locales/ru/settings.json';
+import ruFace from '@/locales/ru/face.json';
 import kkCommon from '@/locales/kk/common.json';
 import kkErrors from '@/locales/kk/errors.json';
 import kkAuth from '@/locales/kk/auth.json';
@@ -43,6 +46,9 @@ import kkDiagnostics from '@/locales/kk/diagnostics.json';
 import kkStructure from '@/locales/kk/structure.json';
 import kkNotifications from '@/locales/kk/notifications.json';
 import kkProfile from '@/locales/kk/profile.json';
+import kkOperations from '@/locales/kk/operations.json';
+import kkSettings from '@/locales/kk/settings.json';
+import kkFace from '@/locales/kk/face.json';
 
 const initialLocale = useUiStore.getState().locale;
 
@@ -70,6 +76,9 @@ void i18n.use(initReactI18next).init({
       structure: ruStructure,
       notifications: ruNotifications,
       profile: ruProfile,
+      operations: ruOperations,
+      settings: ruSettings,
+      face: ruFace,
     },
     kk: {
       common: kkCommon,
@@ -93,6 +102,9 @@ void i18n.use(initReactI18next).init({
       structure: kkStructure,
       notifications: kkNotifications,
       profile: kkProfile,
+      operations: kkOperations,
+      settings: kkSettings,
+      face: kkFace,
     },
   },
   lng: initialLocale,

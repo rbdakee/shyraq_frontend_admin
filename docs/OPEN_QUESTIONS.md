@@ -570,6 +570,22 @@ HANDOFF §24: исторически `/admin/*` мог быть заскопле
 
 Пересмотр: если backend добавит session-management (`GET /auth/sessions` + `POST /auth/sessions/revoke` / `revoke-others`) → вернуть блок 1:1 по VIS Profile, обновить HANDOFF §27 + DESIGN §6.17 (first-document). Каталогизировать в [`BACKEND_NEEDINGS_HANDOFF.md`](BACKEND_NEEDINGS_HANDOFF.md) при необходимости.
 
+### C18 — Settings: нет PATCH для top-level полей садика (name/address/phone) → вкладка «Основное» read-only · parked/watch (2026-06-04, B15)
+
+Контекст: дизайн `screens-ops.jsx` Settings + DESIGN §6.15 рисуют вкладку «Основное» с редактируемыми полями name/address/phone садика. Сверка live `/docs-json` (2026-06-04): единственный пишущий эндпоинт настроек — `PATCH /api/v1/kindergartens/me/settings`, и он заменяет **только JSONB-объект `settings`** (timezone/currency/late_pickup_fee/grace_days/otp_expiry/prepay-скидки — вкладка «Операционные параметры»). PATCH для top-level полей `kindergartens` (`name`/`address`/`phone`) в Admin-scope **нет** (есть только SuperAdmin-поверхность `/saas/kindergartens`). Любой top-level edit с админки был бы no-op.
+
+Решение (CLAUDE §6 — честная деградация, без мёртвого «рабочего» контрола; прецедент §C14/§C17): вкладка «Основное» рендерит name/address/phone/slug **read-only** (disabled + hint «управляется платформой»), Save-кнопка показывается **только** на вкладке «Операционные параметры» (единственная с пишущимися полями). Фискальные поля — read-only (как и было, `fiscal_*` → 403 `fiscal_settings_forbidden`). Не блокирует B15 (acceptance закрыт: настройки сохраняются через `settings`-bag, тема/радиус через ui-store). Каталог backend-need — [`BACKEND_NEEDINGS_HANDOFF.md`](BACKEND_NEEDINGS_HANDOFF.md) (N9 при необходимости). Пересмотр: backend добавит `PATCH /kindergartens/me` (top-level name/address/phone) → вернуть редактируемую форму «Основное», обновить HANDOFF §25 + DESIGN §6.15 (first-document).
+
+### C19 — Holidays/Fiscal/DLQ: live-выравнивание контрактов B15 · resolved (2026-06-04, B15)
+
+Сверка live `/docs-json` перед B15 (2026-06-04) дала расхождения с HANDOFF (формулировки писались до фиксации live):
+
+- **Holidays** `GET /api/v1/admin/holidays`: фильтры **`from_date`/`to_date`** (ISO YYYY-MM-DD), ответ — **bare array** (не `{items,total,limit,offset}` offset-пагинация, как подразумевал §15). `name` — JSONB i18n (`{ru,kk}`), в openapi типизирован `Record<string,never>` (artifact) → читаем через `lib/jsonb-i18n.ts` (canonical `kk`). Уникальность даты на садик → 409 `holiday_already_exists`.
+- **Fiscal** `FiscalReceiptResponseDto.ofd_status`: enum `queued|sent|failed` (нет `success` — дизайн-статус «success» маппится на `sent`). Read-only список+деталь, расширенные операции (retry/queue/report) — Phase B заглушки disabled.
+- **DLQ** `GET /api/v1/admin/lifecycle/failed-jobs`: cursor-пагинация `limit`+`cursor`, ответ `{items,next_cursor}`; `failed_reason`/`finished_on` типизированы `Record<string,never>|null` (artifact) → парсим `z.unknown().nullable()` + безопасный display. Retry `POST …/{id}/retry`; RBAC §24 (per-kg admin retry'ит только свои `payload.kindergartenId`; 403 валидному админу = backend-баг, эскалировать).
+
+Решение: фронт B15 построен по live-факту (код сверен с `openapi.d.ts`, не с устаревшей формулировкой). HANDOFF §15/§17/§24 имеет смысл подогнать под факт отдельным docs-fixup (как pre-B11/pre-B12 правки), не блокер.
+
 ---
 
 _Производный документ. Первоисточники — [`ADMIN_FRONTEND_HANDOFF.md`](ADMIN_FRONTEND_HANDOFF.md), [`ADMIN_DESIGN_SPEC.md`](ADMIN_DESIGN_SPEC.md). Обновлять при изменении backend-scope или решений владельца._

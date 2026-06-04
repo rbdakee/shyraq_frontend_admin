@@ -696,5 +696,71 @@
     "fiscal_status_sent": "Отправлен",
     "fiscal_status_failed": "Ошибка",
     "fiscal_status_queued": "В очереди"
+  },
+
+  "holidays": {
+    "title": "Праздники",
+    "subtitle": "{{count}} дней в {{year}} году · влияют на тарификацию",
+    "add_button": "Добавить праздник",
+    "empty_title": "В этом месяце праздников нет",
+    "empty_description": "Добавьте дату, чтобы она не тарифицировалась",
+    "not_billable": "Не тариф.",
+    "not_billable_short": "не тариф.",
+    "billable_label": "Тарифицируется",
+    "list_title": "Праздники в {{month}}",
+    "edit_action": "Редактировать",
+    "delete_action": "Удалить",
+    "create_title": "Добавить праздник",
+    "create_submit": "Добавить",
+    "create_success": "Праздник добавлен",
+    "edit_title": "Редактировать праздник",
+    "edit_submit": "Сохранить",
+    "edit_success": "Праздник обновлён",
+    "delete_title": "Удалить праздник",
+    "delete_description": "Праздник будет удалён. Это действие нельзя отменить.",
+    "delete_confirm": "Удалить",
+    "delete_success": "Праздник удалён",
+    "form_description": "Укажите дату и название праздника на двух языках.",
+    "date_label": "Дата",
+    "date_required": "Дата обязательна",
+    "name_label": "Название",
+    "name_required": "Название на русском обязательно",
+    "name_placeholder": "Название праздника",
+    "is_billable_label": "Тарифицируемый день"
+  },
+
+  "fiscal": {
+    "title": "Фискальные чеки",
+    "subtitle": "ОФД Республики Казахстан · {{count}} чеков",
+    "empty_title": "Фискальных чеков нет",
+    "empty_description": "Чеки появятся после проведения оплат.",
+    "filtered_empty_title": "Ничего не найдено",
+    "filtered_empty_description": "Попробуйте изменить параметры фильтров.",
+    "phase_a_title": "Phase A: read-only",
+    "phase_a_description": "Сейчас доступен только просмотр чеков. Ручной повтор, очередь сбоев и месячные отчёты появятся в Phase B.",
+    "retry_selected": "Повторить выбранные",
+    "phase_b_tooltip": "Доступно в Phase B",
+    "columns": {
+      "id": "ID",
+      "payment": "Платёж",
+      "provider": "Провайдер",
+      "fiscal_sign": "Фискальный признак",
+      "status": "Статус",
+      "date": "Дата"
+    },
+    "filters": {
+      "all_statuses": "Все статусы"
+    },
+    "status": {
+      "queued": "В очереди",
+      "sent": "Отправлен",
+      "failed": "Ошибка"
+    },
+    "stub_queue_title": "Очередь сбоев",
+    "stub_queue_description": "Управление ретраями и разбор причин ошибок ОФД.",
+    "stub_report_title": "Месячный отчёт",
+    "stub_report_description": "Экспорт в формат, принятый ОФД РК.",
+    "stub_audit_title": "Аудит чеков",
+    "stub_audit_description": "История попыток отправки и payload-ов от ОФД."
   }
 }

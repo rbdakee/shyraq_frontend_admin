@@ -98,6 +98,8 @@ export const KNOWN_ERROR_CODES = [
   // holidays §15
   'holiday_already_exists',
   'holiday_not_found',
+  // kindergarten settings §25
+  'fiscal_settings_forbidden',
   // refunds §16
   'refund_not_found',
   'payment_not_found',

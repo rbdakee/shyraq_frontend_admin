@@ -490,9 +490,9 @@ src/
 
 **Acceptance:**
 
-- [ ] Holidays CRUD + конфликт; Fiscal read-only + Phase B заглушки видимы/disabled.
-- [ ] DLQ cursor + retry; Settings сохраняет + вкладка «Дизайн» переключает тему (персист).
-- [ ] Face — заглушка с правильным порядком consent→enroll и юр-предупреждением. Gate exit 0.
+- [x] Holidays CRUD + конфликт (409 `holiday_already_exists`); Fiscal read-only + Phase B заглушки видимы/disabled. _(B15 wave 2026-06-04: live-факт — holidays `from_date/to_date` + bare-array, fiscal `ofd_status` enum `queued|sent|failed`. См. OPEN_QUESTIONS §C19.)_
+- [x] DLQ cursor (`limit`+`cursor`) + retry (RBAC §24); Settings — `settings`-bag сохраняется (PATCH `/kindergartens/me/settings`), вкладка «Дизайн» переключает тему/радиус (персист ui-store). _(Вкладка «Основное» name/address/phone — read-only: нет backend top-level PATCH, OPEN_QUESTIONS §C18. Dual-review opus+codex: blocker «фейковое сохранение name/address/phone» + major «setInterval-поллинг токенов» исправлены в fixup.)_
+- [x] Face — Phase C заглушка (3 таба, consent→enroll порядок, enroll disabled без согласия, юр-предупреждение); backend face-эндпоинтов нет — данные не подключены (§C1). Gate exit 0 (384 tests).
 
 ---
 
@@ -871,7 +871,7 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 | B12  | Контент + Qundylyq                          | P1        | [x]    |
 | B13  | Посещаемость + Диагностика                  | P1        | [x]    |
 | B14  | Структура + Профиль/Уведомления/WS          | P1        | [x]    |
-| B15  | Праздники/Фискальные/DLQ/Настройки/Face     | P2        | [ ]    |
+| B15  | Праздники/Фискальные/DLQ/Настройки/Face     | P2        | [x]    |
 | B16  | Mobile foundation (shell)                   | mobile    | [x]    |
 | B17  | Mobile DataTable + forms infra              | mobile    | [x]    |
 | B18  | Mobile core screens (8 экранов)             | mobile    | [x]    |
@@ -886,24 +886,24 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 
 Каждый `// TODO(B<N>): …` в коде — строка здесь (тот же текст + `file:line` + owner-батч). Пусто на старте.
 
-| TODO                                                                                                                                     | Файл:строка                                        | Owner | Статус |
-| ---------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- | ----- | ------ |
-| ~~expand groups domain (CRUD, mentors, children, deactivate) — minimal read created in B4 for child list filter/transfer/create select~~ | `src/api/groups.ts:25`                             | B6    | done   |
-| child_photo storage: presigned backend не готов — 404 оставлен как есть (обработанная ошибка), переписать по факту когда backend выкатит | `src/api/storage.ts:1`                             | C5    | parked |
-| ~~Replace useMockNotifications with real useNotifications hook once backend endpoint is available~~                                      | ~~`src/routes/notifications.tsx:39`~~              | B14   | done   |
-| ~~wire useAttendance hook to backend GET /api/v1/attendance/daily-status when B13 desktop batch runs~~                                   | ~~`src/routes/attendance/index.tsx:1`~~            | B13   | done   |
-| ~~wire useAttendance hook to backend GET /api/v1/attendance/daily-status when B13 desktop batch runs~~                                   | ~~`src/routes/attendance/daily-status.tsx:1`~~     | B13   | done   |
-| ~~wire useStructure hook when B14 (Structure desktop) is built~~                                                                         | ~~`src/routes/structure/locations/index.tsx:1`~~   | B14   | done   |
-| ~~wire useStructure hook when B14 (Structure desktop) is built~~                                                                         | ~~`src/routes/structure/cameras/index.tsx:1`~~     | B14   | done   |
-| ~~wire useSchedule hook when B11 (Schedule desktop) is built~~                                                                           | ~~`src/routes/schedule/templates/$id.tsx:1`~~      | B11   | done   |
-| ~~wire useMealPlans hook when B11 (Schedule + Meals desktop) is built~~                                                                  | ~~`src/routes/meal-plans/index.tsx:1`~~            | B11   | done   |
-| ~~wire useContent hook when B12 (Content desktop) is built~~                                                                             | ~~`src/routes/content/index.tsx:1`~~               | B12   | done   |
-| wire useHolidays hook when holidays API + desktop page is built                                                                          | `src/routes/billing/holidays/index.tsx:1`          | B15   | open   |
-| wire useFiscalReceipts hook when fiscal API + desktop page is built                                                                      | `src/routes/billing/fiscal-receipts/index.tsx:1`   | B15   | open   |
-| ~~wire useDiagnosticsTemplates hook when B13 (Diagnostics desktop) is built~~                                                            | ~~`src/routes/diagnostics/templates/index.tsx:1`~~ | B13   | done   |
-| wire useFace hooks when B15 (Face ID desktop) is built                                                                                   | `src/routes/face/index.tsx:1`                      | B15   | open   |
-| wire useLifecycleDlq hook when B15 (DLQ desktop) is built                                                                                | `src/routes/operations/lifecycle-dlq/index.tsx:1`  | B15   | open   |
-| wire useSettings/useKindergarten hooks when B15 (Settings desktop) is built                                                              | `src/routes/settings/index.tsx:1`                  | B15   | open   |
+| TODO                                                                                                                                     | Файл:строка                                           | Owner | Статус |
+| ---------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- | ----- | ------ |
+| ~~expand groups domain (CRUD, mentors, children, deactivate) — minimal read created in B4 for child list filter/transfer/create select~~ | `src/api/groups.ts:25`                                | B6    | done   |
+| child_photo storage: presigned backend не готов — 404 оставлен как есть (обработанная ошибка), переписать по факту когда backend выкатит | `src/api/storage.ts:1`                                | C5    | parked |
+| ~~Replace useMockNotifications with real useNotifications hook once backend endpoint is available~~                                      | ~~`src/routes/notifications.tsx:39`~~                 | B14   | done   |
+| ~~wire useAttendance hook to backend GET /api/v1/attendance/daily-status when B13 desktop batch runs~~                                   | ~~`src/routes/attendance/index.tsx:1`~~               | B13   | done   |
+| ~~wire useAttendance hook to backend GET /api/v1/attendance/daily-status when B13 desktop batch runs~~                                   | ~~`src/routes/attendance/daily-status.tsx:1`~~        | B13   | done   |
+| ~~wire useStructure hook when B14 (Structure desktop) is built~~                                                                         | ~~`src/routes/structure/locations/index.tsx:1`~~      | B14   | done   |
+| ~~wire useStructure hook when B14 (Structure desktop) is built~~                                                                         | ~~`src/routes/structure/cameras/index.tsx:1`~~        | B14   | done   |
+| ~~wire useSchedule hook when B11 (Schedule desktop) is built~~                                                                           | ~~`src/routes/schedule/templates/$id.tsx:1`~~         | B11   | done   |
+| ~~wire useMealPlans hook when B11 (Schedule + Meals desktop) is built~~                                                                  | ~~`src/routes/meal-plans/index.tsx:1`~~               | B11   | done   |
+| ~~wire useContent hook when B12 (Content desktop) is built~~                                                                             | ~~`src/routes/content/index.tsx:1`~~                  | B12   | done   |
+| ~~wire useHolidays hook when holidays API + desktop page is built~~                                                                      | ~~`src/routes/billing/holidays/index.tsx:1`~~         | B15   | done   |
+| ~~wire useFiscalReceipts hook when fiscal API + desktop page is built~~                                                                  | ~~`src/routes/billing/fiscal-receipts/index.tsx:1`~~  | B15   | done   |
+| ~~wire useDiagnosticsTemplates hook when B13 (Diagnostics desktop) is built~~                                                            | ~~`src/routes/diagnostics/templates/index.tsx:1`~~    | B13   | done   |
+| ~~wire useFace hooks when B15 (Face ID desktop) is built~~ — N/A: no backend face endpoints, built as Phase-C stub (§C1)                 | ~~`src/routes/face/index.tsx:1`~~                     | B15   | done   |
+| ~~wire useLifecycleDlq hook when B15 (DLQ desktop) is built~~                                                                            | ~~`src/routes/operations/lifecycle-dlq/index.tsx:1`~~ | B15   | done   |
+| ~~wire useSettings/useKindergarten hooks when B15 (Settings desktop) is built~~                                                          | ~~`src/routes/settings/index.tsx:1`~~                 | B15   | done   |
 
 ---
 
