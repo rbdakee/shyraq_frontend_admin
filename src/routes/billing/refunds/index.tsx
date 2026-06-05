@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select,
   SelectContent,
@@ -163,18 +164,32 @@ export default function RefundsListPage() {
     );
   }
 
-  function handleProcess() {
+  const processTargetIsKaspi = useMemo(() => {
+    if (!processTarget) return false;
+    const refund = data.find((r) => r.id === processTarget);
+    if (!refund) return false;
+    return paymentsMap.get(refund.payment_id)?.provider === 'kaspi_pay';
+  }, [processTarget, data, paymentsMap]);
+
+  function handleProcess(acknowledged: boolean) {
     if (!processTarget) return;
-    processMutation.mutate(processTarget, {
-      onSuccess: () => {
-        toast.success(t('refunds.process_confirm.success'));
-        setProcessTarget(null);
+    // Kaspi has no idempotency key → ack the history check (HANDOFF §16); others send no body.
+    const body = processTargetIsKaspi
+      ? { acknowledge_kaspi_history_checked: acknowledged }
+      : undefined;
+    processMutation.mutate(
+      { id: processTarget, body },
+      {
+        onSuccess: () => {
+          toast.success(t('refunds.process_confirm.success'));
+          setProcessTarget(null);
+        },
+        onError: (err) => {
+          toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
+          console.error(err);
+        },
       },
-      onError: (err) => {
-        toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
-        console.error(err);
-      },
-    });
+    );
   }
 
   const [mobileTab, setMobileTab] = useState<'pending' | 'approved' | 'processed' | 'history'>(
@@ -545,19 +560,86 @@ export default function RefundsListPage() {
         loading={rejectMutation.isPending}
       />
 
-      {/* Process confirm */}
-      <DestructiveConfirm
+      {/* Process confirm (Kaspi → requires history-check ack) */}
+      <ProcessRefundDialog
         open={!!processTarget}
         onOpenChange={(v) => {
           if (!v) setProcessTarget(null);
         }}
-        title={t('refunds.process_confirm.title')}
-        description={t('refunds.process_confirm.description')}
-        confirmLabel={t('refunds.actions.process')}
+        isKaspi={processTargetIsKaspi}
         onConfirm={handleProcess}
         loading={processMutation.isPending}
       />
     </div>
+  );
+}
+
+function ProcessRefundDialog({
+  open,
+  onOpenChange,
+  isKaspi,
+  onConfirm,
+  loading,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  isKaspi: boolean;
+  onConfirm: (acknowledged: boolean) => void;
+  loading: boolean;
+}) {
+  const { t } = useTranslation('billing');
+  const [ack, setAck] = useState(false);
+
+  // Reset the ack checkbox whenever the dialog transitions to open — render-time
+  // state adjustment (React-recommended over an effect for derived-from-prop state).
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) setAck(false);
+  }
+
+  const confirmDisabled = loading || (isKaspi && !ack);
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) onOpenChange(false);
+      }}
+    >
+      <DialogContent className="sm:max-w-[460px] rounded-[var(--r-xl)] border-[var(--line)] bg-[var(--bg-elev)] shadow-[var(--shadow-3)]">
+        <DialogHeader>
+          <DialogTitle className="text-[17px] font-bold tracking-[-0.01em] text-[color:var(--text-1)]">
+            {t('refunds.process_confirm.title')}
+          </DialogTitle>
+          <DialogDescription className="text-[13px] text-[color:var(--text-3)]">
+            {t('refunds.process_confirm.description')}
+          </DialogDescription>
+        </DialogHeader>
+
+        {isKaspi && (
+          <label className="flex cursor-pointer items-start gap-2.5 rounded-[var(--r-lg)] border border-[var(--warning-soft-border)] bg-[var(--warning-soft)] p-3.5">
+            <Checkbox
+              checked={ack}
+              onCheckedChange={(v) => setAck(v === true)}
+              className="mt-0.5"
+            />
+            <span className="text-[12.5px] leading-snug text-[color:var(--warning-text)]">
+              {t('refunds.process_confirm.kaspi_ack')}
+            </span>
+          </label>
+        )}
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            {t('refunds.process_confirm.cancel')}
+          </Button>
+          <Button type="button" disabled={confirmDisabled} onClick={() => onConfirm(ack)}>
+            {t('refunds.actions.process')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

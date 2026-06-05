@@ -852,6 +852,27 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 
 ---
 
+## B23 — Kaspi Pay onboarding (SMS) + Kaspi refund-ack · post-MVP (backend payments-update 2026-06-05)
+
+**Inputs:** HANDOFF §16 (refund Kaspi-ветка), §25a (Kaspi onboarding `/admin/kaspi/*`), §2.7 (WS `kaspi.session_expired`), §28 (sitemap `/settings?tab=payments`); DESIGN §6.16 (вкладка «Оплата»); OPEN_QUESTIONS §A25 (design-gap → строим по дизайн-системе). Готового handoff-дизайна экрана онбординга нет — по §A25.
+
+**Tasks:**
+
+- **error-map:** `+= kaspi_already_connected, kaspi_app_version_outdated, kaspi_unknown_process, kaspi_otp_invalid, kaspi_finish_failed` (§25a) + `kaspi_refund_requires_history_ack` (§16); `errors.json` RU+KK.
+- **2b (refund ack):** `api/refunds.ts` — `processRefund(id, body?: {acknowledge_kaspi_history_checked?: boolean})` шлёт `{json}` только при наличии body; `hooks/use-refunds.ts` — `useProcessRefund` принимает `{id, body?}`; `routes/billing/refunds/index.tsx` — для `paymentsMap.get(r.payment_id)?.provider === 'kaspi_pay'` co-located `ProcessRefundDialog` с чекбоксом «Я проверил историю возвратов в Kaspi» (confirm активен только при отметке; `DestructiveConfirm` не хостит доп.контент); `billing.json` RU+KK.
+- **2a (onboarding):** `api/kaspi.ts` (`initConnect`/`sendPhone`/`verifyOtp`/`getStatus`/`disconnect` + Zod), `hooks/use-kaspi.ts`, `hooks/query-keys.ts` (`qk.kaspi.status`); вкладка «Оплата» в `routes/settings/index.tsx` — карточка статуса (active/pending/expired/revoked) + 3-шаговый мастер (телефон `7XXXXXXXXXX` НЕ E.164 → SMS-OTP, ⚠️ реальная SMS) + reconnect/disconnect; `settings.json` RU+KK (`tab_payments` + ключи мастера/статусов).
+- **WS:** `hooks/use-ws.ts` — `EVENT_KEY_TO_QUERY_KEYS['kaspi.session_expired'] = [qk.kaspi.status]`.
+
+**Acceptance:**
+
+- [ ] Все 6 Kaspi error-кодов в `KNOWN_ERROR_CODES` + RU/KK ключи; unit error-map зелёный.
+- [ ] Refund process для `kaspi_pay` без ack → блокирован в UI (confirm disabled); с ack → `{acknowledge_kaspi_history_checked:true}` уходит; mock/halyk/cash — тело не шлётся (старое поведение).
+- [ ] Вкладка «Оплата»: статус-карточка по `GET /admin/kaspi/status`; мастер connect→send-phone→verify-otp проходит; телефон валидируется как 11 цифр (не E.164); `kaspi_otp_invalid` → `setError` на OTP; reconnect/disconnect работают.
+- [ ] WS `kaspi.session_expired` → инвалидация `qk.kaspi.status` + тост; expired-баннер виден.
+- [ ] typecheck + lint --max-warnings=0 + test exit 0. Browser QA (реальная SMS — беречь попытки) TBD by user.
+
+---
+
 ## Tracker
 
 | Батч | Тема                                        | Приоритет | Статус |
@@ -879,6 +900,7 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 | B20  | Mobile billing screens (10 экранов)         | mobile    | [x]    |
 | B21  | Mobile secondary screens (8 экранов)        | mobile    | [x]    |
 | B22  | Mobile system + i18n + QA (5 экранов)       | mobile    | [x]    |
+| B23  | Kaspi Pay onboarding (SMS) + refund-ack     | post-MVP  | [ ]    |
 
 ---
 

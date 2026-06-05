@@ -26,6 +26,7 @@ const EVENT_KEY_TO_QUERY_KEYS: Record<string, readonly (readonly string[])[]> = 
   'content.published': [qk.content.all],
   'enrollment.created': [qk.enrollments.all],
   'discount.activated': [qk.customDiscounts.all],
+  'kaspi.session_expired': [qk.kaspi.status],
 };
 
 export function useWs(): void {

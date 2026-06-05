@@ -13,6 +13,7 @@ import type {
   RefundStatus,
   CreateRefundBody,
   RejectRefundBody,
+  ProcessRefundBody,
 } from '@/api/refunds';
 import { qk } from './query-keys';
 
@@ -67,7 +68,7 @@ export function useRejectRefund() {
 export function useProcessRefund() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => processRefund(id),
+    mutationFn: ({ id, body }: { id: string; body?: ProcessRefundBody }) => processRefund(id, body),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: qk.refunds.all });
       void queryClient.invalidateQueries({ queryKey: qk.payments.all });

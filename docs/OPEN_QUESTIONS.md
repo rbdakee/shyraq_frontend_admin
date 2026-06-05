@@ -247,6 +247,18 @@ Live OpenAPI inspection during manual QA showed `ContentListResponseDto = {items
 
 Код B14 conform к live с defensive Zod. Не блокирует — все эндпоинты существуют.
 
+### A25 — Kaspi Pay SMS-онбординг: нет готового дизайна → вкладка «Оплата» в Настройках, строим по дизайн-системе; refund-ack для kaspi_pay · resolved (2026-06-05, owner via AskUserQuestion)
+
+Контекст: backend прислал payments-update (2026-06-05): **(2a)** SMS-онбординг кассирского аккаунта Kaspi Pay садика (`/admin/kaspi/*`), **(2b)** обязательный `acknowledge_kaspi_history_checked:true` при `process` возврата с `provider=kaspi_pay`. Расхождение с дизайном: в готовом handoff (`docs/design/handoff/shyraq-admin/project/*`) **нет** экрана подключения Kaspi — есть только провайдер-фильтр в таблице платежей. По CLAUDE.md §6 (design-gap → OPEN_QUESTIONS, не молчаливый дрейф) — решение владельца:
+
+1. **Размещение (owner via AskUserQuestion):** экран онбординга Kaspi → **новая вкладка «Оплата»** в Настройках (`/settings?tab=payments`), рядом с general/operations/design/fiscal/subscription. Готового дизайна нет — **строим по существующей дизайн-системе** (карточки/статусы/баннеры как в fiscal/subscription вкладках), визуал согласован с остальными вкладками Настроек. Не «эталон» из handoff — собственное решение в рамках токенов/паттернов.
+2. **Объём:** всё сразу — 2a (онбординг) + 2b (refund-ack), порядок docs → код. Sub-agentic режим НЕ активирован — код пишет оркестратор сам.
+3. **Контракт 2a** (HANDOFF §25a): 3-шаговый мастер — `connect/init` (скрытый, `{}`→`{process_id}`) → `connect/send-phone {process_id, phone:'7XXXXXXXXXX'}` (формат 11 цифр без `+`/пробелов, **НЕ E.164**) → `connect/verify-otp {process_id, otp}` (⚠️ verify-otp шлёт **реальную SMS** кассиру — беречь попытки). Статус `GET /admin/kaspi/status` (active/pending/expired/revoked). `POST /admin/kaspi/disconnect`. Ошибки: `kaspi_already_connected`(409), `kaspi_app_version_outdated`(502), `kaspi_unknown_process`(400, TTL~5мин), `kaspi_otp_invalid`(401), `kaspi_finish_failed`(502).
+4. **Контракт 2b** (HANDOFF §16): `POST /admin/refunds/:id/process` для `kaspi_pay` требует тело `{acknowledge_kaspi_history_checked:true}`; без него → `400 kaspi_refund_requires_history_ack`. Для mock/halyk_epay/cash — тело не шлём. UI: чекбокс «Я проверил историю возвратов в приложении Kaspi», кнопка подтверждения активна только при отметке.
+5. **WS** (HANDOFF §2.7): `kaspi.session_expired` → инвалидация `qk.kaspi.status` + тост (expired-баннер «Переподключите Kaspi»).
+
+Не блокирует — все эндпоинты существуют (live payments-update). Acceptance в IMPLEMENTATION_PLAN (батч B16-KASPI).
+
 ### A15 — Parent-requests: list `/admin/*` vs detail/actions `/staff/*`, `type` filter, snake_case, cursor · resolved (2026-05-19)
 
 Контекст: при B8 (parent-requests data+UI) сверка live `/docs-json` выявила существенное расхождение HANDOFF §19 ↔ факт. Решение: прецедент §A7/§A8 — live = факт. Зафиксировано (HANDOFF §19 правлен под факт в wave-коммите B7+B8 — first-document):

@@ -40,6 +40,12 @@ export interface RejectRefundBody {
   reason: string;
 }
 
+// Kaspi has no idempotency key → blind retry risks a double refund (HANDOFF §16).
+// Processing a kaspi_pay refund REQUIRES the admin to confirm they checked Kaspi history.
+export interface ProcessRefundBody {
+  acknowledge_kaspi_history_checked?: boolean;
+}
+
 export async function listRefunds(filters: RefundListFilters = {}): Promise<RefundResponseDto[]> {
   const searchParams: Record<string, string> = {};
   if (filters.status) searchParams.status = filters.status;
@@ -71,7 +77,12 @@ export async function rejectRefund(id: string, body: RejectRefundBody): Promise<
   return RefundResponseDtoSchema.parse(data);
 }
 
-export async function processRefund(id: string): Promise<RefundResponseDto> {
-  const data: unknown = await apiClient.post(`admin/refunds/${id}/process`).json();
+export async function processRefund(
+  id: string,
+  body?: ProcessRefundBody,
+): Promise<RefundResponseDto> {
+  const data: unknown = await apiClient
+    .post(`admin/refunds/${id}/process`, body ? { json: body } : undefined)
+    .json();
   return RefundResponseDtoSchema.parse(data);
 }

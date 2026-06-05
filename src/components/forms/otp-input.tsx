@@ -8,11 +8,12 @@ import {
 } from 'react';
 import { cn } from '@/lib/cn';
 
-const CELL_COUNT = 6;
+const DEFAULT_CELL_COUNT = 6;
 
 interface OtpInputProps {
   value: string;
   onChange: (value: string) => void;
+  length?: number;
   disabled?: boolean;
   hasError?: boolean;
   className?: string;
@@ -23,9 +24,10 @@ export interface OtpInputHandle {
 }
 
 const OtpInput = forwardRef<OtpInputHandle, OtpInputProps>(function OtpInput(
-  { value, onChange, disabled, hasError, className },
+  { value, onChange, length = DEFAULT_CELL_COUNT, disabled, hasError, className },
   ref,
 ) {
+  const CELL_COUNT = length;
   const cells = useRef<(HTMLInputElement | null)[]>([]);
   const chars = value.padEnd(CELL_COUNT, '').slice(0, CELL_COUNT).split('');
 

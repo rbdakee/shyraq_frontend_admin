@@ -177,5 +177,8 @@ export const qk = {
       ['notifications', 'list', filters] as const,
     preferences: ['notifications', 'preferences'] as const,
   },
+  kaspi: {
+    status: ['kaspi', 'status'] as const,
+  },
   myQr: ['users', 'me', 'qr'] as const,
 } as const;

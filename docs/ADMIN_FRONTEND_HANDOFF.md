@@ -92,6 +92,7 @@
 - Слушать событие `auth_error` → при `token_expired`/`session_revoked` принудительный разлогин/рефреш.
 - После handshake сервер шлёт `connected: { user_id, rooms: [...] }`. Админ авто-подписывается на `user:{user_id}` и `group:{group_id}` (по активным mentor-назначениям — у админа их обычно нет, основное — `user:{id}`).
 - В B9 диспетчер шлёт события только в `user:{userId}` (события под именем = `event_key`, payload `{title_i18n, body_i18n, data}`). Используй для тостов/инвалидации (например, прилетела заявка, изменился статус оплаты).
+- Событие `kaspi.session_expired` (payments-update 2026-06-05) → инвалидация `qk.kaspi.status` + тост (родители временно не могут платить, нужен reconnect — см. §25a).
 - Полный каталог событий — `architecture.md §6.5`.
 
 ### 2.8 Rate limiting
@@ -633,11 +634,14 @@ Cursor: `{items, cursor: string|null}` — поле называется **`curs
 | POST  | `/admin/refunds`             | `{payment_id, amount, reason}`. Чек: payment completed, amount ≤ payment.amount. Все поля required.  |
 | POST  | `/admin/refunds/:id/approve` | pending → approved. Body: `{}` (пустой).                                                             |
 | POST  | `/admin/refunds/:id/reject`  | `{reason}` required (1..500). pending → rejected. Overwrites original reason column.                 |
-| POST  | `/admin/refunds/:id/process` | approved → processed (через провайдера; правит payment/invoice/баланс).                              |
+| POST  | `/admin/refunds/:id/process` | approved → processed (через провайдера; правит payment/invoice/баланс). **Для Kaspi — см. ниже.**    |
 
 **RefundResponseDto** (snake_case): `id, kindergarten_id, payment_id, invoice_id(nullable), amount, reason, status(pending|approved|processed|rejected), processed_by(nullable), provider_ref(nullable), created_at, updated_at`.
 
-Ошибки: `refund_not_found`(404), `payment_not_found`(404), `refund_already_processed`(409).
+> **Возврат Kaspi (backend payments-update 2026-06-05).** Если возвращаемый платёж имеет `provider='kaspi_pay'`, `POST /admin/refunds/:id/process` **требует** тело `{acknowledge_kaspi_history_checked: true}`. Причина: у Kaspi нет idempotency-ключа — слепой повтор может дать двойной возврат, поэтому оператор обязан явно подтвердить, что проверил историю возвратов в приложении Kaspi. Без подтверждения → `400 kaspi_refund_requires_history_ack`. Для `mock`/`halyk_epay`/`cash` тело **не нужно** (process шлётся без body, как раньше).
+> **UI:** в диалоге «Провести возврат» при Kaspi-платеже показать чекбокс «Я проверил историю возвратов в приложении Kaspi»; кнопка «Провести» активна только при отмеченном чекбоксе, и тогда шлём `acknowledge_kaspi_history_checked=true`.
+
+Ошибки: `refund_not_found`(404), `payment_not_found`(404), `refund_already_processed`(409), `kaspi_refund_requires_history_ack`(400, только Kaspi — нет ack истории).
 
 **Контекст:** pro-rata refund при архивации ребёнка создаётся автоматически (`status=pending`, reason `pro_rata_archive`) — админ его видит здесь и проводит через approve→process вручную.
 
@@ -808,6 +812,44 @@ Cursor: `{items, cursor: string|null}` — поле называется **`curs
 
 ---
 
+## 25a. Биллинг: Подключение Kaspi Pay (SMS-онбординг) — `/admin/kaspi/*`
+
+> **Источник:** backend payments-update 2026-06-05. **Дизайн:** готового handoff-экрана нет (в дизайне есть только фильтр провайдеров в таблице платежей) → решение о размещении и вёрстке — OPEN_QUESTIONS §A25 (вкладка «Оплата» в Настройках, строим по дизайн-системе).
+
+Один кассирский аккаунт Kaspi Pay на садик. Онбординг — мастер из 3 шагов + финализация. ⚠️ Шаг `verify-otp` шлёт **реальную SMS** на телефон кассира — беречь попытки.
+
+| Метод | Путь                              | Тело → Ответ                                                                                                   |
+| ----- | --------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| POST  | `/admin/kaspi/connect/init`       | `{}` → `{process_id}` (201). Скрытый шаг — стартует сессию онбординга.                                         |
+| POST  | `/admin/kaspi/connect/send-phone` | `{process_id, phone: '7XXXXXXXXXX'}` → `{process_id, sms_sent: true}`. Шлёт SMS кассиру.                       |
+| POST  | `/admin/kaspi/connect/verify-otp` | `{process_id, otp: '123456'}` → `{connected: true, phone, org_name, profile_id}`.                              |
+| GET   | `/admin/kaspi/status`             | → `{connected: bool, status: 'pending'\|'active'\|'expired'\|'revoked', phone?, org_name?, last_checked_at?}`. |
+| POST  | `/admin/kaspi/disconnect`         | → `{status: 'revoked'}`.                                                                                       |
+
+**Телефон кассира** — формат `7XXXXXXXXXX` (11 цифр, без `+`/пробелов; НЕ E.164). Backend сам нормализует ввод (`+77772270088` / `87772270088` / `77772270088` / `7772270088` → канон) — фронт может слать любой из этих видов; шлём 11-значный `7XXXXXXXXXX`. Менять нормализацию на фронте не требуется.
+
+**Состояния `status`:**
+
+- `active` — всё работает, оплата идёт. Показать `phone` / `org_name` / `last_checked_at` + кнопки «Переподключить» (= повторный онбординг) и «Отключить».
+- `pending` — онбординг начат, но не завершён.
+- `expired` — сессия Kaspi истекла, авто-продление не удалось → **баннер «Переподключите Kaspi»** (родители не смогут платить). Параллельно прилетает WS-уведомление `kaspi.session_expired`.
+- `revoked` — отключено вручную (через disconnect).
+
+Если `status != active` → показать мастер из 3 шагов (init скрыто → ввод телефона кассира → ввод SMS-кода). Если `active` → карточка статуса + Переподключить/Отключить.
+
+**Ошибки (HTTP):**
+
+- `409 kaspi_already_connected` — уже подключено, сперва `disconnect`.
+- `502 kaspi_app_version_outdated` — версионный гейт Kaspi → **сообщить суперадмину** (он поднимает билд); кнопку повтора показать после.
+- `400 kaspi_unknown_process` — `process_id` протух (TTL ~5 мин) → начать заново (с `init`).
+- `401 kaspi_otp_invalid` — неверный SMS-код (на `verify-otp`).
+- `502 kaspi_finish_failed` — реальный сбой связи с Kaspi → повторить онбординг.
+- **Ошибки телефона на `send-phone`** (показывать inline на поле телефона, не общим тостом):
+  - `422 invalid_phone_format` — мусор, не прошёл DTO-валидацию.
+  - `400 kaspi_invalid_phone` — формат ок, но номер не сводится к 10 цифрам → «Проверьте номер телефона».
+
+---
+
 ## 26. Аналитика / Дашборд — `/admin/dashboard/*`
 
 | Метод | Путь                                 | Ответ                                                                                                                                                  |
@@ -879,7 +921,8 @@ Cursor: `{items, cursor: string|null}` — поле называется **`curs
 /diagnostics/templates         — Шаблоны диагностики + конструктор
 /face                          — Face-профили + согласия + enrollment (Phase C)
 /operations/lifecycle-dlq      — Упавшие фоновые задачи
-/settings                      — Настройки садика
+/settings                      — Настройки садика (табы: Основное/Операционные/Дизайн/Оплата/Фискальные/Подписка)
+/settings?tab=payments         — Оплата: онбординг Kaspi Pay (SMS-мастер) + статус (§25a)
 /profile                       — Профиль, локаль, мой QR, уведомления
 ```
 

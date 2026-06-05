@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -20,18 +20,41 @@ import {
   CheckIcon,
   UploadIcon,
   Loader2Icon,
+  AlertTriangleIcon,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { OtpInput } from '@/components/forms/otp-input';
+import { PhoneInput } from '@/components/forms/phone-input';
+import { DestructiveConfirm } from '@/components/feedback/destructive-confirm';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useUiStore } from '@/stores/ui-store';
 import { THEMES, RADII, type ThemeName, type RadiusName } from '@/lib/themes';
 import { useSessionStore } from '@/stores/session-store';
 import { useKindergartenFull, useUpdateKindergartenSettings } from '@/hooks/use-kindergarten';
+import {
+  useKaspiStatus,
+  useInitKaspiConnect,
+  useSendKaspiPhone,
+  useVerifyKaspiOtp,
+  useDisconnectKaspi,
+  type KaspiStatus,
+} from '@/hooks/use-kaspi';
 import { mapValidationErrors } from '@/components/forms/map-validation-errors';
-import { isAppError, toI18nKey } from '@/lib/error-map';
+import { isAppError, getErrorCode, toI18nKey } from '@/lib/error-map';
+import { formatDateTime } from '@/lib/format';
+import { DEFAULT_TIMEZONE } from '@/lib/constants';
 
 const THEME_NAMES: ThemeName[] = [
   'green',
@@ -373,6 +396,7 @@ function DesktopSettings() {
             {t('tab_design')}
             <span className="ml-1 text-[11px] text-text-3">{Object.keys(THEMES).length}</span>
           </TabsTrigger>
+          <TabsTrigger value="payments">{t('tab_payments')}</TabsTrigger>
           <TabsTrigger value="fiscal">{t('tab_fiscal')}</TabsTrigger>
           <TabsTrigger value="subscription">{t('tab_subscription')}</TabsTrigger>
         </TabsList>
@@ -385,6 +409,9 @@ function DesktopSettings() {
         </TabsContent>
         <TabsContent value="design">
           <DesignTab />
+        </TabsContent>
+        <TabsContent value="payments">
+          <PaymentsTab />
         </TabsContent>
         <TabsContent value="fiscal">
           <FiscalTab kg={kg} />
@@ -1064,6 +1091,342 @@ function SubscriptionTab({
         <div className="mt-2 text-[12px] text-text-3">{t('sub_close_hint')}</div>
       </div>
     </div>
+  );
+}
+
+// ========== PAYMENTS TAB (Kaspi Pay onboarding) ==========
+
+const KASPI_STATUS_BADGE: Record<KaspiStatus, 'success' | 'warning' | 'neutral'> = {
+  active: 'success',
+  pending: 'warning',
+  expired: 'warning',
+  revoked: 'neutral',
+};
+
+function PaymentsTab() {
+  const { t } = useTranslation('settings');
+  const tz = DEFAULT_TIMEZONE;
+  const statusQuery = useKaspiStatus();
+  const disconnectMutation = useDisconnectKaspi();
+
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [disconnectOpen, setDisconnectOpen] = useState(false);
+
+  const status = statusQuery.data;
+
+  function handleDisconnect() {
+    disconnectMutation.mutate(undefined, {
+      onSuccess: () => {
+        toast.success(t('pay_disconnect_success'));
+        setDisconnectOpen(false);
+      },
+      onError: (err) => {
+        toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
+        console.error(err);
+      },
+    });
+  }
+
+  if (statusQuery.isPending) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2Icon className="size-5 animate-spin text-text-3" />
+      </div>
+    );
+  }
+
+  const isConnected = status?.connected && status.status === 'active';
+  const isExpired = status?.status === 'expired';
+  const isPending = status?.status === 'pending';
+
+  return (
+    <div className="grid gap-[22px] lg:grid-cols-[1fr_320px]">
+      <div className="rounded-[var(--r-lg)] border border-line bg-bg-elev p-5">
+        <div className="mb-4 flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex size-10 items-center justify-center rounded-[var(--r-md)] bg-bg-sunken text-text-1">
+              <CreditCardIcon className="size-5" />
+            </div>
+            <div>
+              <div className="text-[15px] font-bold text-text-1">{t('pay_kaspi_title')}</div>
+              <div className="text-[12.5px] text-text-3">{t('pay_kaspi_sub')}</div>
+            </div>
+          </div>
+          {status && (
+            <Badge variant={KASPI_STATUS_BADGE[status.status]} dot>
+              {t(`pay_status_${status.status}`)}
+            </Badge>
+          )}
+        </div>
+
+        {isExpired && (
+          <div className="mb-4 flex gap-2.5 rounded-[var(--r-md)] border border-[var(--warning-soft-border)] bg-[var(--warning-soft)] p-3.5">
+            <AlertTriangleIcon className="mt-0.5 size-4 shrink-0 text-[color:var(--warning-text)]" />
+            <div className="text-[12.5px] leading-snug text-[color:var(--warning-text)]">
+              {t('pay_expired_banner')}
+            </div>
+          </div>
+        )}
+
+        {isConnected ? (
+          <div
+            className="grid gap-x-4 gap-y-3 text-[13.5px]"
+            style={{ gridTemplateColumns: '160px 1fr' }}
+          >
+            <div className="text-text-3">{t('pay_connected_phone')}</div>
+            <div className="font-mono text-text-1">{status?.phone ?? '—'}</div>
+            <div className="text-text-3">{t('pay_org_name')}</div>
+            <div className="text-text-1">{status?.org_name ?? '—'}</div>
+            <div className="text-text-3">{t('pay_last_checked')}</div>
+            <div className="text-text-1">
+              {status?.last_checked_at ? formatDateTime(status.last_checked_at, tz) : '—'}
+            </div>
+          </div>
+        ) : (
+          <div className="text-[13px] text-text-2">
+            {isPending ? t('pay_pending_desc') : t('pay_empty_desc')}
+          </div>
+        )}
+
+        <div className="mt-5 flex gap-2">
+          {isConnected ? (
+            <>
+              <Button variant="outline" onClick={() => setWizardOpen(true)}>
+                {t('pay_reconnect_btn')}
+              </Button>
+              <Button
+                variant="outline"
+                className="border-[var(--danger)] text-[var(--danger)] hover:bg-[var(--danger-soft)]"
+                onClick={() => setDisconnectOpen(true)}
+              >
+                {t('pay_disconnect_btn')}
+              </Button>
+            </>
+          ) : (
+            <Button onClick={() => setWizardOpen(true)}>
+              {isExpired || isPending ? t('pay_reconnect_btn') : t('pay_connect_btn')}
+            </Button>
+          )}
+        </div>
+      </div>
+
+      <div className="rounded-[var(--r-lg)] border border-line bg-bg-elev p-4">
+        <div className="mb-2 text-[15px] font-bold text-text-1">{t('pay_hint_title')}</div>
+        <div className="text-[12.5px] leading-relaxed text-text-2">{t('pay_hint_text')}</div>
+      </div>
+
+      <KaspiWizard open={wizardOpen} onOpenChange={setWizardOpen} />
+
+      <DestructiveConfirm
+        open={disconnectOpen}
+        onOpenChange={setDisconnectOpen}
+        title={t('pay_disconnect_confirm_title')}
+        description={t('pay_disconnect_confirm_desc')}
+        confirmLabel={t('pay_disconnect_btn')}
+        onConfirm={handleDisconnect}
+        loading={disconnectMutation.isPending}
+      />
+    </div>
+  );
+}
+
+// Cashier phone is a bare 11-digit MSISDN `7XXXXXXXXXX` (NOT E.164) — HANDOFF §25a.
+// We reuse the shared PhoneInput (E.164 `+7…`) and strip the leading `+` on send.
+const KASPI_PHONE_RE = /^7\d{10}$/;
+// Kaspi SMS code is 4 digits (login OTP is 6 — hence the explicit length).
+const KASPI_OTP_LEN = 4;
+
+function KaspiWizard({
+  open,
+  onOpenChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { t } = useTranslation('settings');
+  const initMutation = useInitKaspiConnect();
+  const sendPhoneMutation = useSendKaspiPhone();
+  const verifyMutation = useVerifyKaspiOtp();
+
+  const [step, setStep] = useState<'phone' | 'otp'>('phone');
+  const [processId, setProcessId] = useState<string | null>(null);
+  const [phone, setPhone] = useState('');
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [otp, setOtp] = useState('');
+  const [otpError, setOtpError] = useState<string | null>(null);
+
+  function reset() {
+    setStep('phone');
+    setProcessId(null);
+    setPhone('');
+    setPhoneError(null);
+    setOtp('');
+    setOtpError(null);
+  }
+
+  function handleOpenChange(next: boolean) {
+    if (!next) reset();
+    onOpenChange(next);
+  }
+
+  // The init step is hidden from the user: kick it off lazily on first phone submit.
+  function handleSendPhone() {
+    // PhoneInput stores E.164 (`+7…`); Kaspi wants the bare `7XXXXXXXXXX`.
+    const bare = phone.replace(/^\+/, '');
+    if (!KASPI_PHONE_RE.test(bare)) {
+      setPhoneError(t('pay_phone_invalid'));
+      return;
+    }
+    setPhoneError(null);
+
+    const send = (pid: string) => {
+      sendPhoneMutation.mutate(
+        { processId: pid, phone: bare },
+        {
+          onSuccess: () => {
+            setOtp('');
+            setOtpError(null);
+            setStep('otp');
+          },
+          onError: (err) => {
+            const code = getErrorCode(err);
+            if (code === 'kaspi_invalid_phone' || code === 'invalid_phone_format') {
+              // Phone-specific rejection → surface inline on the field, not a toast.
+              setPhoneError(t(`errors:${code}`));
+            } else if (code === 'kaspi_unknown_process') {
+              // TTL (~5 min) expired before send → restart the whole wizard.
+              toast.error(t('errors:kaspi_unknown_process'));
+              reset();
+            } else {
+              toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
+            }
+            console.error(err);
+          },
+        },
+      );
+    };
+
+    if (processId) {
+      send(processId);
+      return;
+    }
+    initMutation.mutate(undefined, {
+      onSuccess: (res) => {
+        setProcessId(res.process_id);
+        send(res.process_id);
+      },
+      onError: (err) => {
+        toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
+        console.error(err);
+      },
+    });
+  }
+
+  function handleVerify() {
+    if (!processId || otp.length < KASPI_OTP_LEN) return;
+    setOtpError(null);
+    verifyMutation.mutate(
+      { processId, otp },
+      {
+        onSuccess: () => {
+          toast.success(t('pay_connect_success'));
+          handleOpenChange(false);
+        },
+        onError: (err) => {
+          const code = getErrorCode(err);
+          if (code === 'kaspi_otp_invalid') {
+            setOtpError(t('errors:kaspi_otp_invalid'));
+          } else if (code === 'kaspi_unknown_process') {
+            // TTL (~5 min) expired — restart the whole wizard.
+            toast.error(t('errors:kaspi_unknown_process'));
+            reset();
+          } else {
+            toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
+          }
+          console.error(err);
+        },
+      },
+    );
+  }
+
+  const sending = initMutation.isPending || sendPhoneMutation.isPending;
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="sm:max-w-[440px] rounded-[var(--r-xl)] border-[var(--line)] bg-[var(--bg-elev)] shadow-[var(--shadow-3)]">
+        <DialogHeader>
+          <DialogTitle className="text-[17px] font-bold tracking-[-0.01em] text-[color:var(--text-1)]">
+            {t('pay_wizard_title')}
+          </DialogTitle>
+          <DialogDescription className="text-[13px] text-[color:var(--text-3)]">
+            {step === 'phone' ? t('pay_step_phone_desc') : t('pay_step_otp_desc')}
+          </DialogDescription>
+        </DialogHeader>
+
+        {step === 'phone' ? (
+          <div className="flex flex-col gap-1.5">
+            <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+              {t('pay_phone_label')}
+            </label>
+            <PhoneInput
+              value={phone}
+              onChange={(v) => {
+                setPhone(v);
+                if (phoneError) setPhoneError(null);
+              }}
+              hasError={!!phoneError}
+            />
+            {phoneError && (
+              <p className="text-[12px] text-[color:var(--danger-fg)]">{phoneError}</p>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <OtpInput
+              value={otp}
+              onChange={(v) => {
+                setOtp(v);
+                if (otpError) setOtpError(null);
+              }}
+              length={KASPI_OTP_LEN}
+              hasError={!!otpError}
+            />
+            {otpError && (
+              <p className="text-center text-[12px] text-[color:var(--danger-fg)]">{otpError}</p>
+            )}
+          </div>
+        )}
+
+        <DialogFooter>
+          {step === 'otp' && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setStep('phone')}
+              disabled={verifyMutation.isPending}
+            >
+              {t('pay_back')}
+            </Button>
+          )}
+          <Button type="button" variant="outline" onClick={() => handleOpenChange(false)}>
+            {t('pay_cancel')}
+          </Button>
+          {step === 'phone' ? (
+            <Button type="button" onClick={handleSendPhone} disabled={sending}>
+              {t('pay_send_code')}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              onClick={handleVerify}
+              disabled={verifyMutation.isPending || otp.length < KASPI_OTP_LEN}
+            >
+              {t('pay_verify')}
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 

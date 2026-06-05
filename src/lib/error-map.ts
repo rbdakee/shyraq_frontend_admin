@@ -105,6 +105,14 @@ export const KNOWN_ERROR_CODES = [
   'payment_not_found',
   'refund_already_processed',
   'refund_status_invalid',
+  'kaspi_refund_requires_history_ack',
+  // kaspi onboarding §25a
+  'kaspi_already_connected',
+  'kaspi_app_version_outdated',
+  'kaspi_unknown_process',
+  'kaspi_otp_invalid',
+  'kaspi_invalid_phone',
+  'kaspi_finish_failed',
   // custom discounts §18
   'custom_discount_not_found',
   'custom_discount_status_invalid',
