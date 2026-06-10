@@ -70,6 +70,8 @@ export const GuardianDtoSchema = z.object({
   kindergarten_id: z.string(),
   child_id: z.string(),
   user_id: z.string(),
+  user_full_name: z.string().nullable(),
+  user_phone: z.string().nullable(),
   role: GuardianRoleEnum,
   status: GuardianStatusEnum,
   has_approval_rights: z.boolean(),
@@ -207,6 +209,10 @@ export interface UpdateGuardianBody {
   can_pickup?: boolean;
 }
 
+export interface ApproveGuardianBody {
+  grant_approval_rights?: boolean;
+}
+
 export interface OffsetPaginationParams {
   limit?: number;
   offset?: number;
@@ -320,6 +326,24 @@ export async function updateChildGuardian(
 
 export async function revokeChildGuardian(id: string, guardianId: string): Promise<void> {
   await apiClient.post(`children/${id}/guardians/${guardianId}/revoke`).json();
+}
+
+export async function approveChildGuardian(
+  id: string,
+  guardianId: string,
+  body: ApproveGuardianBody = {},
+): Promise<GuardianDto> {
+  const data: unknown = await apiClient
+    .post(`children/${id}/guardians/${guardianId}/approve`, { json: body })
+    .json();
+  return GuardianDtoSchema.parse(data);
+}
+
+export async function rejectChildGuardian(id: string, guardianId: string): Promise<GuardianDto> {
+  const data: unknown = await apiClient
+    .post(`children/${id}/guardians/${guardianId}/reject`)
+    .json();
+  return GuardianDtoSchema.parse(data);
 }
 
 export async function listChildGroupHistory(id: string): Promise<ChildGroupHistoryDto[]> {

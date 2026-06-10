@@ -41,6 +41,9 @@ export const KNOWN_ERROR_CODES = [
   'child_not_archived',
   'child_already_in_group',
   'archive_reason_required',
+  'guardian_not_found',
+  'invalid_guardian_status_transition',
+  'max_approval_rights_exceeded',
   // enrollments §6
   'enrollment_not_found',
   'enrollment_invalid_transition',

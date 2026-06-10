@@ -847,6 +847,46 @@ export interface paths {
     patch: operations['ChildController_updateGuardian_v1'];
     trace?: never;
   };
+  '/api/v1/children/{id}/guardians/{guardianId}/approve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Admin-side approve of a pending guardian (parent) request.
+     * @description Approves a pending_approval guardian row without requiring the primary parent to act — for clearing the approval queue from the Admin panel. Works for secondary/nanny self-link requests and to force-approve a primary whose OTP auto-approve never fired. Optionally grants has_approval_rights (≤2/child) for secondary/nanny; a primary always receives approval rights. Sets approved_by = the calling admin.
+     */
+    post: operations['ChildController_approveGuardian_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/children/{id}/guardians/{guardianId}/reject': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Admin-side reject of a pending guardian (parent) request.
+     * @description Declines a pending_approval guardian row from the Admin panel — the pair of the approve endpoint. Transitions pending_approval → rejected (terminal). No body.
+     */
+    post: operations['ChildController_rejectGuardian_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/children/{id}/guardians/{guardianId}/revoke': {
     parameters: {
       query?: never;
@@ -873,6 +913,26 @@ export interface paths {
     };
     /** List children where the caller is an approved guardian (any role). */
     get: operations['ParentChildController_listMine_v1'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/parent/children/pending-requests': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Мои заявки на привязку, ожидающие подтверждения (заявитель).
+     * @description Applicant's view of their OWN `link` requests still in `pending_approval` — the requests awaiting approval by an admin or the primary guardian. Complements GET /parent/approvals/pending (the primary guardian view of "who do I approve"). Cross-tenant: a parent may have pending requests in several kindergartens. Child PII stays hidden until approval (same rule as /link) — only a masked child name is returned, never IIN / date-of-birth / photo / group.
+     */
+    get: operations['ParentChildController_pendingRequests_v1'];
     put?: never;
     post?: never;
     delete?: never;
@@ -1692,7 +1752,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Process an approved refund — calls the payment provider and atomically debits the payment account. */
+    /** Process an approved refund — calls the payment provider and atomically debits the payment account. For kaspi_pay refunds the body MUST include acknowledge_kaspi_history_checked=true (Kaspi has no idempotency key — verify the refund/return history in the Kaspi app first or a blind retry may double-refund). */
     post: operations['AdminRefundController_process_v1'];
     delete?: never;
     options?: never;
@@ -1937,6 +1997,138 @@ export interface paths {
     put?: never;
     /** Manually enqueue the B22a T1 nightly overdue invoice pass (cross-tenant). Async — returns the BullMQ job id immediately. Used for back-fill or recovery from a missed cron tick. */
     post: operations['SaasBillingController_triggerOverdueRun_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/saas/kaspi/config': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Read the current Kaspi global config (single-row).
+     * @description Returns the globally-shared Kaspi app-version and URL settings. The super-admin updates `app_build` here when Kaspi starts rejecting the current build with OldVersionToUpdate.
+     */
+    get: operations['SaasKaspiConfigController_getConfig_v1'];
+    /**
+     * Partially update the Kaspi global config.
+     * @description All body fields are optional — only supplied fields are written. After a successful write the in-memory cache is invalidated so all Kaspi adapters pick up the new values on their next request.
+     */
+    put: operations['SaasKaspiConfigController_updateConfig_v1'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/saas/kaspi/version-probe': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * SMS-free build-gate health-check against Kaspi entrance/step (init).
+     * @description Hits Kaspi's entrance/step endpoint with the given build (or the current config build) and reports whether the gate accepted it. No SMS is triggered — the gate fires before phone entry. Use for manual binary-search of the current floor, or as a cron health-check (see docs/endpoints.md §1.8).
+     */
+    post: operations['SaasKaspiConfigController_versionProbe_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/kaspi/connect/init': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Start Kaspi onboarding (no SMS is sent).
+     * @description Calls Kaspi entrance/step, generates a per-kindergarten device fingerprint, and stores the in-flight state in Redis (TTL 300s). Returns the process_id used by the next two steps.
+     */
+    post: operations['AdminKaspiConnectController_init_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/kaspi/connect/send-phone': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Submit the cashier phone — triggers a REAL Kaspi SMS code. */
+    post: operations['AdminKaspiConnectController_sendPhone_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/kaspi/connect/verify-otp': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Submit the SMS OTP → auto-finish (ECDH + org-context) → persist session. */
+    post: operations['AdminKaspiConnectController_verifyOtp_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/kaspi/status': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Current Kaspi connection status (no secrets). */
+    get: operations['AdminKaspiConnectController_status_v1'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/kaspi/disconnect': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Disconnect Kaspi (status=revoked). */
+    post: operations['AdminKaspiConnectController_disconnect_v1'];
     delete?: never;
     options?: never;
     head?: never;
@@ -3131,7 +3323,7 @@ export interface paths {
     delete: operations['AdminContentController_delete_v1'];
     options?: never;
     head?: never;
-    /** Update a content post (draft or scheduled only). Optionally attach new media files via multipart `files` field. */
+    /** Update a content post (draft or scheduled only). Optionally attach new media files via multipart `files` field — uploaded files REPLACE existing media_urls in full. Published posts are immutable (409 content_already_published). */
     patch: operations['AdminContentController_update_v1'];
     trace?: never;
   };
@@ -3647,7 +3839,8 @@ export interface components {
       /**
        * @example {
        *       "db": "up",
-       *       "redis": "up"
+       *       "redis": "up",
+       *       "kaspi": "up"
        *     }
        */
       checks: {
@@ -3655,7 +3848,17 @@ export interface components {
         db?: 'up' | 'down';
         /** @enum {string} */
         redis?: 'up' | 'down';
+        /** @enum {string} */
+        kaspi?: 'up' | 'down' | 'unknown';
       };
+      /**
+       * @description K9 — last cached Kaspi version-gate snapshot (present once the cron has run).
+       * @example {
+       *       "build": "1071",
+       *       "checked_at": "2026-06-04T10:00:00.000Z"
+       *     }
+       */
+      kaspi_detail?: Record<string, never>;
     };
     UserResponseDto: {
       /** @example 00000000-0000-4000-8000-000000000001 */
@@ -3706,6 +3909,12 @@ export interface components {
        * @example +77012345678
        */
       phone: string;
+      /**
+       * @description Which client app the login targets. Drives the audience filter: `parent` → role parent (open registration); `staff` → mentor/specialist/reception; `admin` → admin. For `staff`/`admin` the phone must already be invited.
+       * @example parent
+       * @enum {string}
+       */
+      app: 'parent' | 'staff' | 'admin';
     };
     OtpRequestResponseDto: {
       /**
@@ -3730,6 +3939,17 @@ export interface components {
        * @example 123456
        */
       code: string;
+      /**
+       * @description Which client app the login targets. Roles are filtered by this audience BEFORE the role resolve. `role` is NOT accepted here — it is derived.
+       * @example parent
+       * @enum {string}
+       */
+      app: 'parent' | 'staff' | 'admin';
+      /**
+       * @description Optional kindergarten id (staff/admin only). When supplied and it matches one of the filtered active staff roles, the multi-kg select step is skipped and a full token pair is issued directly for that kindergarten.
+       * @example 5b3d3b8a-7f4f-4d2a-9c84-9a7c1c1c1c1c
+       */
+      kindergartenId?: string | null;
     };
     RoleResponseDto: {
       /** @example parent */
@@ -3769,6 +3989,18 @@ export interface components {
        */
       locale: 'kk' | 'ru';
     };
+    ParentContextResponseDto: {
+      /**
+       * @description Count of children the user is an approved guardian of
+       * @example 0
+       */
+      approved_children_count: number;
+      /**
+       * @description Count of the user's own link requests still pending_approval
+       * @example 1
+       */
+      pending_requests_count: number;
+    };
     AuthResponseDto: {
       /** @example eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIuLi4ifQ.signature */
       access_token: string;
@@ -3786,6 +4018,18 @@ export interface components {
       roles: components['schemas']['RoleResponseDto'][];
       kindergartens: components['schemas']['KindergartenSummaryResponseDto'][];
       user: components['schemas']['AuthUserResponseDto'];
+      /**
+       * @description Parent app only — true when this verify created the users row. Omitted for staff/admin.
+       * @example true
+       */
+      is_new_user?: boolean;
+      /**
+       * @description Parent app only — true when full_name + date_of_birth + iin are all set. Omitted for staff/admin.
+       * @example false
+       */
+      profile_complete?: boolean;
+      /** @description Parent app only — approved-children + pending-request counters. Omitted for staff/admin. */
+      parent_context?: components['schemas']['ParentContextResponseDto'];
     };
     RefreshTokenDto: {
       /**
@@ -4484,6 +4728,16 @@ export interface components {
       child_id: string;
       /** @example eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee */
       user_id: string;
+      /**
+       * @description Display name resolved from the linked `users` row (users.full_name). null when the phone-invited user has not filled in their profile yet.
+       * @example Алия Бекова
+       */
+      user_full_name: Record<string, never> | null;
+      /**
+       * @description Phone (E.164) resolved from the linked `users` row (users.phone). null when unavailable.
+       * @example +77011223344
+       */
+      user_phone: Record<string, never> | null;
       /** @enum {string} */
       role: 'primary' | 'secondary' | 'nanny';
       /** @enum {string} */
@@ -4546,6 +4800,48 @@ export interface components {
        * @example false
        */
       grant_approval_rights?: boolean;
+    };
+    PendingRequestKindergartenDto: {
+      /**
+       * @description Display name of the kindergarten the request targets.
+       * @example Балапан
+       */
+      name: string;
+    };
+    PendingApplicantRequestDto: {
+      /**
+       * @description Guardian row id (track approval state with it).
+       * @example 66666666-6666-6666-6666-666666666666
+       */
+      id: string;
+      /**
+       * @description Requested guardian role.
+       * @example secondary
+       * @enum {string}
+       */
+      role: 'secondary' | 'nanny';
+      /**
+       * @description Whether the request asks for pickup rights.
+       * @example false
+       */
+      can_pickup: boolean;
+      /**
+       * @description Always `pending_approval` for this endpoint.
+       * @example pending_approval
+       * @enum {string}
+       */
+      status: 'pending_approval';
+      /**
+       * @description Masked child name (first letter of each word + ****). Full child PII stays hidden until the primary guardian approves the link.
+       * @example А****
+       */
+      child_name_masked: string;
+      kindergarten: components['schemas']['PendingRequestKindergartenDto'];
+      /**
+       * @description When the link request was created (ISO 8601).
+       * @example 2026-06-01T09:15:00.000Z
+       */
+      created_at: string;
     };
     ToggleApprovalRightsDto: {
       /** @example true */
@@ -4951,7 +5247,8 @@ export interface components {
         | 'refund.processed'
         | 'enrollment.first_invoice_skipped'
         | 'child.archived'
-        | 'child.reactivated';
+        | 'child.reactivated'
+        | 'kaspi.session_expired';
       /**
        * @description Set to false to disable push for this event key.
        * @example false
@@ -5776,6 +6073,13 @@ export interface components {
        */
       reason: string;
     };
+    ProcessRefundDto: {
+      /**
+       * @description Required ONLY for kaspi_pay refunds. Set true to confirm you verified the refund/return history in the Kaspi app before processing. Kaspi has no idempotency key, so a blind retry may double-refund. Ignored for mock/halyk_epay refunds.
+       * @example true
+       */
+      acknowledge_kaspi_history_checked?: boolean;
+    };
     HolidayResponseDto: {
       /** @example h1a2b3c4-0003-0003-0003-000000000003 */
       id: string;
@@ -6311,6 +6615,245 @@ export interface components {
        */
       status: string;
     };
+    KaspiGlobalConfigResponseDto: {
+      /**
+       * @description Kaspi app version string (cosmetic, does not affect the gate).
+       * @example 4.110.1
+       */
+      app_version: string;
+      /**
+       * @description Kaspi app build number (key gate field — Kaspi rejects builds below the rolling floor).
+       * @example 1076
+       */
+      app_build: string;
+      /**
+       * @description iOS platform version used in Cookie and request body.
+       * @example 18.5
+       */
+      platform_ver: string;
+      /**
+       * @description Device model identifier sent in the Kaspi request body.
+       * @example iPhone17,3
+       */
+      model: string;
+      /**
+       * @description Device brand sent in the Kaspi request body.
+       * @example Apple
+       */
+      brand: string;
+      /**
+       * @description Native Kaspi app User-Agent string.
+       * @example Kaspi%20Pay/1076 CFNetwork/3826.500.131 Darwin/24.5.0
+       */
+      ua_native: string;
+      /**
+       * @description Browser/WebView User-Agent string sent in HTTP headers.
+       * @example Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148
+       */
+      ua_browser: string;
+      /**
+       * @description Base URL for the Kaspi entrance (login / onboarding) API.
+       * @example https://entrance-pay.kaspi.kz
+       */
+      entrance_url: string;
+      /**
+       * @description Base URL for the Kaspi mtoken (session token) API.
+       * @example https://mtoken.kaspi.kz
+       */
+      mtoken_url: string;
+      /**
+       * @description Base URL for the Kaspi QR-pay API.
+       * @example https://qrpay.kaspi.kz
+       */
+      qrpay_url: string;
+      /**
+       * @description UUID of the super-admin who last edited this config. Null if never updated.
+       * @example 00000000-0000-0000-0000-000000000001
+       */
+      updated_by: Record<string, never> | null;
+      /**
+       * Format: date-time
+       * @description Timestamp of the last update (ISO-8601).
+       * @example 2026-06-01T12:00:00.000Z
+       */
+      updated_at: string;
+    };
+    UpdateKaspiGlobalConfigDto: {
+      /**
+       * @description Kaspi app version string.
+       * @example 4.111.0
+       */
+      app_version?: string;
+      /**
+       * @description Kaspi app build number — raise this when Kaspi blocks with OldVersionToUpdate.
+       * @example 1077
+       */
+      app_build?: string;
+      /**
+       * @description iOS platform version.
+       * @example 18.5
+       */
+      platform_ver?: string;
+      /**
+       * @description Device model identifier.
+       * @example iPhone17,3
+       */
+      model?: string;
+      /**
+       * @description Device brand.
+       * @example Apple
+       */
+      brand?: string;
+      /**
+       * @description Native Kaspi app User-Agent string.
+       * @example Kaspi%20Pay/1077 CFNetwork/3826.500.131 Darwin/24.5.0
+       */
+      ua_native?: string;
+      /**
+       * @description Browser/WebView User-Agent string.
+       * @example Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148
+       */
+      ua_browser?: string;
+      /**
+       * @description Base URL for the Kaspi entrance API.
+       * @example https://entrance-pay.kaspi.kz
+       */
+      entrance_url?: string;
+      /**
+       * @description Base URL for the Kaspi mtoken API.
+       * @example https://mtoken.kaspi.kz
+       */
+      mtoken_url?: string;
+      /**
+       * @description Base URL for the Kaspi QR-pay API.
+       * @example https://qrpay.kaspi.kz
+       */
+      qrpay_url?: string;
+    };
+    KaspiVersionProbeDto: {
+      /**
+       * @description App build to test against Kaspi gate. Defaults to current config `app_build`.
+       * @example 1077
+       */
+      app_build?: string;
+      /**
+       * @description App version to test. Defaults to current config `app_version`.
+       * @example 4.111.0
+       */
+      app_version?: string;
+    };
+    KaspiVersionProbeResponseDto: {
+      /**
+       * @description The app_build that was probed.
+       * @example 1077
+       */
+      build: string;
+      /**
+       * @description True if Kaspi accepted the build (phone-entry view appeared). False if blocked or unexpected response.
+       * @example true
+       */
+      accepted: boolean;
+      /**
+       * @description Present only when Kaspi actively blocked the build with OldVersionToUpdate.
+       * @example OldVersionToUpdate
+       */
+      alarm?: string | null;
+    };
+    KaspiInitResponseDto: {
+      /**
+       * @description Opaque Kaspi process id — pass it to send-phone and verify-otp.
+       * @example e1b2c3d4-0000-0000-0000-000000000000
+       */
+      process_id: string;
+    };
+    KaspiSendPhoneDto: {
+      /**
+       * @description Process id returned by POST /admin/kaspi/connect/init.
+       * @example e1b2c3d4-0000-0000-0000-000000000000
+       */
+      process_id: string;
+      /**
+       * @description Cashier phone. Accepts any common KZ form — bare 10-digit national (7011234567), 11-digit with country code (77011234567), 8-prefixed (87011234567), or E.164 (+77011234567). The backend normalizes to the 10-digit national number Kaspi's entrance step requires. Triggers a real SMS.
+       * @example 77011234567
+       */
+      phone: string;
+    };
+    KaspiSendPhoneResponseDto: {
+      /** @example e1b2c3d4-0000-0000-0000-000000000000 */
+      process_id: string;
+      /**
+       * @description True when Kaspi accepted the phone and dispatched the SMS.
+       * @example true
+       */
+      sms_sent: boolean;
+    };
+    KaspiVerifyOtpDto: {
+      /**
+       * @description Process id returned by POST /admin/kaspi/connect/init.
+       * @example e1b2c3d4-0000-0000-0000-000000000000
+       */
+      process_id: string;
+      /**
+       * @description The SMS code the cashier received. Kaspi sends a 4-digit code; the validator tolerates 4–6 digits defensively.
+       * @example 1234
+       */
+      otp: string;
+    };
+    KaspiVerifyOtpResponseDto: {
+      /** @example true */
+      connected: boolean;
+      /**
+       * @description The connected cashier phone.
+       * @example 77011234567
+       */
+      phone: string;
+      /**
+       * @description Organization name resolved from Kaspi org-context.
+       * @example ТОО Солнышко
+       */
+      org_name: Record<string, never> | null;
+      /**
+       * @description Kaspi merchant profile id.
+       * @example 482931
+       */
+      profile_id: Record<string, never> | null;
+    };
+    KaspiStatusResponseDto: {
+      /**
+       * @description True only when the session status is `active`.
+       * @example true
+       */
+      connected: boolean;
+      /**
+       * @description Session status: pending | active | expired | revoked | disconnected (no row).
+       * @example active
+       * @enum {string}
+       */
+      status: 'pending' | 'active' | 'expired' | 'revoked' | 'disconnected';
+      /**
+       * @description Connected cashier phone (omitted when never connected).
+       * @example 77011234567
+       */
+      phone?: string;
+      /**
+       * @description Organization name (omitted when never connected).
+       * @example ТОО Солнышко
+       */
+      org_name?: string;
+      /**
+       * Format: date-time
+       * @description Last time the session was checked/refreshed (ISO-8601).
+       * @example 2026-06-04T12:00:00.000Z
+       */
+      last_checked_at?: string;
+    };
+    KaspiDisconnectResponseDto: {
+      /**
+       * @example revoked
+       * @enum {string}
+       */
+      status: 'revoked';
+    };
     PaymentCalendarMonthDto: {
       /**
        * @description Period start as ISO date (first day of the month).
@@ -6400,6 +6943,11 @@ export interface components {
        * @example https://app.shyraq.kz/payment/callback
        */
       return_url: string;
+      /**
+       * @description Required when provider=kaspi_pay — phone Kaspi sends the remote invoice to. Ignored for other providers.
+       * @example 77011234567
+       */
+      kaspi_phone_number?: string;
     };
     InitiatePaymentResponseDto: {
       /** @example pa1b2c3d-0007-0007-0007-000000000007 */
@@ -6438,6 +6986,11 @@ export interface components {
        * @example https://app.shyraq.kz/payment/prepayment/callback
        */
       return_url: string;
+      /**
+       * @description Required when provider=kaspi_pay — phone Kaspi sends the remote invoice to. Ignored for other providers.
+       * @example 77011234567
+       */
+      kaspi_phone_number?: string;
     };
     PrepaymentPreviewDto: {
       /**
@@ -6471,6 +7024,11 @@ export interface components {
       payment_id: string;
       /** @example https://pay.halykbank.kz/checkout/abc123 */
       redirect_url: Record<string, never> | null;
+      /**
+       * @description Provider deeplink (Kaspi). The only way the parent pays a Kaspi prepayment.
+       * @example kaspi://pay?...
+       */
+      deeplink?: Record<string, never> | null;
       preview: components['schemas']['PrepaymentPreviewDto'];
     };
     PaymentWebhookDto: Record<string, never>;
@@ -7622,74 +8180,6 @@ export interface components {
       /** @example Принято — увидимся в субботу. */
       review_note?: Record<string, never> | null;
     };
-    CreateContentDto: {
-      /**
-       * @description Content type. `birthday` is normally auto-generated by cron; admin may create manually.
-       * @example news
-       * @enum {string}
-       */
-      content_type: 'news' | 'menu' | 'schedule_pub' | 'qundylyq' | 'birthday';
-      /**
-       * @description Targeting mode. `all` broadcasts to everyone; `group` or `child` narrows.
-       * @example all
-       * @enum {string}
-       */
-      target_type: 'all' | 'group' | 'child';
-      /**
-       * @description Required when target_type=group.
-       * @example 550e8400-e29b-41d4-a716-446655440000
-       */
-      target_group_id?: Record<string, never> | null;
-      /**
-       * @description Required when target_type=child.
-       * @example a1b2c3d4-e5f6-7890-abcd-ef1234567890
-       */
-      target_child_id?: Record<string, never> | null;
-      /**
-       * @description Legacy single-locale title (pre-i18n fallback).
-       * @example Важное объявление
-       */
-      title?: Record<string, never> | null;
-      /**
-       * @description Legacy single-locale body.
-       * @example Просим всех родителей ознакомиться с новыми правилами.
-       */
-      body?: Record<string, never> | null;
-      /**
-       * @description Localised title map, e.g. { ru, kk }.
-       * @example {
-       *       "ru": "Важное объявление",
-       *       "kk": "Маңызды хабарландыру"
-       *     }
-       */
-      title_i18n?: Record<string, never> | null;
-      /**
-       * @description Localised body map.
-       * @example {
-       *       "ru": "Просим всех родителей ознакомиться с новыми правилами.",
-       *       "kk": "Барлық ата-аналарды жаңа ережелермен таныса беруін сұраймыз."
-       *     }
-       */
-      body_i18n?: Record<string, never> | null;
-      /**
-       * @description Arbitrary metadata JSONB. For qundylyq: { month, theme }. For birthday: auto-populated by service.
-       * @example {
-       *       "month": "2026-05",
-       *       "theme": "Kindness"
-       *     }
-       */
-      metadata?: Record<string, never> | null;
-      /**
-       * @description If provided, post is created in scheduled status (must be in the future).
-       * @example 2026-05-10T07:00:00.000Z
-       */
-      scheduled_for?: Record<string, never> | null;
-      /**
-       * @description Post expiry. Null means no expiry.
-       * @example 2026-05-17T23:59:59.000Z
-       */
-      expires_at?: Record<string, never> | null;
-    };
     ContentPostResponseDto: {
       /** @example c1d2e3f4-0000-0000-0000-000000000001 */
       id: string;
@@ -7768,68 +8258,6 @@ export interface components {
        * @example eyJpZCI6ImFiYyJ9
        */
       cursor: Record<string, never> | null;
-    };
-    UpdateContentDto: {
-      /**
-       * @description Targeting mode. Must be consistent with target_group_id / target_child_id.
-       * @example all
-       * @enum {string}
-       */
-      target_type?: 'all' | 'group' | 'child';
-      /**
-       * @description Required when target_type=group.
-       * @example 550e8400-e29b-41d4-a716-446655440000
-       */
-      target_group_id?: Record<string, never> | null;
-      /**
-       * @description Required when target_type=child.
-       * @example a1b2c3d4-e5f6-7890-abcd-ef1234567890
-       */
-      target_child_id?: Record<string, never> | null;
-      /**
-       * @description Legacy single-locale title.
-       * @example Обновлённое объявление
-       */
-      title?: Record<string, never> | null;
-      /**
-       * @description Legacy single-locale body.
-       * @example Текст объявления изменён.
-       */
-      body?: Record<string, never> | null;
-      /**
-       * @description Localised title map.
-       * @example {
-       *       "ru": "Обновлённое объявление",
-       *       "kk": "Жаңартылған хабарландыру"
-       *     }
-       */
-      title_i18n?: Record<string, never> | null;
-      /**
-       * @description Localised body map.
-       * @example {
-       *       "ru": "Текст изменён.",
-       *       "kk": "Мәтін өзгерді."
-       *     }
-       */
-      body_i18n?: Record<string, never> | null;
-      /**
-       * @description Metadata JSONB patch.
-       * @example {
-       *       "month": "2026-05",
-       *       "theme": "Kindness"
-       *     }
-       */
-      metadata?: Record<string, never> | null;
-      /**
-       * @description Reschedule date. Only valid when post is in scheduled status. Must be in the future.
-       * @example 2026-05-10T07:00:00.000Z
-       */
-      scheduled_for?: Record<string, never> | null;
-      /**
-       * @description Post expiry override.
-       * @example 2026-05-17T23:59:59.000Z
-       */
-      expires_at?: Record<string, never> | null;
     };
     ScheduleContentDto: {
       /**
@@ -10638,6 +11066,93 @@ export interface operations {
       };
     };
   };
+  ChildController_approveGuardian_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        id: string;
+        guardianId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: {
+      content: {
+        'application/json': components['schemas']['ApproveGuardianDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GuardianDto'];
+        };
+      };
+      /** @description Guardian not found for this child. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description max_approval_rights_exceeded — child already has 2 guardians with approval rights; or child_guardian_status_conflict on a concurrent transition. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description invalid_guardian_status_transition — row is not in pending_approval. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ChildController_rejectGuardian_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        id: string;
+        guardianId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['GuardianDto'];
+        };
+      };
+      /** @description Guardian not found for this child. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description invalid_guardian_status_transition — row is not in pending_approval. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   ChildController_revokeGuardian_v1: {
     parameters: {
       query?: never;
@@ -10696,6 +11211,42 @@ export interface operations {
         content?: never;
       };
       /** @description Caller has no approved guardian record in this tenant. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ParentChildController_pendingRequests_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The caller's pending link requests (possibly empty). Child name is masked to first-letter + ****. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PendingApplicantRequestDto'][];
+        };
+      };
+      /** @description invalid_token / token_revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description pending_role_select. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -13340,7 +13891,11 @@ export interface operations {
       };
       cookie?: never;
     };
-    requestBody?: never;
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProcessRefundDto'];
+      };
+    };
     responses: {
       200: {
         headers: {
@@ -13349,6 +13904,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['RefundResponseDto'];
         };
+      };
+      /** @description kaspi_refund_requires_history_ack — kaspi_pay refund processed without acknowledge_kaspi_history_checked=true. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Bearer missing/invalid/revoked. */
       401: {
@@ -14334,6 +14896,347 @@ export interface operations {
       };
     };
   };
+  SaasKaspiConfigController_getConfig_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Current Kaspi global config. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['KaspiGlobalConfigResponseDto'];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not super_admin/support. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SaasKaspiConfigController_updateConfig_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateKaspiGlobalConfigDto'];
+      };
+    };
+    responses: {
+      /** @description Updated Kaspi global config. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['KaspiGlobalConfigResponseDto'];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not super_admin/support. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation error (422). */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SaasKaspiConfigController_versionProbe_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['KaspiVersionProbeDto'];
+      };
+    };
+    responses: {
+      /** @description Probe result. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['KaspiVersionProbeResponseDto'];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not super_admin/support. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation error (422). */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminKaspiConnectController_init_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['KaspiInitResponseDto'];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not admin. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description kaspi_already_connected — disconnect the active session first. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminKaspiConnectController_sendPhone_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['KaspiSendPhoneDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['KaspiSendPhoneResponseDto'];
+        };
+      };
+      /** @description kaspi_unknown_process — process_id missing or expired. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not admin. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminKaspiConnectController_verifyOtp_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['KaspiVerifyOtpDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['KaspiVerifyOtpResponseDto'];
+        };
+      };
+      /** @description kaspi_unknown_process — process_id missing or expired. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked, or kaspi_otp_invalid (401). */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not admin. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminKaspiConnectController_status_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['KaspiStatusResponseDto'];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not admin. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminKaspiConnectController_disconnect_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['KaspiDisconnectResponseDto'];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not admin. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description kaspi_not_connected — no session to disconnect. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   ParentInvoiceController_listForChild_v1: {
     parameters: {
       query?: {
@@ -14506,7 +15409,7 @@ export interface operations {
           'application/json': components['schemas']['InitiatePaymentResponseDto'];
         };
       };
-      /** @description Validation error / amount mismatch. */
+      /** @description Validation error / amount mismatch / payment_provider_mismatch (dto.provider is not the deployment active PAYMENT_PROVIDER). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -14568,7 +15471,7 @@ export interface operations {
           'application/json': components['schemas']['InitiatePrepaymentResponseDto'];
         };
       };
-      /** @description prepayment_horizon_not_configured / months_out_of_range / validation error. */
+      /** @description prepayment_horizon_not_configured / months_out_of_range / payment_provider_mismatch (dto.provider is not the deployment active PAYMENT_PROVIDER) / validation error. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -18962,10 +19865,139 @@ export interface operations {
       path?: never;
       cookie?: never;
     };
+    /** @description multipart/form-data: scalar fields as form-fields, up to 5 binary uploads in `files`. application/json: same fields, no `files`. In multipart, object fields (`title_i18n`, `body_i18n`, `metadata`) must be JSON-stringified. */
     requestBody: {
       content: {
-        'multipart/form-data': components['schemas']['CreateContentDto'];
-        'application/json': components['schemas']['CreateContentDto'];
+        'multipart/form-data': {
+          /**
+           * @example news
+           * @enum {string}
+           */
+          content_type: 'news' | 'menu' | 'schedule_pub' | 'qundylyq' | 'birthday';
+          /**
+           * @example all
+           * @enum {string}
+           */
+          target_type: 'all' | 'group' | 'child';
+          /**
+           * Format: uuid
+           * @example 550e8400-e29b-41d4-a716-446655440000
+           */
+          target_group_id?: string | null;
+          /**
+           * Format: uuid
+           * @example a1b2c3d4-e5f6-7890-abcd-ef1234567890
+           */
+          target_child_id?: string | null;
+          /** @example Важное объявление */
+          title?: string | null;
+          /** @example Просим всех родителей ознакомиться с новыми правилами. */
+          body?: string | null;
+          /**
+           * @example {
+           *       "ru": "Важное объявление",
+           *       "kk": "Маңызды хабарландыру"
+           *     }
+           */
+          title_i18n?: {
+            [key: string]: string;
+          } | null;
+          /**
+           * @example {
+           *       "ru": "Текст",
+           *       "kk": "Мәтін"
+           *     }
+           */
+          body_i18n?: {
+            [key: string]: string;
+          } | null;
+          /**
+           * @example {
+           *       "month": "2026-05",
+           *       "theme": "Kindness"
+           *     }
+           */
+          metadata?: {
+            [key: string]: unknown;
+          } | null;
+          /**
+           * Format: date-time
+           * @example 2026-05-10T07:00:00.000Z
+           */
+          scheduled_for?: string | null;
+          /**
+           * Format: date-time
+           * @example 2026-05-17T23:59:59.000Z
+           */
+          expires_at?: string | null;
+          /** @description Up to 5 media files (multipart only). `image/*` ≤ 10 MB; `video/*` ≤ 100 MB per file. */
+          files?: string[];
+        };
+        'application/json': {
+          /**
+           * @example news
+           * @enum {string}
+           */
+          content_type: 'news' | 'menu' | 'schedule_pub' | 'qundylyq' | 'birthday';
+          /**
+           * @example all
+           * @enum {string}
+           */
+          target_type: 'all' | 'group' | 'child';
+          /**
+           * Format: uuid
+           * @example 550e8400-e29b-41d4-a716-446655440000
+           */
+          target_group_id?: string | null;
+          /**
+           * Format: uuid
+           * @example a1b2c3d4-e5f6-7890-abcd-ef1234567890
+           */
+          target_child_id?: string | null;
+          /** @example Важное объявление */
+          title?: string | null;
+          /** @example Просим всех родителей ознакомиться с новыми правилами. */
+          body?: string | null;
+          /**
+           * @example {
+           *       "ru": "Важное объявление",
+           *       "kk": "Маңызды хабарландыру"
+           *     }
+           */
+          title_i18n?: {
+            [key: string]: string;
+          } | null;
+          /**
+           * @example {
+           *       "ru": "Текст",
+           *       "kk": "Мәтін"
+           *     }
+           */
+          body_i18n?: {
+            [key: string]: string;
+          } | null;
+          /**
+           * @example {
+           *       "month": "2026-05",
+           *       "theme": "Kindness"
+           *     }
+           */
+          metadata?: {
+            [key: string]: unknown;
+          } | null;
+          /**
+           * Format: date-time
+           * @example 2026-05-10T07:00:00.000Z
+           */
+          scheduled_for?: string | null;
+          /**
+           * Format: date-time
+           * @example 2026-05-17T23:59:59.000Z
+           */
+          expires_at?: string | null;
+          /** @description Up to 5 media files (multipart only). `image/*` ≤ 10 MB; `video/*` ≤ 100 MB per file. */
+          files?: string[];
+        };
       };
     };
     responses: {
@@ -19120,10 +20152,129 @@ export interface operations {
       };
       cookie?: never;
     };
+    /** @description Partial patch. multipart/form-data: scalar fields as form-fields + up to 5 binary uploads in `files` (replaces existing `media_urls` wholesale; omit `files` to leave media unchanged). application/json: same scalar fields, no `files`. In multipart, object fields must be JSON-stringified. */
     requestBody: {
       content: {
-        'multipart/form-data': components['schemas']['UpdateContentDto'];
-        'application/json': components['schemas']['UpdateContentDto'];
+        'multipart/form-data': {
+          /**
+           * @example all
+           * @enum {string}
+           */
+          target_type?: 'all' | 'group' | 'child';
+          /**
+           * Format: uuid
+           * @example 550e8400-e29b-41d4-a716-446655440000
+           */
+          target_group_id?: string | null;
+          /**
+           * Format: uuid
+           * @example a1b2c3d4-e5f6-7890-abcd-ef1234567890
+           */
+          target_child_id?: string | null;
+          /** @example Обновлённое объявление */
+          title?: string | null;
+          /** @example Текст объявления изменён. */
+          body?: string | null;
+          /**
+           * @example {
+           *       "ru": "Обновлённое объявление",
+           *       "kk": "Жаңартылған хабарландыру"
+           *     }
+           */
+          title_i18n?: {
+            [key: string]: string;
+          } | null;
+          /**
+           * @example {
+           *       "ru": "Текст изменён.",
+           *       "kk": "Мәтін өзгерді."
+           *     }
+           */
+          body_i18n?: {
+            [key: string]: string;
+          } | null;
+          /**
+           * @example {
+           *       "month": "2026-05",
+           *       "theme": "Kindness"
+           *     }
+           */
+          metadata?: {
+            [key: string]: unknown;
+          } | null;
+          /**
+           * Format: date-time
+           * @example 2026-05-10T07:00:00.000Z
+           */
+          scheduled_for?: string | null;
+          /**
+           * Format: date-time
+           * @example 2026-05-17T23:59:59.000Z
+           */
+          expires_at?: string | null;
+          /** @description Up to 5 media files (multipart only). If provided, REPLACES `media_urls` entirely. `image/*` ≤ 10 MB; `video/*` ≤ 100 MB per file. To leave media unchanged, omit this field. There is no way to remove or reorder individual existing media files via this endpoint. */
+          files?: string[];
+        };
+        'application/json': {
+          /**
+           * @example all
+           * @enum {string}
+           */
+          target_type?: 'all' | 'group' | 'child';
+          /**
+           * Format: uuid
+           * @example 550e8400-e29b-41d4-a716-446655440000
+           */
+          target_group_id?: string | null;
+          /**
+           * Format: uuid
+           * @example a1b2c3d4-e5f6-7890-abcd-ef1234567890
+           */
+          target_child_id?: string | null;
+          /** @example Обновлённое объявление */
+          title?: string | null;
+          /** @example Текст объявления изменён. */
+          body?: string | null;
+          /**
+           * @example {
+           *       "ru": "Обновлённое объявление",
+           *       "kk": "Жаңартылған хабарландыру"
+           *     }
+           */
+          title_i18n?: {
+            [key: string]: string;
+          } | null;
+          /**
+           * @example {
+           *       "ru": "Текст изменён.",
+           *       "kk": "Мәтін өзгерді."
+           *     }
+           */
+          body_i18n?: {
+            [key: string]: string;
+          } | null;
+          /**
+           * @example {
+           *       "month": "2026-05",
+           *       "theme": "Kindness"
+           *     }
+           */
+          metadata?: {
+            [key: string]: unknown;
+          } | null;
+          /**
+           * Format: date-time
+           * @example 2026-05-10T07:00:00.000Z
+           */
+          scheduled_for?: string | null;
+          /**
+           * Format: date-time
+           * @example 2026-05-17T23:59:59.000Z
+           */
+          expires_at?: string | null;
+          /** @description Up to 5 media files (multipart only). If provided, REPLACES `media_urls` entirely. `image/*` ≤ 10 MB; `video/*` ≤ 100 MB per file. To leave media unchanged, omit this field. There is no way to remove or reorder individual existing media files via this endpoint. */
+          files?: string[];
+        };
       };
     };
     responses: {
@@ -19308,7 +20459,18 @@ export interface operations {
       path?: never;
       cookie?: never;
     };
-    requestBody?: never;
+    /** @description Single file upload. Field name is `file` (not `files`). */
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /**
+           * Format: binary
+           * @description Single media file. `image/*` ≤ 10 MB; `video/*` ≤ 100 MB.
+           */
+          file: string;
+        };
+      };
+    };
     responses: {
       200: {
         headers: {

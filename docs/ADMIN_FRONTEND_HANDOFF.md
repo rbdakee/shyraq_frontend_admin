@@ -174,22 +174,24 @@
 
 ### 5.1 Эндпоинты
 
-| Метод | Путь                                               | Назначение                                                                                                                          |
-| ----- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| GET   | `/admin/children`                                  | Список. Фильтры: `status`(card_created/active/archived), `current_group_id`, поиск по ФИО/ИИН.                                      |
-| POST  | `/admin/children`                                  | Создать карточку вручную (вне enrollment). Статус `card_created`, без авто-счёта.                                                   |
-| GET   | `/admin/children/:id`                              | Полная карточка: guardians, группа, история групп, timeline (preview), платежи (preview), диагностики (preview), `face_enrollment`. |
-| PATCH | `/admin/children/:id`                              | Обновить ФИО, ИИН, DOB, photo, `medical_notes`, `allergy_notes`.                                                                    |
-| POST  | `/admin/children/:id/transfer-group`               | Перевод в другую группу. Body `{to_group_id, reason?}`. → `child_group_history` + notify `child.transferred`.                       |
-| POST  | `/admin/children/:id/archive`                      | Архивировать. Body `{archive_reason}` (1..500). Закрывает тарифы, enqueue pro-rata refund.                                          |
-| POST  | `/admin/children/:id/reactivate`                   | Реактивировать. Body `{}`. Ответ `{child, requires_new_tariff_assignment:true}`.                                                    |
-| GET   | `/admin/children/:id/status-history`               | Аудит изменений статуса. `?limit=(≤200)&offset=`. `{items:[...], total}`.                                                           |
-| GET   | `/admin/children/:id/guardians`                    | Все опекуны + статус одобрения + `has_approval_rights`.                                                                             |
-| POST  | `/admin/children/:id/guardians`                    | Добавить опекуна вручную (админ может создать primary).                                                                             |
-| PATCH | `/admin/children/:id/guardians/:guardianId`        | Изменить `role`, `can_pickup`. (`has_approval_rights` — только через Parent flow.)                                                  |
-| POST  | `/admin/children/:id/guardians/:guardianId/revoke` | Отозвать доступ (`revoked_at`, `revoked_by`).                                                                                       |
-| GET   | `/admin/children/:id/group-history`                | История переводов.                                                                                                                  |
-| GET   | `/admin/children/:id/timeline`                     | Полная timeline ребёнка.                                                                                                            |
+| Метод | Путь                                                | Назначение                                                                                                                                                                       |
+| ----- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET   | `/admin/children`                                   | Список. Фильтры: `status`(card_created/active/archived), `current_group_id`, поиск по ФИО/ИИН.                                                                                   |
+| POST  | `/admin/children`                                   | Создать карточку вручную (вне enrollment). Статус `card_created`, без авто-счёта.                                                                                                |
+| GET   | `/admin/children/:id`                               | Полная карточка: guardians, группа, история групп, timeline (preview), платежи (preview), диагностики (preview), `face_enrollment`.                                              |
+| PATCH | `/admin/children/:id`                               | Обновить ФИО, ИИН, DOB, photo, `medical_notes`, `allergy_notes`.                                                                                                                 |
+| POST  | `/admin/children/:id/transfer-group`                | Перевод в другую группу. Body `{to_group_id, reason?}`. → `child_group_history` + notify `child.transferred`.                                                                    |
+| POST  | `/admin/children/:id/archive`                       | Архивировать. Body `{archive_reason}` (1..500). Закрывает тарифы, enqueue pro-rata refund.                                                                                       |
+| POST  | `/admin/children/:id/reactivate`                    | Реактивировать. Body `{}`. Ответ `{child, requires_new_tariff_assignment:true}`.                                                                                                 |
+| GET   | `/admin/children/:id/status-history`                | Аудит изменений статуса. `?limit=(≤200)&offset=`. `{items:[...], total}`.                                                                                                        |
+| GET   | `/admin/children/:id/guardians`                     | Все опекуны + статус одобрения + `has_approval_rights`.                                                                                                                          |
+| POST  | `/admin/children/:id/guardians`                     | Добавить опекуна вручную (админ может создать primary).                                                                                                                          |
+| PATCH | `/admin/children/:id/guardians/:guardianId`         | Изменить `role`, `can_pickup`. (`has_approval_rights` — только через Parent flow.)                                                                                               |
+| POST  | `/admin/children/:id/guardians/:guardianId/revoke`  | Отозвать доступ (`revoked_at`, `revoked_by`).                                                                                                                                    |
+| POST  | `/admin/children/:id/guardians/:guardianId/approve` | `pending_approval → approved`. Body опц. `{grant_approval_rights?:false}` (true — выдать опекуну право самому одобрять других, ≤2/реб.; для админ-кнопки не нужно — слать `{}`). |
+| POST  | `/admin/children/:id/guardians/:guardianId/reject`  | `pending_approval → rejected` (терминально). Без body.                                                                                                                           |
+| GET   | `/admin/children/:id/group-history`                 | История переводов.                                                                                                                                                               |
+| GET   | `/admin/children/:id/timeline`                      | Полная timeline ребёнка.                                                                                                                                                         |
 
 **transfer-group:** `{ "to_group_id":"uuid", "reason":"Возрастная группа" }` → `200 { id, full_name, current_group_id, group_history_entry_id }`. Ошибки: 404 `child_not_found`, 404 `group_not_found`, 409 `child_already_in_group`, 409 `archived_child_not_transferable` (архивного нельзя — сначала reactivate).
 
@@ -199,12 +201,16 @@
 
 **status-history item:** `{ id, previous_status, new_status, previous_archive_reason, archive_reason, changed_by_user_id, changed_at }`, сортировка `changed_at DESC`.
 
+**GuardianDto display-поля** (backend update 2026-06-10, закрывает N2): `GuardianDto` теперь содержит `user_full_name: string|null` и `user_phone: string|null` (E.164), резолвятся из `users` по `child_guardians.user_id`. Присутствуют во **всех** ответах с `GuardianDto` (list, child-detail `guardians[]`, invite, patch, approve/reject/revoke). ⚠️ Для приглашённого по телефону юзера без профиля backend кладёт `user_full_name = <телефон>` (а не `null`) → фронт детектит `user_full_name === user_phone` как «имя не задано» (показывает «—» + телефон в своей колонке). `relationship` backend по-прежнему не отдаёт (не входит в scope).
+
+**guardians approve/reject** (backend update 2026-06-10): админ может подтвердить **и** отклонить заявку опекуна прямо из админки, не дожидаясь primary-родителя. Доп. прав не нужно (текущая admin-сессия). Оба эндпоинта → `200 GuardianDto` с новым `status` — обновлять строку **на месте** (без полной перезагрузки). approve body опц. `{grant_approval_rights?:false}`; для обычной кнопки «Подтвердить» — `{}`. reject — без body. Ошибки: 404 `guardian_not_found`; 422 `invalid_guardian_status_transition` (строка уже **не** в `pending_approval` — кто-то обработал → тост «заявка уже обработана» + перезагрузка списка); 409 `max_approval_rights_exceeded` (только approve + `grant_approval_rights:true`); 401/403 (сессия/роль). Кнопки показываются **только** для `pending_approval`.
+
 ### 5.2 Страницы и поведение
 
 - **Список детей:** таблица (ФИО, ИИН, группа, статус-бейдж, дата зачисления), фильтры по статусу/группе, поиск, кнопка «Создать карточку». Архивные — визуально приглушены/отдельный фильтр.
 - **Карточка ребёнка** (детальная, табы):
   - _Профиль_ — ФИО, ИИН, DOB, пол, фото (presigned upload `purpose=child_photo`), мед.заметки, аллергии, текущая группа, статус, дата зачисления. Edit-режим (PATCH).
-  - _Опекуны_ — список (роль primary/secondary/nanny, статус pending/approved/rejected/revoked, can_pickup, has_approval_rights). Действия: добавить опекуна (форма телефон/ФИО/роль), изменить роль/can_pickup, отозвать. Кнопка «Отозвать все QR пользователя» (§23).
+  - _Опекуны_ — список (роль primary/secondary/nanny, статус pending/approved/rejected/revoked, can_pickup, has_approval_rights). Действия: добавить опекуна (форма телефон/ФИО/роль), для `pending_approval` — **подтвердить/отклонить заявку** (inline-кнопки; reject — с confirm, терминально), изменить роль/can_pickup, отозвать. Кнопка «Отозвать все QR пользователя» (§23).
   - _Группа / История групп_ — текущая группа + хронология `child_group_history`. Кнопка «Перевести в группу» (модал: выбор группы + причина).
   - _Timeline_ — лента событий дня/истории (check-in/out, активности, заметки, фото).
   - _Платежи_ — превью счётов/оплат ребёнка (ссылка в Биллинг с фильтром по child_id).

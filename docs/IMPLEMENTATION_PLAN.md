@@ -873,6 +873,51 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 
 ---
 
+## B24 — Опекуны: подтвердить/отклонить заявку (admin) · post-MVP (backend update 2026-06-10)
+
+**Goal:** админ обрабатывает заявки опекунов (`pending_approval`) прямо в карточке ребёнка, не дожидаясь primary-родителя.
+
+**Inputs:** HANDOFF §5.1 (новые эндпоинты `…/guardians/:gid/approve` body `{}` / `…/reject`, контракт `200 GuardianDto`, ошибки 404/422/409/401/403), §5.2 (Опекуны — действия для pending). Дизайн approve/reject-кнопок в handoff отсутствует (новая backend-фича) → строим по дизайн-системе (Button `sm`, badge «Одобрен»/«Отклонён» — канон `ds.jsx#statusBadge.guardian`, не меняем).
+
+**Tasks:**
+
+- **error-map:** `+= guardian_not_found, invalid_guardian_status_transition, max_approval_rights_exceeded` (§5); `errors.json` RU+KK (`invalid_guardian_status_transition` = «Заявка уже обработана»).
+- `api/children.ts` — `approveChildGuardian(id, gid, body?: {grant_approval_rights?})` (json `{}`), `rejectChildGuardian(id, gid)` (без body); оба → `GuardianDtoSchema.parse`.
+- `hooks/use-children.ts` — `useApproveChildGuardian`/`useRejectChildGuardian` (инвалидация `guardians` + `detail`).
+- `routes/children/tabs/guardians-tab.tsx` — для `status==='pending_approval'` inline «Подтвердить»/«Отклонить»; per-row loading/disable (анти-дабл-клик); reject — через `DestructiveConfirm`; approve 200 → success-тост + строка обновляется; 422 `invalid_guardian_status_transition` → тост + `refetch`; прочие — стандартная обработка. Кнопки только для `pending_approval`.
+- i18n `children` (`detail.guardians.approve/reject/approve_success/reject_success`, `modals.reject_guardian.*`).
+
+**Acceptance:**
+
+- [ ] 3 error-кода в `KNOWN_ERROR_CODES` + RU/KK; unit error-map зелёный.
+- [ ] Для `pending_approval` видны 2 кнопки; для approved/rejected/revoked — нет (как сейчас).
+- [ ] approve → `approved` (бейдж «Одобрен»), reject (после confirm) → `rejected` («Отклонён»); строка обновляется без полной перезагрузки; обе кнопки disabled на время запроса.
+- [ ] 422 → тост «Заявка уже обработана» + список перезагружается; 404/401/403 — стандартно.
+- [ ] typecheck + lint --max-warnings=0 + test exit 0. Browser QA TBD by user.
+
+---
+
+## B25 — Опекуны: ФИО/телефон (закрытие нехватки N2) · post-MVP (backend update 2026-06-10)
+
+**Goal:** показывать реальные ФИО и телефон опекуна вместо `ID: …` / «—» (нехватка N2 закрыта backend'ом).
+
+**Inputs:** BACKEND_NEEDINGS §N2 (resolved), HANDOFF §5.1 (`GuardianDto.user_full_name|user_phone`, оба `string|null`, во всех ответах с DTO), DESIGN `screens-core.jsx` (аватар-инициалы + ФИО + телефон mono). ⚠️ backend кладёт `user_full_name = <телефон>` для приглашённого по телефону юзера без профиля.
+
+**Tasks:**
+
+- `pnpm gen:api` (новые поля в `openapi.d.ts`); `GuardianDtoSchema` += `user_full_name`/`user_phone` (`z.string().nullable()`) + unit на nullable-кейс.
+- `routes/children/tabs/guardians-tab.tsx` — колонка ФИО → аватар-инициалы (`getInitials`) + `user_full_name`; колонка «Телефон» → `formatPhone(user_phone)`; helper `resolveGuardianName` (детект `user_full_name === user_phone` → «имя не задано» → «—»).
+- Docs: HANDOFF §5.1 (display-поля DTO), BACKEND_NEEDINGS N2 → `resolved`.
+
+**Acceptance:**
+
+- [ ] У опекуна с заполненным профилем видны ФИО + телефон + аватар-инициалы.
+- [ ] Приглашённый по телефону (без имени): ФИО = «—», телефон показан (не дублируется как имя).
+- [ ] `user_phone = null` → «—»; `user_full_name = null` → «—».
+- [ ] typecheck + lint --max-warnings=0 + test exit 0. Browser QA TBD by user.
+
+---
+
 ## Tracker
 
 | Батч | Тема                                        | Приоритет | Статус |
@@ -901,6 +946,8 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 | B21  | Mobile secondary screens (8 экранов)        | mobile    | [x]    |
 | B22  | Mobile system + i18n + QA (5 экранов)       | mobile    | [x]    |
 | B23  | Kaspi Pay onboarding (SMS) + refund-ack     | post-MVP  | [ ]    |
+| B24  | Опекуны: подтвердить/отклонить (admin)      | post-MVP  | [ ]    |
+| B25  | Опекуны: ФИО/телефон (N2 closed)            | post-MVP  | [ ]    |
 
 ---
 

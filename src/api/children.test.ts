@@ -76,6 +76,8 @@ describe('GuardianDtoSchema', () => {
     kindergarten_id: '7c2c2b6a-1a2b-4c3d-9e8f-0a1b2c3d4e5f',
     child_id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
     user_id: 'eeeeeeee-eeee-eeee-eeee-eeeeeeeeeeee',
+    user_full_name: 'Айгерим Нурсултанкызы',
+    user_phone: '+77011223344',
     role: 'primary',
     status: 'approved',
     has_approval_rights: false,
@@ -111,5 +113,12 @@ describe('GuardianDtoSchema', () => {
       const guardian = { ...validGuardian, role };
       expect(GuardianDtoSchema.parse(guardian).role).toBe(role);
     }
+  });
+
+  it('accepts null user_full_name / user_phone (unresolved profile)', () => {
+    const guardian = { ...validGuardian, user_full_name: null, user_phone: null };
+    const result = GuardianDtoSchema.parse(guardian);
+    expect(result.user_full_name).toBeNull();
+    expect(result.user_phone).toBeNull();
   });
 });

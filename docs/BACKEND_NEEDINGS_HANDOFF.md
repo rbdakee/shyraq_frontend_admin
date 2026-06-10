@@ -17,7 +17,7 @@
 | ID  | Тема                                                                           | Статус              | Затронутые экраны                                                |
 | --- | ------------------------------------------------------------------------------ | ------------------- | ---------------------------------------------------------------- |
 | N1  | Дашборд: `summary` + `payments-overview` отсутствуют                           | `blocked`           | `/` (Дашборд) — KPI, Финансы, Обзор оплат                        |
-| N2  | `GuardianDto` без ФИО/телефона пользователя                                    | `degraded`          | `/children/:id` → вкладка «Опекуны»                              |
+| N2  | ~~`GuardianDto` без ФИО/телефона пользователя~~ **resolved 2026-06-10**        | `resolved`          | `/children/:id` → вкладка «Опекуны»                              |
 | N3  | Storage `child_photo` не реализован                                            | `blocked` (подфича) | `/children/new`, `/children/:id` → фото                          |
 | N4  | `GET /users/me` без `roles[]`/`kindergartens[]`; нет session-restore с ролями  | `forward-looking`   | Восстановление сессии после hard-reload (роли для будущего RBAC) |
 | N5  | Enrollments DTO без поля пола ребёнка                                          | `forward-looking`   | `/enrollments` → child после `card_created` с пустым `gender`    |
@@ -45,17 +45,15 @@
 
 ---
 
-## N2 — `GuardianDto` не содержит ФИО/телефон пользователя · `degraded`
+## N2 — `GuardianDto` без ФИО/телефон пользователя · `resolved` (2026-06-10)
 
-**Нужно фронту.** Вкладка «Опекуны» в карточке ребёнка показывает по дизайну: **ФИО опекуна, телефон, связь (relationship)**, роль, статус, право забирать.
+**Нужно фронту.** Вкладка «Опекуны» в карточке ребёнка показывает по дизайну: **ФИО опекуна, телефон**, роль, статус, право забирать.
 
-**Live backend (проверено).** `GuardianDto` = `{id, kindergarten_id, child_id, user_id, role, status, has_approval_rights, can_pickup, permissions, approved_by, approved_at, revoked_by, revoked_at, permissions_updated_by, permissions_updated_at, created_at, updated_at}`. Пользователь — только `user_id` (UUID). **Нет** `full_name`/`phone`/`relationship`. Batch-резолва users в scope нет.
+**Решение (live, deployed 2026-06-10).** Backend добавил в `GuardianDto` два поля, резолвящиеся из `users` по `child_guardians.user_id`: `user_full_name: string|null`, `user_phone: string|null` (E.164). Присутствуют во всех ответах с `GuardianDto` (list, child-detail `guardians[]`, invite, patch, approve/reject/revoke; а также parent-сторона). ⚠️ Для приглашённого по телефону юзера без профиля `user_full_name = <телефон>` (не `null`).
 
-**Влияние.** `/children/:id` → «Опекуны»: ФИО рендерится как «ID: f728aa95…», телефон «—». Роль/статус/can_pickup/has_approval_rights — корректны. Это согласованная честная деградация (не выдумываем имя из UUID).
+**Сделано на фронте.** `GuardianDtoSchema` += `user_full_name`/`user_phone` (`z.string().nullable()`); вкладка «Опекуны» рисует аватар-инициалы + ФИО + телефон (`formatPhone`). Кейс «имя = телефон» детектится (`resolveGuardianName`) и показывается как «—» (телефон — в своей колонке). HANDOFF §5.1 обновлён. `relationship` backend не отдаёт (вне scope) — связь не показываем.
 
-**Предлагаемый контракт.** Встроить в `GuardianDto` отображаемые поля пользователя: `user_full_name`, `user_phone`, `relationship` — **или** дать users-lookup (`GET /users?ids=<uuid,uuid>` → `[{id, full_name, phone}]`).
-
-**Источник.** OPEN_QUESTIONS §C4. **Действие.** Пересмотреть когда backend расширит `GuardianDto` или появится users-резолв (ожидается с профилем/B6/B14). Не блокирует B4.
+**Источник.** OPEN_QUESTIONS §C4; реализовано в B25. Закрыто.
 
 ---
 

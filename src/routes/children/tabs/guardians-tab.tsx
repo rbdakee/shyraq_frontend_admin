@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { PlusIcon, MoreHorizontalIcon, CheckIcon, XIcon, InfoIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
@@ -48,9 +49,12 @@ import {
   useInviteChildGuardian,
   useUpdateChildGuardian,
   useRevokeChildGuardian,
+  useApproveChildGuardian,
+  useRejectChildGuardian,
   useRevokeAllUserQr,
 } from '@/hooks/use-children';
-import { toI18nKey } from '@/lib/error-map';
+import { getErrorCode, toI18nKey } from '@/lib/error-map';
+import { getInitials, formatPhone } from '@/lib/format';
 
 type GuardianRole = 'primary' | 'secondary' | 'nanny';
 type GuardianStatus = 'pending_approval' | 'approved' | 'rejected' | 'revoked';
@@ -60,6 +64,8 @@ interface GuardianDto {
   kindergarten_id: string;
   child_id: string;
   user_id: string;
+  user_full_name: string | null;
+  user_phone: string | null;
   role: GuardianRole;
   status: GuardianStatus;
   has_approval_rights: boolean;
@@ -108,6 +114,13 @@ function guardianStatusVariant(
   return map[status];
 }
 
+// Backend sets full_name = phone for phone-invited users without a profile yet →
+// treat "name equals phone" (and null) as "no real name set".
+function resolveGuardianName(g: GuardianDto): string | null {
+  if (!g.user_full_name || g.user_full_name === g.user_phone) return null;
+  return g.user_full_name;
+}
+
 function guardianRoleVariant(role: GuardianRole): 'default' | 'info' | 'neutral' {
   const map: Record<GuardianRole, 'default' | 'info' | 'neutral'> = {
     primary: 'default',
@@ -125,12 +138,17 @@ export default function GuardiansTab({ childId }: { childId: string }) {
   const inviteMutation = useInviteChildGuardian(childId);
   const updateMutation = useUpdateChildGuardian(childId);
   const revokeMutation = useRevokeChildGuardian(childId);
+  const approveMutation = useApproveChildGuardian(childId);
+  const rejectMutation = useRejectChildGuardian(childId);
   const revokeAllQrMutation = useRevokeAllUserQr();
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [revokeTarget, setRevokeTarget] = useState<GuardianDto | null>(null);
   const [revokeQrTarget, setRevokeQrTarget] = useState<GuardianDto | null>(null);
   const [editTarget, setEditTarget] = useState<GuardianDto | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<GuardianDto | null>(null);
+  // Single row acted on at a time → gate both buttons of that row to avoid double-submit.
+  const [actingGuardianId, setActingGuardianId] = useState<string | null>(null);
 
   const inviteForm = useForm<InviteGuardianForm>({
     resolver: zodResolver(InviteGuardianSchema),
@@ -177,6 +195,39 @@ export default function GuardiansTab({ childId }: { childId: string }) {
         toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
         console.error(err);
       },
+    });
+  }
+
+  function handleGuardianActionError(err: unknown) {
+    // 422: row no longer pending (someone already processed) → message + reload list.
+    if (getErrorCode(err) === 'invalid_guardian_status_transition') {
+      void guardiansQuery.refetch();
+    }
+    toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
+    console.error(err);
+  }
+
+  function handleApproveGuardian(guardianId: string) {
+    setActingGuardianId(guardianId);
+    approveMutation.mutate(guardianId, {
+      onSuccess: () => toast.success(t('detail.guardians.approve_success')),
+      onError: handleGuardianActionError,
+      onSettled: () => setActingGuardianId(null),
+    });
+  }
+
+  function handleRejectGuardian(guardianId: string) {
+    setActingGuardianId(guardianId);
+    rejectMutation.mutate(guardianId, {
+      onSuccess: () => {
+        setRejectTarget(null);
+        toast.success(t('detail.guardians.reject_success'));
+      },
+      onError: (err) => {
+        setRejectTarget(null);
+        handleGuardianActionError(err);
+      },
+      onSettled: () => setActingGuardianId(null),
     });
   }
 
@@ -242,7 +293,7 @@ export default function GuardiansTab({ childId }: { childId: string }) {
               <TableHead>{t('detail.guardians.columns.status')}</TableHead>
               <TableHead>{t('detail.guardians.columns.can_pickup')}</TableHead>
               <TableHead>{t('detail.guardians.columns.approval_rights')}</TableHead>
-              <TableHead className="w-10" />
+              <TableHead className="text-right" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -256,67 +307,109 @@ export default function GuardiansTab({ childId }: { childId: string }) {
                 </TableCell>
               </TableRow>
             )}
-            {guardians.map((g) => (
-              <TableRow key={g.id}>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="text-[12px] font-mono text-[color:var(--text-3)]"
-                      title={g.user_id}
-                    >
-                      {t('detail.guardians.user_id_label')}: {g.user_id.slice(0, 8)}…
-                    </span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <span className="text-[color:var(--text-4)]">—</span>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={guardianRoleVariant(g.role)}>
-                    {t(`detail.guardians.role.${g.role}`)}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={guardianStatusVariant(g.status)} dot>
-                    {t(`detail.guardians.status.${g.status}`)}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  {g.can_pickup ? (
-                    <CheckIcon className="size-4 text-[color:var(--success)]" />
-                  ) : (
-                    <XIcon className="size-4 text-[color:var(--text-4)]" />
-                  )}
-                </TableCell>
-                <TableCell>
-                  {g.has_approval_rights ? (
-                    <CheckIcon className="size-4 text-[color:var(--success)]" />
-                  ) : (
-                    <XIcon className="size-4 text-[color:var(--text-4)]" />
-                  )}
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon-sm">
-                        <MoreHorizontalIcon className="size-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => setEditTarget(g)}>
-                        {t('detail.guardians.edit_role')}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem variant="destructive" onClick={() => setRevokeTarget(g)}>
-                        {t('detail.guardians.revoke_access')}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem variant="destructive" onClick={() => setRevokeQrTarget(g)}>
-                        {t('detail.guardians.revoke_all_qr')}
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            ))}
+            {guardians.map((g) => {
+              const guardianName = resolveGuardianName(g);
+              return (
+                <TableRow key={g.id}>
+                  <TableCell>
+                    <div className="flex items-center gap-2.5" title={g.user_id}>
+                      <Avatar size="sm">
+                        <AvatarFallback>{getInitials(guardianName)}</AvatarFallback>
+                      </Avatar>
+                      {guardianName ? (
+                        <span className="font-semibold text-[color:var(--text-1)]">
+                          {guardianName}
+                        </span>
+                      ) : (
+                        <span className="text-[color:var(--text-4)]">—</span>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {g.user_phone ? (
+                      <span className="font-mono text-[color:var(--text-2)]">
+                        {formatPhone(g.user_phone)}
+                      </span>
+                    ) : (
+                      <span className="text-[color:var(--text-4)]">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={guardianRoleVariant(g.role)}>
+                      {t(`detail.guardians.role.${g.role}`)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={guardianStatusVariant(g.status)} dot>
+                      {t(`detail.guardians.status.${g.status}`)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {g.can_pickup ? (
+                      <CheckIcon className="size-4 text-[color:var(--success)]" />
+                    ) : (
+                      <XIcon className="size-4 text-[color:var(--text-4)]" />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {g.has_approval_rights ? (
+                      <CheckIcon className="size-4 text-[color:var(--success)]" />
+                    ) : (
+                      <XIcon className="size-4 text-[color:var(--text-4)]" />
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-1.5">
+                      {g.status === 'pending_approval' && (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => handleApproveGuardian(g.id)}
+                            disabled={actingGuardianId === g.id}
+                          >
+                            <CheckIcon />
+                            {t('detail.guardians.approve')}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => setRejectTarget(g)}
+                            disabled={actingGuardianId === g.id}
+                          >
+                            <XIcon />
+                            {t('detail.guardians.reject')}
+                          </Button>
+                        </>
+                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon-sm">
+                            <MoreHorizontalIcon className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditTarget(g)}>
+                            {t('detail.guardians.edit_role')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => setRevokeTarget(g)}
+                          >
+                            {t('detail.guardians.revoke_access')}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onClick={() => setRevokeQrTarget(g)}
+                          >
+                            {t('detail.guardians.revoke_all_qr')}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </div>
@@ -443,6 +536,22 @@ export default function GuardiansTab({ childId }: { childId: string }) {
           if (revokeTarget) handleRevokeGuardian(revokeTarget.id);
         }}
         loading={revokeMutation.isPending}
+      />
+
+      {/* Reject guardian request (terminal) */}
+      <DestructiveConfirm
+        open={!!rejectTarget}
+        onOpenChange={(open) => {
+          if (!open) setRejectTarget(null);
+        }}
+        title={t('modals.reject_guardian.title')}
+        description={t('modals.reject_guardian.description')}
+        confirmLabel={t('modals.reject_guardian.confirm')}
+        cancelLabel={t('modals.reject_guardian.cancel')}
+        onConfirm={() => {
+          if (rejectTarget) handleRejectGuardian(rejectTarget.id);
+        }}
+        loading={rejectMutation.isPending}
       />
 
       {/* Revoke all QR */}

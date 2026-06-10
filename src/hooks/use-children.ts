@@ -15,6 +15,8 @@ import {
   inviteChildGuardian,
   updateChildGuardian,
   revokeChildGuardian,
+  approveChildGuardian,
+  rejectChildGuardian,
   listChildGroupHistory,
   listChildTimeline,
   revokeAllUserQr,
@@ -199,6 +201,28 @@ export function useRevokeChildGuardian(childId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (guardianId: string) => revokeChildGuardian(childId, guardianId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: qk.children.guardians(childId) });
+      void queryClient.invalidateQueries({ queryKey: qk.children.detail(childId) });
+    },
+  });
+}
+
+export function useApproveChildGuardian(childId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (guardianId: string) => approveChildGuardian(childId, guardianId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: qk.children.guardians(childId) });
+      void queryClient.invalidateQueries({ queryKey: qk.children.detail(childId) });
+    },
+  });
+}
+
+export function useRejectChildGuardian(childId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (guardianId: string) => rejectChildGuardian(childId, guardianId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: qk.children.guardians(childId) });
       void queryClient.invalidateQueries({ queryKey: qk.children.detail(childId) });
