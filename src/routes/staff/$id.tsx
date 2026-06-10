@@ -46,6 +46,7 @@ import { useStaff, useUpdateStaff, useDeactivateStaff, useActivateStaff } from '
 import { useGroups, useAssignGroupMentor } from '@/hooks/use-groups';
 import { useRevokeAllUserQr } from '@/hooks/use-children';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
 import { mapValidationErrors } from '@/components/forms/map-validation-errors';
 import { formatDate, formatPhone, getInitials } from '@/lib/format';
@@ -96,6 +97,8 @@ export default function StaffDetailPage() {
 
   const staffQuery = useStaff(id ?? '');
   const staff = staffQuery.data;
+
+  useBreadcrumbLabel(id, staff?.full_name);
 
   const [editing, setEditing] = useState(false);
   const [revokeQrOpen, setRevokeQrOpen] = useState(false);

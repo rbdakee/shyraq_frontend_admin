@@ -19,6 +19,7 @@ import { ErrorState } from '@/components/feedback/error-state';
 import { SkeletonLine, SkeletonBox } from '@/components/feedback/skeleton';
 import { usePayment, type PaymentResponseDto } from '@/hooks/use-payments';
 import { useChildrenList } from '@/hooks/use-children';
+import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import { formatMoney, formatDateTime, getInitials } from '@/lib/format';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
 import { PAYMENT_STATUS_BADGE, PROVIDER_I18N_KEYS } from './payment-constants';
@@ -52,6 +53,11 @@ export default function PaymentDetailPage() {
 
   const paymentQuery = usePayment(id ?? '');
   const payment = paymentQuery.data;
+
+  useBreadcrumbLabel(
+    id,
+    payment ? t('payments.detail.title', { id: payment.id.slice(0, 8) }) : undefined,
+  );
 
   const childrenQuery = useChildrenList({ status: 'active', limit: 200, offset: 0 });
   const childName = useMemo(

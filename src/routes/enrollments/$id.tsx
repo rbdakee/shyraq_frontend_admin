@@ -44,6 +44,7 @@ import {
 } from '@/hooks/use-enrollments';
 import { useStaffList } from '@/hooks/use-staff';
 import { useGroups } from '@/hooks/use-groups';
+import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import { formatDate, formatDateTime, formatPhone, getInitials } from '@/lib/format';
 import { toI18nKey } from '@/lib/error-map';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
@@ -98,6 +99,8 @@ export default function EnrollmentDetailPage() {
   const enrollmentQuery = useEnrollment(id ?? '');
   const enrollment = enrollmentQuery.data?.enrollment;
   const statusLog = enrollmentQuery.data?.log ?? [];
+
+  useBreadcrumbLabel(id, enrollment?.childName ?? enrollment?.contactName);
 
   const updateMutation = useUpdateEnrollment(id ?? '');
   const transitionMutation = useTransitionEnrollment(id ?? '');

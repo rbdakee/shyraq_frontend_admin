@@ -7,6 +7,7 @@ import {
   ArrowRightIcon,
   Trash2Icon,
   RefreshCwIcon,
+  CheckCircleIcon,
   InfoIcon,
   PhoneIcon,
   MailIcon,
@@ -35,6 +36,7 @@ import { DestructiveConfirm } from '@/components/feedback/destructive-confirm';
 import { ErrorState } from '@/components/feedback/error-state';
 import { SkeletonLine, SkeletonBox } from '@/components/feedback/skeleton';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
+import TariffBlock from './_components/tariff-block';
 import { EntityCombobox } from '@/components/forms/entity-combobox';
 import type { ComboboxOption } from '@/components/forms/entity-combobox';
 import {
@@ -42,9 +44,11 @@ import {
   useTransferChildGroup,
   useArchiveChild,
   useReactivateChild,
+  useActivateChild,
 } from '@/hooks/use-children';
 import { useGroups } from '@/hooks/use-groups';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import { formatDate } from '@/lib/format';
 import { toI18nKey } from '@/lib/error-map';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
@@ -115,6 +119,8 @@ export default function ChildDetailPage() {
   const child = childQuery.data?.child;
   const guardians = childQuery.data?.guardians ?? [];
 
+  useBreadcrumbLabel(id, child?.full_name);
+
   const [activeTab, setActiveTab] = useState('profile');
   const [archiveOpen, setArchiveOpen] = useState(false);
   const [reactivateOpen, setReactivateOpen] = useState(false);
@@ -126,6 +132,7 @@ export default function ChildDetailPage() {
 
   const archiveMutation = useArchiveChild(id ?? '');
   const reactivateMutation = useReactivateChild(id ?? '');
+  const activateMutation = useActivateChild(id ?? '');
   const transferMutation = useTransferChildGroup(id ?? '');
 
   const transferForm = useForm<TransferForm>({
@@ -146,6 +153,28 @@ export default function ChildDetailPage() {
       },
       onError: (err) => {
         toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
+        console.error(err);
+      },
+    });
+  }
+
+  function handleActivate() {
+    activateMutation.mutate(undefined, {
+      onSuccess: () => {
+        toast.success(t('modals.activate.success'));
+      },
+      onError: (err) => {
+        // 409 child_activation_requires_tariff → guide the admin to assign a tariff first.
+        if (toI18nKey(err) === 'errors:child_activation_requires_tariff') {
+          toast.error(t('modals.activate.tariff_required'), {
+            action: {
+              label: t('modals.activate.tariff_link'),
+              onClick: () => navigate(`/billing/tariff-assignments?child=${id}`),
+            },
+          });
+        } else {
+          toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
+        }
         console.error(err);
       },
     });
@@ -225,6 +254,7 @@ export default function ChildDetailPage() {
   }
 
   const isArchived = child.status === 'archived';
+  const isCardCreated = child.status === 'card_created';
 
   if (isMobile) {
     const groupName = child.current_group_id ? groupsMap.get(child.current_group_id) : null;
@@ -321,6 +351,11 @@ export default function ChildDetailPage() {
                 {child.enrollment_date ? formatDate(child.enrollment_date, tz) : '—'}
               </span>
             </div>
+          </div>
+
+          {/* Tariff section */}
+          <div className="mt-4">
+            <TariffBlock childId={id!} />
           </div>
         </>
 
@@ -419,20 +454,28 @@ export default function ChildDetailPage() {
                 <ArrowRightIcon className="size-4" />
                 {t('actions.transfer')}
               </Button>
-              {!isArchived ? (
-                <Button variant="destructive" onClick={() => setArchiveOpen(true)}>
-                  <Trash2Icon className="size-4" />
-                  {t('actions.archive')}
+              {isCardCreated ? (
+                <Button onClick={handleActivate} disabled={activateMutation.isPending}>
+                  <CheckCircleIcon className="size-4" />
+                  {t('actions.activate')}
                 </Button>
-              ) : (
+              ) : isArchived ? (
                 <Button onClick={() => setReactivateOpen(true)}>
                   <RefreshCwIcon className="size-4" />
                   {t('actions.reactivate')}
+                </Button>
+              ) : (
+                <Button variant="destructive" onClick={() => setArchiveOpen(true)}>
+                  <Trash2Icon className="size-4" />
+                  {t('actions.archive')}
                 </Button>
               )}
             </div>
           </div>
         </div>
+
+        {/* Tariff */}
+        <TariffBlock childId={id!} />
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>

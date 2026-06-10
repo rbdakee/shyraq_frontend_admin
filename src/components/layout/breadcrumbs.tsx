@@ -1,6 +1,10 @@
 import { useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronRightIcon } from 'lucide-react';
+import { useBreadcrumbStore } from '@/stores/breadcrumb-store';
+
+// UUID-looking segments are entity ids — never show the raw value to the user.
+const ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const SEGMENT_LABELS: Record<string, string> = {
   enrollments: 'nav.enrollments',
@@ -11,7 +15,6 @@ const SEGMENT_LABELS: Record<string, string> = {
   locations: 'nav.structure',
   cameras: 'nav.structure',
   schedule: 'nav.schedule',
-  templates: 'nav.schedule',
   weeks: 'nav.schedule',
   'meal-plans': 'nav.meals',
   content: 'nav.content',
@@ -37,12 +40,23 @@ const SEGMENT_LABELS: Record<string, string> = {
   new: 'actions.create',
 };
 
+// `templates` is shared by Schedule and Diagnostics — resolve by full path so the
+// section's default page collapses into its parent crumb instead of mislabeling.
+const PATH_LABELS: Record<string, string> = {
+  '/schedule/templates': 'nav.schedule',
+  '/diagnostics/templates': 'nav.diagnostics',
+};
+
 interface Crumb {
   label: string;
   path?: string;
 }
 
-function buildCrumbs(pathname: string, t: (key: string) => string): Crumb[] {
+function buildCrumbs(
+  pathname: string,
+  t: (key: string) => string,
+  labels: Record<string, string>,
+): Crumb[] {
   const segs = pathname.split('/').filter(Boolean);
   if (segs.length === 0) {
     return [{ label: t('nav.dashboard') }];
@@ -53,8 +67,10 @@ function buildCrumbs(pathname: string, t: (key: string) => string): Crumb[] {
 
   for (let i = 0; i < segs.length; i++) {
     accumulated += '/' + segs[i];
-    const labelKey = SEGMENT_LABELS[segs[i]];
-    const label = labelKey ? t(labelKey) : segs[i];
+    const seg = segs[i];
+    const labelKey = PATH_LABELS[accumulated] ?? SEGMENT_LABELS[seg];
+    // Registered entity label (id → name) wins; otherwise a raw id collapses to '…'.
+    const label = labels[seg] ?? (labelKey ? t(labelKey) : ID_RE.test(seg) ? '…' : seg);
     const isLast = i === segs.length - 1;
 
     if (i > 0 && labelKey && crumbs.length > 0 && crumbs[crumbs.length - 1].label === label) {
@@ -73,7 +89,8 @@ function buildCrumbs(pathname: string, t: (key: string) => string): Crumb[] {
 export default function Breadcrumbs() {
   const { t } = useTranslation();
   const location = useLocation();
-  const crumbs = buildCrumbs(location.pathname, t);
+  const labels = useBreadcrumbStore((s) => s.labels);
+  const crumbs = buildCrumbs(location.pathname, t, labels);
 
   if (crumbs.length <= 1) {
     return (

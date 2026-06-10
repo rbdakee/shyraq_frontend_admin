@@ -50,11 +50,19 @@
       "day": "День недели",
       "start_time": "Начало",
       "end_time": "Конец",
+      "time_step_error": "Минуты: 00, 15, 30 или 45",
       "activity": "Активность",
+      "category": "Категория",
       "location": "Локация (опц.)",
       "description": "Описание (опц.)",
       "submit": "Добавить",
       "cancel": "Отмена"
+    },
+    "category": {
+      "lesson": "Урок",
+      "activity": "Активность",
+      "meal": "Еда",
+      "sleep": "Сон"
     },
     "edit_dialog": {
       "title": "Слот",
@@ -89,12 +97,10 @@
     },
     "legend": {
       "title": "Условные обозначения",
-      "lesson": "Урок",
       "lesson_sub": "обычное занятие",
-      "meal": "Еда",
+      "activity_sub": "игры, прогулка, творчество",
       "meal_sub": "приём пищи",
-      "walk": "Прогулка",
-      "walk_sub": "прогулка / приём"
+      "sleep_sub": "тихий час / сон"
     }
   },
   "weeks": {

@@ -7,12 +7,15 @@ const ActivityEventStatusEnum = z.enum(['scheduled', 'in_progress', 'completed',
 
 const WeekSnapshotSourceEnum = z.enum(['manual', 'cron']);
 
+export const SlotCategoryEnum = z.enum(['lesson', 'activity', 'meal', 'sleep']);
+
 export const ScheduleTemplateSlotResponseDtoSchema = z.object({
   id: z.string(),
   dayOfWeek: DayOfWeekEnum,
   startTime: z.string(),
   endTime: z.string(),
   activityName: z.string(),
+  category: SlotCategoryEnum,
   locationId: z.string().nullable(),
   description: z.string().nullable(),
 });
@@ -36,6 +39,7 @@ export const ActivityEventResponseDtoSchema = z.object({
   groupId: z.string(),
   templateSlotId: z.string().nullable(),
   activityName: z.string(),
+  category: SlotCategoryEnum,
   locationId: z.string().nullable(),
   startsAt: z.string(),
   endsAt: z.string().nullable(),
@@ -62,6 +66,7 @@ export const WeekCopySummaryDtoSchema = z.object({
   totalEvents: z.number(),
 });
 
+export type SlotCategory = z.infer<typeof SlotCategoryEnum>;
 export type ScheduleTemplateSlot = z.infer<typeof ScheduleTemplateSlotResponseDtoSchema>;
 export type ScheduleTemplate = z.infer<typeof ScheduleTemplateResponseDtoSchema>;
 export type ActivityEvent = z.infer<typeof ActivityEventResponseDtoSchema>;
@@ -106,6 +111,7 @@ export interface CreateSlotBody {
   startTime: string;
   endTime: string;
   activityName: string;
+  category?: SlotCategory;
   locationId?: string;
   description?: string;
 }
@@ -115,6 +121,7 @@ export interface UpdateSlotBody {
   startTime?: string;
   endTime?: string;
   activityName?: string;
+  category?: SlotCategory;
   locationId?: string | null;
   description?: string | null;
 }
@@ -122,6 +129,7 @@ export interface UpdateSlotBody {
 export interface CreateActivityEventBody {
   groupId: string;
   activityName: string;
+  category?: SlotCategory;
   locationId?: string;
   startsAt: string;
   endsAt?: string;
@@ -130,6 +138,7 @@ export interface CreateActivityEventBody {
 
 export interface UpdateActivityEventBody {
   activityName?: string;
+  category?: SlotCategory;
   locationId?: string | null;
   startsAt?: string;
   endsAt?: string | null;
@@ -173,30 +182,27 @@ export async function updateScheduleTemplate(
   return ScheduleTemplateResponseDtoSchema.parse(data);
 }
 
-export async function listTemplateSlots(templateId: string): Promise<ScheduleTemplateSlot[]> {
-  const data: unknown = await apiClient.get(`admin/schedule/templates/${templateId}/slots`).json();
-  return z.array(ScheduleTemplateSlotResponseDtoSchema).parse(data);
-}
-
+// POST/PATCH .../slots return the full updated template (ScheduleTemplateResponseDto),
+// not the single slot — parse accordingly (backend contract, OpenAPI 201/200).
 export async function createSlot(
   templateId: string,
   body: CreateSlotBody,
-): Promise<ScheduleTemplateSlot> {
+): Promise<ScheduleTemplate> {
   const data: unknown = await apiClient
     .post(`admin/schedule/templates/${templateId}/slots`, { json: body })
     .json();
-  return ScheduleTemplateSlotResponseDtoSchema.parse(data);
+  return ScheduleTemplateResponseDtoSchema.parse(data);
 }
 
 export async function updateSlot(
   templateId: string,
   slotId: string,
   body: UpdateSlotBody,
-): Promise<ScheduleTemplateSlot> {
+): Promise<ScheduleTemplate> {
   const data: unknown = await apiClient
     .patch(`admin/schedule/templates/${templateId}/slots/${slotId}`, { json: body })
     .json();
-  return ScheduleTemplateSlotResponseDtoSchema.parse(data);
+  return ScheduleTemplateResponseDtoSchema.parse(data);
 }
 
 export async function deleteSlot(templateId: string, slotId: string): Promise<void> {

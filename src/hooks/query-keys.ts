@@ -115,7 +115,6 @@ export const qk = {
     templatesList: (filters: ScheduleTemplateListFilters = {}) =>
       ['schedule', 'templates', 'list', filters] as const,
     templateDetail: (id: string) => ['schedule', 'templates', 'detail', id] as const,
-    templateSlots: (templateId: string) => ['schedule', 'templates', templateId, 'slots'] as const,
     weekSnapshots: (filters: WeekSnapshotListFilters = {}) =>
       ['schedule', 'week-snapshots', filters] as const,
     activityEvents: (filters: ActivityEventListFilters = {}) =>

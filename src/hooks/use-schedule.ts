@@ -4,7 +4,6 @@ import {
   getScheduleTemplate,
   createScheduleTemplate,
   updateScheduleTemplate,
-  listTemplateSlots,
   createSlot,
   updateSlot,
   deleteSlot,
@@ -33,6 +32,7 @@ import { qk } from './query-keys';
 // Re-export domain types so `routes/*` can consume them via this hook layer
 // (CLAUDE §4 forbids `routes/*` importing from `api/*` directly).
 export type {
+  SlotCategory,
   ScheduleTemplate,
   ScheduleTemplateSlot,
   ActivityEvent,
@@ -65,14 +65,6 @@ export function useScheduleTemplate(id: string) {
     queryKey: qk.schedule.templateDetail(id),
     queryFn: () => getScheduleTemplate(id),
     enabled: !!id,
-  });
-}
-
-export function useTemplateSlots(templateId: string) {
-  return useQuery({
-    queryKey: qk.schedule.templateSlots(templateId),
-    queryFn: () => listTemplateSlots(templateId),
-    enabled: !!templateId,
   });
 }
 
@@ -127,9 +119,6 @@ export function useCreateSlot(templateId: string) {
     mutationFn: (body: CreateSlotBody) => createSlot(templateId, body),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: qk.schedule.templateSlots(templateId),
-      });
-      void queryClient.invalidateQueries({
         queryKey: qk.schedule.templateDetail(templateId),
       });
     },
@@ -143,9 +132,6 @@ export function useUpdateSlot(templateId: string) {
       updateSlot(templateId, slotId, body),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: qk.schedule.templateSlots(templateId),
-      });
-      void queryClient.invalidateQueries({
         queryKey: qk.schedule.templateDetail(templateId),
       });
     },
@@ -157,9 +143,6 @@ export function useDeleteSlot(templateId: string) {
   return useMutation({
     mutationFn: (slotId: string) => deleteSlot(templateId, slotId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: qk.schedule.templateSlots(templateId),
-      });
       void queryClient.invalidateQueries({
         queryKey: qk.schedule.templateDetail(templateId),
       });

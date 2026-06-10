@@ -17,6 +17,8 @@
   "archived_child_not_transferable": "Архивного ребёнка нельзя перевести",
   "child_already_archived": "Ребёнок уже в архиве",
   "child_not_archived": "Ребёнок не находится в архиве",
+  "child_activation_requires_tariff": "Сначала назначьте ребёнку тариф",
+  "invalid_child_status_transition": "Недопустимое изменение статуса ребёнка",
   "child_already_in_group": "Ребёнок уже в группе",
   "archive_reason_required": "Укажите причину архивирования",
   "guardian_not_found": "Опекун не найден",

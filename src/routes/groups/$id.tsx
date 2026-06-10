@@ -21,6 +21,7 @@ import { SkeletonLine, SkeletonBox } from '@/components/feedback/skeleton';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
 import { useGroup, useGroupChildren, useArchiveGroup, useRestoreGroup } from '@/hooks/use-groups';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
+import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import { toI18nKey } from '@/lib/error-map';
 import { formatDate, getInitials } from '@/lib/format';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
@@ -48,6 +49,8 @@ export default function GroupDetailPage() {
 
   const groupQuery = useGroup(id ?? '');
   const group = groupQuery.data;
+
+  useBreadcrumbLabel(id, group?.name);
 
   const childrenQuery = useGroupChildren(id ?? '');
   const childrenCount = childrenQuery.data?.data.length ?? 0;

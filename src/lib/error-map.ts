@@ -39,6 +39,8 @@ export const KNOWN_ERROR_CODES = [
   'archived_child_not_transferable',
   'child_already_archived',
   'child_not_archived',
+  'child_activation_requires_tariff',
+  'invalid_child_status_transition',
   'child_already_in_group',
   'archive_reason_required',
   'guardian_not_found',

@@ -14,17 +14,18 @@
 
 ## Сводка
 
-| ID  | Тема                                                                           | Статус              | Затронутые экраны                                                |
-| --- | ------------------------------------------------------------------------------ | ------------------- | ---------------------------------------------------------------- |
-| N1  | Дашборд: `summary` + `payments-overview` отсутствуют                           | `blocked`           | `/` (Дашборд) — KPI, Финансы, Обзор оплат                        |
-| N2  | ~~`GuardianDto` без ФИО/телефона пользователя~~ **resolved 2026-06-10**        | `resolved`          | `/children/:id` → вкладка «Опекуны»                              |
-| N3  | Storage `child_photo` не реализован                                            | `blocked` (подфича) | `/children/new`, `/children/:id` → фото                          |
-| N4  | `GET /users/me` без `roles[]`/`kindergartens[]`; нет session-restore с ролями  | `forward-looking`   | Восстановление сессии после hard-reload (роли для будущего RBAC) |
-| N5  | Enrollments DTO без поля пола ребёнка                                          | `forward-looking`   | `/enrollments` → child после `card_created` с пустым `gender`    |
-| N6  | `InvoiceResponseDto` без массивов payments/refunds/fiscal_receipts             | `degraded`          | `/billing/invoices/:id` → секции Оплаты/Возвраты/Фискальные      |
-| N7  | Parent-request DTO без отображаемых имён автора/заявителя                      | `degraded`          | `/parent-requests`, `/parent-requests/:id` → тред, шапка, список |
-| N8  | `StaffMemberDto` без user display-полей (`full_name`/`phone` null)             | `degraded`          | `/staff` → колонки ФИО, телефон, аватар-инициалы                 |
-| N9  | Schedule week-snapshots copy без per-group фильтра (только глобально на садик) | `degraded`          | `/schedule/weeks` → CTA «Скопировать неделю» только глобальный   |
+| ID  | Тема                                                                           | Статус              | Затронутые экраны                                                          |
+| --- | ------------------------------------------------------------------------------ | ------------------- | -------------------------------------------------------------------------- |
+| N1  | Дашборд: `summary` + `payments-overview` отсутствуют                           | `blocked`           | `/` (Дашборд) — KPI, Финансы, Обзор оплат                                  |
+| N2  | ~~`GuardianDto` без ФИО/телефона пользователя~~ **resolved 2026-06-10**        | `resolved`          | `/children/:id` → вкладка «Опекуны»                                        |
+| N3  | Storage `child_photo` не реализован                                            | `blocked` (подфича) | `/children/new`, `/children/:id` → фото                                    |
+| N4  | `GET /users/me` без `roles[]`/`kindergartens[]`; нет session-restore с ролями  | `forward-looking`   | Восстановление сессии после hard-reload (роли для будущего RBAC)           |
+| N5  | Enrollments DTO без поля пола ребёнка                                          | `forward-looking`   | `/enrollments` → child после `card_created` с пустым `gender`              |
+| N6  | `InvoiceResponseDto` без массивов payments/refunds/fiscal_receipts             | `degraded`          | `/billing/invoices/:id` → секции Оплаты/Возвраты/Фискальные                |
+| N7  | Parent-request DTO без отображаемых имён автора/заявителя                      | `degraded`          | `/parent-requests`, `/parent-requests/:id` → тред, шапка, список           |
+| N8  | `StaffMemberDto` без user display-полей (`full_name`/`phone` null)             | `degraded`          | `/staff` → колонки ФИО, телефон, аватар-инициалы                           |
+| N9  | Schedule week-snapshots copy без per-group фильтра (только глобально на садик) | `degraded`          | `/schedule/weeks` → CTA «Скопировать неделю» только глобальный             |
+| N10 | ~~Schedule slot без поля `category` (тип слота)~~ **resolved 2026-06-11**      | `resolved`          | `/schedule/templates/:id` → цвет/категория слота (Урок/Активность/Еда/Сон) |
 
 ---
 
@@ -160,6 +161,33 @@
 **Предлагаемый контракт.** Добавить **опциональный** `groupId` в `CopyWeekDto`: при наличии копировать только указанную группу. `WeekCopySummaryDto` остаётся как есть (`copiedGroups ∈ {0, 1}`). Альтернатива: новый отдельный endpoint `POST /admin/schedule/week-snapshots/copy-group {groupId, fromMonday}`. Первый вариант предпочтительнее — меньше DTO/контрактов.
 
 **Источник.** OPEN_QUESTIONS §B1 (2026-05-26, B11 pre-flight). **Действие.** Сделать когда backend расширит `CopyWeekDto` → добавить per-group action в строке группы на `/schedule/weeks`, обновить HANDOFF §10 + DESIGN §6.7 (first-document). Не блокирует B11.
+
+---
+
+## N10 — Schedule slot без поля `category` (тип слота) · `resolved` (2026-06-11)
+
+> **Закрыто.** Backend a1522b0 (в `main`) добавил `category` аддитивно, фронт смигрирован: цвет читается из `slot.category`, добавлен Select «Категория» в форму слота, легенда обновлена (Прогулка → Активность), DTO в HANDOFF §10 обновлены. История ниже — для контекста.
+
+**Нужно фронту.** На `/schedule/templates/:id` каждый слот в недельной сетке цветокодируется по типу: **Урок / Активность / Еда / Сон**. Сейчас у слота **нет поля типа** — фронт угадывает цвет, матча ключевые слова в `activityName` (`getSlotTone`: «завтрак/обед» → Еда, «прогулка/занятие» → ..., «сон» → Сон, иначе → Урок). Это хрупко (зависит от формулировки названия) и **админ не может явно выбрать тип**. Нужна явная категория, выбираемая в форме создания/редактирования слота.
+
+**Live backend (было до a1522b0).** `CreateSlotDto` / `UpdateSlotDto` / `ScheduleTemplateSlotResponseDto` = `{dayOfWeek, startTime, endTime, activityName, locationId?, description?}` — поля типа/категории нет.
+
+**Предлагаемый контракт.**
+
+- **Enum `SlotCategory`** (канонические строковые значения; человекочитаемые лейблы — на фронте, i18n): `lesson` (Урок), `activity` (Активность), `meal` (Еда), `sleep` (Сон).
+- **DB-миграция** `schedule_template_slots`: колонка `category` (enum/text), `NOT NULL DEFAULT 'activity'`; бэкфилл существующих строк → `'activity'` (или по желанию — keyword-эвристикой).
+- **CreateSlotDto**: `category` — обязательное, enum из 4 значений (фронт всегда шлёт; серверный default `'activity'` как страховка).
+- **UpdateSlotDto**: `category` — опциональное, enum.
+- **ScheduleTemplateSlotResponseDto**: `category` — всегда присутствует, enum.
+- **Валидация**: неизвестное значение → 400 (как для прочих enum-полей).
+
+**Проекция в `activity_events` (рекомендуется, вторично).** Слоты проецируются в `activity_events` (week copy / rollout), а Staff/Parent рендерят дневное расписание. Для сквозного цветокодирования: добавить `category` в `activity_events` (копировать из слота при проекции) и вернуть его в DTO событий (admin/staff/parent). Можно отдельным follow-up — для админ-вью шаблонов не обязательно.
+
+**Backward-compat.** Аддитивное изменение: бэкфилл default → нет null-обработки; прочие клиенты игнорируют незнакомое поле.
+
+**Acceptance.** `POST/PATCH .../slots` с `category` персистит/возвращает; `GET …/templates/:id` отдаёт `category` на каждом слоте; невалидный `category` → 400.
+
+**Источник.** Запрос владельца (2026-06-10). **Действие фронта (когда backend отдаст поле):** заменить keyword-`getSlotTone` на чтение `slot.category`; добавить Select «Категория» (Урок/Активность/Еда/Сон) в форму слота; обновить легенду (Прогулка → Активность); обновить HANDOFF §10 (DTO) + DESIGN. До этого — цвет по-прежнему угадывается по названию.
 
 ---
 

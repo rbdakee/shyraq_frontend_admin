@@ -39,6 +39,7 @@ import {
 } from '@/hooks/use-parent-requests';
 import { useChildrenList } from '@/hooks/use-children';
 import { useGroups } from '@/hooks/use-groups';
+import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import { formatDateTime, formatDate, getInitials } from '@/lib/format';
 import { isAppError, toI18nKey } from '@/lib/error-map';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
@@ -111,6 +112,8 @@ export default function ParentRequestDetailPage() {
   );
 
   const request = requestQuery.data;
+
+  useBreadcrumbLabel(id, request ? t(`request_type.${request.request_type}`) : undefined);
 
   const allMessages = useMemo(
     () => messagesQuery.data?.pages.flatMap((p) => p.items) ?? [],

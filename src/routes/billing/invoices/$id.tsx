@@ -45,6 +45,7 @@ import {
   type InvoiceStatus,
 } from '@/hooks/use-invoices';
 import { useChildrenList } from '@/hooks/use-children';
+import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import { formatMoney, formatDate, getInitials } from '@/lib/format';
 import { toI18nKey, isAppError } from '@/lib/error-map';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
@@ -68,6 +69,11 @@ export default function InvoiceDetailPage() {
 
   const invoiceQuery = useInvoice(id ?? '');
   const invoice = invoiceQuery.data;
+
+  useBreadcrumbLabel(
+    id,
+    invoice ? t('invoices.detail.invoice_number', { id: invoice.id.slice(0, 8) }) : undefined,
+  );
 
   const childrenQuery = useChildrenList({ status: 'active', limit: 200, offset: 0 });
   const childName =

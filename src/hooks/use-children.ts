@@ -10,6 +10,7 @@ import {
   transferChildGroup,
   archiveChild,
   reactivateChild,
+  activateChild,
   listChildStatusHistory,
   listChildGuardians,
   inviteChildGuardian,
@@ -166,6 +167,18 @@ export function useReactivateChild(id: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => reactivateChild(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: qk.children.detail(id) });
+      void queryClient.invalidateQueries({ queryKey: qk.children.list() });
+      void queryClient.invalidateQueries({ queryKey: qk.children.statusHistory(id) });
+    },
+  });
+}
+
+export function useActivateChild(id: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => activateChild(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: qk.children.detail(id) });
       void queryClient.invalidateQueries({ queryKey: qk.children.list() });

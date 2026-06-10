@@ -52,6 +52,18 @@ export function formatDate(value: string | Date, timeZone: string): string {
   return `${get('day')}.${get('month')}.${get('year')}`;
 }
 
+/**
+ * Formats an ISO string or Date to a localized month + year, e.g. `Июль 2026`
+ * (ru) / `Шілде 2026` (kk). First letter is uppercased (Intl yields lowercase
+ * month names for these locales).
+ */
+export function formatMonthYear(value: string | Date, locale: 'ru' | 'kk'): string {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  const bcp47 = locale === 'kk' ? 'kk-KZ' : 'ru-RU';
+  const text = new Intl.DateTimeFormat(bcp47, { month: 'long', year: 'numeric' }).format(date);
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 // KZ IIN (ИИН) is an immutable spec: exactly 12 decimal digits.
 const IIN_MAX_DIGITS = 12;
 // Non-breaking space prevents line-wrap between IIN digit groups in narrow table cells

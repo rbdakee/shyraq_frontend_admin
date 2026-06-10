@@ -2,11 +2,14 @@ import { useParams } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ErrorState } from '@/components/feedback/error-state';
 import { useDiagnosticTemplate } from '@/hooks/use-diagnostic-templates';
+import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import { TemplateEditor } from './_components/template-editor';
 
 export default function DiagnosticTemplateDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, error } = useDiagnosticTemplate(id);
+
+  useBreadcrumbLabel(id, data?.name);
 
   if (isLoading) {
     return (

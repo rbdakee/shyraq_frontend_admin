@@ -1,7 +1,18 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import AuthGuard from '@/components/layout/auth-guard';
 import App from '@/App';
 import ServerError from '@/routes/_500';
+
+// Parent path segments that have no page of their own (only nested children).
+// Hitting them directly — or via a breadcrumb link — must land on the section's
+// default page instead of 404. Targets mirror the nav landing routes (nav-config).
+const SECTION_REDIRECTS: Record<string, string> = {
+  schedule: '/schedule/templates',
+  structure: '/structure/locations',
+  billing: '/billing/invoices',
+  diagnostics: '/diagnostics/templates',
+  operations: '/operations/lifecycle-dlq',
+};
 
 const lazy403 = async () => {
   const { default: Component } = await import('@/routes/_403');
@@ -364,6 +375,10 @@ export const router = createBrowserRouter([
               return { Component };
             },
           },
+          ...Object.entries(SECTION_REDIRECTS).map(([segment, to]) => ({
+            path: segment,
+            element: <Navigate to={to} replace />,
+          })),
           { path: '_403', lazy: lazy403 },
           { path: '_500', lazy: lazy500 },
           { path: '*', lazy: lazy404 },

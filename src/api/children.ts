@@ -286,6 +286,13 @@ export async function reactivateChild(id: string): Promise<ReactivateChildRespon
   return ReactivateChildResponseSchema.parse(data);
 }
 
+// card_created → active. Requires an active tariff assignment, else 409
+// child_activation_requires_tariff (the UI prompts to assign a tariff first).
+export async function activateChild(id: string): Promise<ChildDto> {
+  const data: unknown = await apiClient.post(`children/${id}/activate`, { json: {} }).json();
+  return ChildDtoSchema.parse(data);
+}
+
 export async function listChildStatusHistory(
   id: string,
   params: OffsetPaginationParams = {},

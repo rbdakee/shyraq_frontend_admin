@@ -10,6 +10,7 @@ import { DestructiveConfirm } from '@/components/feedback/destructive-confirm';
 import { ErrorState } from '@/components/feedback/error-state';
 import { SkeletonLine, SkeletonBox } from '@/components/feedback/skeleton';
 import { useTariffPlan, useDeactivateTariffPlan } from '@/hooks/use-tariff-plans';
+import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import { resolveJsonbI18n } from '@/lib/jsonb-i18n';
 import { formatMoney, formatDate } from '@/lib/format';
 import { toI18nKey } from '@/lib/error-map';
@@ -24,6 +25,8 @@ export default function TariffPlanDetailPage() {
 
   const planQuery = useTariffPlan(id ?? '');
   const plan = planQuery.data;
+
+  useBreadcrumbLabel(id, plan?.name);
 
   const [deactivateOpen, setDeactivateOpen] = useState(false);
   const deactivateMutation = useDeactivateTariffPlan(id ?? '');

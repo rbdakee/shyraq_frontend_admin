@@ -56,6 +56,7 @@ import {
 import { useGroups } from '@/hooks/use-groups';
 import { useChildrenList } from '@/hooks/use-children';
 import { useTariffPlansList } from '@/hooks/use-tariff-plans';
+import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import { resolveJsonbI18n, type JsonbI18n } from '@/lib/jsonb-i18n';
 import { formatMoney, formatDateTime } from '@/lib/format';
 import { toI18nKey } from '@/lib/error-map';
@@ -261,6 +262,12 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
   const detail = detailQuery.data;
   const discount = detail?.discount;
   const stats = detail?.stats;
+
+  // No-op in create mode (no discountId). For edit/view, show the discount name.
+  useBreadcrumbLabel(
+    discountId,
+    discount ? resolveJsonbI18n(discount.name as JsonbI18n, locale) : undefined,
+  );
 
   const applicationsQuery = useCustomDiscountApplications(discountId ?? '', { limit: 50 });
 
