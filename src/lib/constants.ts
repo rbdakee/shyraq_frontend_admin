@@ -28,3 +28,9 @@ export const MOBILE_BADGE_MAX = 99;
 // Short enough to feel live, long enough to avoid hammering the API on every
 // tab switch / window focus while the user is in the shell.
 export const MOBILE_BADGE_STALE_MS = 60_000;
+
+// WHY: media_url(s)/photo_url are presigned S3 links with a 1-hour signature
+// TTL. Detail queries that render those links re-fetch on this interval (< 1h)
+// so displayed signed URLs never expire on a screen left open & idle past the
+// hour. See OPEN_QUESTIONS §A26 / IMPLEMENTATION_PLAN §B26.
+export const MEDIA_PRESIGNED_REFETCH_MS = 50 * 60 * 1000;

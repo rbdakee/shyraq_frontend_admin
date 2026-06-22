@@ -918,6 +918,29 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 
 ---
 
+## B26 — Presigned media + cache-hardening · post-MVP (backend media-update 2026-06-21)
+
+**Goal:** медиа теперь отдаётся готовыми presigned-ссылками S3 (TTL 1ч) — просмотр фото/видео заработал без изменений рендера; защитить от истечения подписи на простаивающих detail-экранах.
+
+**Inputs:** OPEN_QUESTIONS §A26, HANDOFF §2.6 (read-pattern + 1ч TTL) + §29 reality-check. Места рендера presigned-`<img>`: `components/forms/multipart-media-input.tsx` (контент `media_urls` ← `useContent(id)` через `routes/content/$id.tsx`), `routes/children/$id.tsx` + `routes/children/tabs/profile-tab.tsx` (`photo_url` ← `useChild(id)`). Списки и топбар-аватар (инициалы) presigned-`<img>` не несут.
+
+**Tasks:**
+
+- `lib/constants.ts` += `MEDIA_PRESIGNED_REFETCH_MS = 50 * 60 * 1000` (50 мин < 1ч presigned TTL; WHY-коммент).
+- `hooks/use-content.ts` `useContent` += `refetchInterval: MEDIA_PRESIGNED_REFETCH_MS`.
+- `hooks/use-children.ts` `useChild` += `refetchInterval: MEDIA_PRESIGNED_REFETCH_MS`.
+- Docs: HANDOFF §2.6 + §29 под presigned-реальность; OPEN_QUESTIONS §A26 (resolved) + апдейты §C2/§C5.
+- (Опц., локально у владельца) `pnpm gen:api` — типы полей не меняются (`string[]`), только примеры/описания.
+
+**Acceptance:**
+
+- [x] `media_url(s)` / `photo_url` рендерятся напрямую в `<img>`/`<video>` без auth-заголовка (уже так; blob-костыля нет — нечего удалять).
+- [x] `useContent` / `useChild` авто-refetch'ат каждые 50 мин (< 1ч TTL) → presigned-ссылки на открытых detail-экранах не протухают; `refetchIntervalInBackground` default false.
+- [x] Долгоживущий стор/persist не держит presigned-URL (session-store in-memory; `persistQueryClient` нет).
+- [x] typecheck + lint --max-warnings=0 + test exit 0. Browser QA TBD by user.
+
+---
+
 ## Tracker
 
 | Батч | Тема                                        | Приоритет | Статус |
@@ -948,6 +971,7 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 | B23  | Kaspi Pay onboarding (SMS) + refund-ack     | post-MVP  | [ ]    |
 | B24  | Опекуны: подтвердить/отклонить (admin)      | post-MVP  | [ ]    |
 | B25  | Опекуны: ФИО/телефон (N2 closed)            | post-MVP  | [ ]    |
+| B26  | Presigned media + cache-hardening           | post-MVP  | [x]    |
 
 ---
 

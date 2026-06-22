@@ -27,6 +27,7 @@ export type {
 } from '@/api/content';
 export { ContentTypeEnum, ContentTargetTypeEnum, ContentStatusEnum } from '@/api/content';
 export { validateContentFiles } from '@/lib/content-media-validation';
+import { MEDIA_PRESIGNED_REFETCH_MS } from '@/lib/constants';
 import { qk } from './query-keys';
 
 const ONE_MINUTE = 60 * 1000;
@@ -44,6 +45,10 @@ export function useContent(id: string | undefined) {
     queryKey: qk.content.detail(id ?? ''),
     queryFn: () => getContent(id!),
     enabled: !!id,
+    // WHY refetchInterval: media_urls are presigned S3 links (1h TTL) rendered in
+    // the editor preview; refresh under the TTL so a left-open editor keeps valid
+    // signatures. See OPEN_QUESTIONS §A26 / IMPLEMENTATION_PLAN §B26.
+    refetchInterval: MEDIA_PRESIGNED_REFETCH_MS,
   });
 }
 

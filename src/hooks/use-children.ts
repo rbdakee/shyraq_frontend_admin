@@ -31,6 +31,7 @@ import type {
   UpdateGuardianBody,
   OffsetPaginationParams,
 } from '@/api/children';
+import { MEDIA_PRESIGNED_REFETCH_MS } from '@/lib/constants';
 import { qk } from './query-keys';
 
 export function useChildrenList(filters: ChildListFilters = {}) {
@@ -45,6 +46,10 @@ export function useChild(id: string) {
     queryKey: qk.children.detail(id),
     queryFn: () => getChild(id),
     enabled: !!id,
+    // WHY refetchInterval: photo_url is a presigned S3 link (1h TTL) rendered as
+    // the card avatar; refresh under the TTL so a left-open card keeps a valid
+    // signature. See OPEN_QUESTIONS §A26 / IMPLEMENTATION_PLAN §B26.
+    refetchInterval: MEDIA_PRESIGNED_REFETCH_MS,
   });
 }
 

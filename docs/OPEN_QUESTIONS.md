@@ -270,6 +270,18 @@ Live OpenAPI inspection during manual QA showed `ContentListResponseDto = {items
 5. **Cursor подтверждён:** list + messages → `{items, next_cursor:string|null}` (null на последней странице). Невалидный cursor → 400 `parent_request_cursor_invalid`.
 6. **DTO:** `ParentRequestResponseDto` (18 полей, snake_case; `request_type` enum `trusted_person|day_off|vacation|late_pickup|open_request`, `status` enum `pending|accepted|rejected|cancelled`, `recipient_type` enum `admin|mentor|specialist`, `details` JSONB по типу — `.passthrough()`, не over-model; nullable: `date_from, date_to, recipient_type, recipient_staff_id, reviewed_by, reviewed_at, review_note, invoice_id`). `ParentRequestMessageResponseDto` — только UUID автора (`author_user_id`/`author_staff_id`), без имени → §C15 / N7. Код B8 conform к live с defensive Zod.
 
+### A26 — Медиа отдаётся presigned-ссылками S3 (TTL 1ч); рендер напрямую + cache-hardening · resolved (2026-06-21, backend media-update)
+
+Контекст: backend перевёл раздачу медиа на **готовые абсолютные presigned-ссылки S3** — поля `media_urls[]` / `media_url` (лента, посты, истории, timeline, диагностика) теперь `https://balam-media-dev.object.pscloud.io/<key>?X-Amz-Signature=…` вместо относительного `/api/v1/media/…`. Это закрывает прежнюю проблему «фото не видно»: приватный бакет + auth-required `GET /api/v1/media/...`, к которому браузерный `<img>` не прикладывал JWT (access-токен in-memory, A2 → `ky`-only). Решение владельца (2026-06-21):
+
+1. **Рендер без изменений:** ссылку из `media_url(s)` — напрямую в `<img src>` / `<video src>`, без `Authorization`-заголовка (подпись в URL). Blob-fetch-костыль (авторизованный `fetch` + `createObjectURL`) **не нужен** — у нас он и не строился (фронт всегда рендерил raw `<img>`).
+2. **TTL 1 час** — ссылку нельзя хранить надолго. Кеш-аудит: ни один query не держит URL дольше TTL (`staleTime` ≤ 5 мин, `gcTime` 5 мин, `refetchOnWindowFocus/Mount/Reconnect` on), `persistQueryClient`/localStorage-персиста кеша нет, `session-store` (`avatar_url`) — in-memory. Остаётся узкий edge-кейс «медиа-экран открыт + в фокусе + простаивает >1ч».
+3. **Cache-hardening (B26):** на detail-запросы, реально рендерящие presigned-`<img>` — `useContent(id)` (контент-редактор, `media_urls`) и `useChild(id)` (`photo_url` карточки) — добавлен `refetchInterval = MEDIA_PRESIGNED_REFETCH_MS` (50 мин < 1ч). Списки и топбар-аватар (инициалы-fallback, не `<img>`) presigned-медиа не несут. `refetchIntervalInBackground` оставлен default `false` (фон не полим; на возврат фокуса — `refetchOnWindowFocus`).
+4. **Загрузка** (`POST /admin/content/upload-media`) — без изменений: канонический **неподписанный** `{url, key}`, сохраняем как раньше.
+5. Старый `GET /api/v1/media/{kgId}/{yyyyMm}/{filename}` (под JWT, kg-scoped) — fallback, не используем.
+
+Связано: §C5 (child_photo **upload** presigned всё ещё parked — это про загрузку, не про чтение), §C2 (S3 Phase B). Acceptance — IMPLEMENTATION_PLAN §B26.
+
 ---
 
 ## B. Открытые (open — НЕ кодить до resolve)
@@ -488,6 +500,8 @@ HANDOFF §22,§9.2,§29: admin-эндпоинты конфигурации ес�
 
 HANDOFF §17,§29: Fiscal — read-only stub (B13 backend), full CRUD/retry/queue/report — Phase B (B15 backend). Реальные провайдеры (Halyk ePay, ОФД, SMS, S3) — Phase B, **контракты не изменятся**. Fiscal DTO строим расширяемым типом. Cookie refresh-flow (вместо localStorage, A2) — future, не блокирует MVP. → B15 заглушки.
 
+**Апдейт (2026-06-21):** S3 для **чтения** медиа выкачен (presigned-ссылки, dev-бакет `balam-media-dev`, см. §A26). Остальное из этого пункта (реальные ePay/ОФД/SMS, child_photo **upload**, cookie-auth) — по-прежнему Phase B.
+
 ### C3 — `/admin/*` RBAC-нюанс для DLQ · parked/watch
 
 HANDOFF §24: исторически `/admin/*` мог быть заскоплен строго на роль `admin`. Если валидный админ получает 403 на lifecycle-DLQ — это backend-баг, **эскалировать**, не обходить на фронте. Проверить на проде в B15.
@@ -505,6 +519,8 @@ HANDOFF §24: исторически `/admin/*` мог быть заскопле
 Решение владельца (уточнено у backend, 2026-05-18): фича `child_photo` на backend **ещё не готова** (presigned — Phase B, см. C2; `upload-media` под `child_photo` backend не поддерживает). **Оставляем как есть** — код presigned не трогаем, 404 всплывает как обработанная ошибка (тост, не краш), карточка создаётся без фото (`photo_url?` опционален). НЕ переписывать на `upload-media`, ничего не доинвентить. Сделать фичу, когда backend выкатит storage для child_photo. **Не блокирует B4** (фото — единственная заблокированная подфича; CRUD/группы/опекуны/архив работают).
 
 Пересмотр: когда backend сообщит о готовности child_photo storage → реализовать по фактическому контракту, обновить HANDOFF §2/§5 + DESIGN §183 (presigned vs multipart) под факт (first-document). Связано с C2 (S3/presigned Phase B).
+
+**Апдейт (2026-06-21):** этот пункт — про **upload** фото ребёнка (всё ещё parked, presigned-upload не выкачен). **Чтение** медиа теперь работает через presigned S3 (§A26) — не путать read и upload.
 
 ### C6 — Enrollments: модал «Создать карточку» без полей тарифа · parked/watch (2026-05-19, W4/B5)
 
