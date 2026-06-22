@@ -15,7 +15,7 @@
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
     "test": "vitest run --passWithNoTests",
-    "gen:api": "openapi-typescript http://194.32.140.219:5678/docs-json -o src/api/types/openapi.d.ts",
+    "gen:api": "openapi-typescript https://balam-api-dev.innodev.kz/docs-json -o src/api/types/openapi.d.ts",
     "prepare": "husky"
   },
   "lint-staged": {
@@ -32,6 +32,7 @@
     "@tailwindcss/vite": "^4.3.0",
     "@tanstack/react-query": "^5.100.10",
     "@tanstack/react-table": "^8.21.3",
+    "@vercel/functions": "^3.7.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",

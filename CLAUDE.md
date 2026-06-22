@@ -8,7 +8,7 @@ Onboarding for every Claude Code session in this repo. **Read top to bottom befo
 
 **Shyraq Admin Web** — веб-кабинет управления **одним садиком** для сотрудника с ролью `admin` (заведующая/управляющий). Операционный, насыщенный данными инструмент ежедневного использования. Desktop-first (1280–1920, корректно на 1366×768), плюс **mobile-shell (<1024px, 33 экрана)** — см. `docs/design/handoff-with-mobile/`. RU + KK.
 
-**1 из 4 клиентов одного backend:** SuperAdmin (`../frontend_superadmin/`), **Admin (этот репо)**, Staff App, Parent App. Backend один: `http://194.32.140.219:5678`.
+**1 из 4 клиентов одного backend:** SuperAdmin (`../frontend_superadmin/`), **Admin (этот репо)**, Staff App, Parent App. Backend (dev) один: `https://balam-api-dev.innodev.kz` (HTTPS, валидный серт; старый `http://194.238.42.156:5678` пока отвечает, но мигрировали на домен).
 
 **Первичны наши docs + готовый дизайн** (HANDOFF / DESIGN / `docs/design/handoff/`) и этот `CLAUDE.md` + `docs/IMPLEMENTATION_PLAN.md`. Стек и конвенции — наше решение, зафиксировано в плане (§Foundations). `../frontend_superadmin/` — соседний сервис на похожем стеке: заглядывать туда как в **пример**, только если возник открытый вопрос по архитектуре/тулингу и ответа нет в наших docs. Не «эталон», не копировать вслепую.
 
@@ -28,7 +28,7 @@ Onboarding for every Claude Code session in this repo. **Read top to bottom befo
 | Визуальный handoff (HTML/JSX прототип всех 28 экранов)    | [`docs/design/handoff/shyraq-admin/project/`](docs/design/handoff/shyraq-admin/project/)                                                                                                        |
 | Визуальный handoff (mobile, 33 экрана)                    | [`docs/design/handoff-with-mobile/shyraq-admin/project/`](docs/design/handoff-with-mobile/shyraq-admin/project/) (`mobile-app.jsx`, `mobile-screens.jsx`, `mobile-screens-2.jsx`, `mobile.css`) |
 | Дизайн-токены / темы / Tweaks-панель                      | [`docs/design/handoff/shyraq-admin/project/styles.css`](docs/design/handoff/shyraq-admin/project/styles.css), [`app.jsx`](docs/design/handoff/shyraq-admin/project/app.jsx) (`THEMES`)          |
-| Backend OpenAPI (live)                                    | `http://194.32.140.219:5678/docs-json` · Swagger `…/docs`                                                                                                                                       |
+| Backend OpenAPI (live)                                    | `https://balam-api-dev.innodev.kz/docs-json` · Swagger `…/docs`                                                                                                                                 |
 
 **Backend code** (`../backend_shyraq_v2/`) — читать **только** при критической неопределённости или подозрении на расхождение с handoff. После расхождения — обновить наши docs.
 
@@ -46,7 +46,7 @@ Onboarding for every Claude Code session in this repo. **Read top to bottom befo
 
 API base — `/api/v1`. Полный путь endpoint'а — `/api/v1/<route>`. Swagger живёт на корне домена, **не** под `/api/v1`.
 
-- **Dev:** Vite proxy `'/api' → http://194.32.140.219:5678` (`vite.config.ts`) — пишем `fetch('/api/v1/...')`, CORS не нужен. Хост никогда не хардкодим — через `env.ts` (`VITE_API_BASE_URL=/api/v1`).
+- **Dev:** Vite proxy `'/api' → https://balam-api-dev.innodev.kz` (`vite.config.ts`, через `VITE_BACKEND_URL`) — пишем `fetch('/api/v1/...')`, CORS не нужен. Хост никогда не хардкодим — через `env.ts` (`VITE_API_BASE_URL=/api/v1`).
 - **Типы:** `pnpm gen:api` генерит `src/api/types/openapi.d.ts` из live `/docs-json`. Артефакт коммитим. Backend изменился → `gen:api` + `pnpm typecheck` зелёный.
 - **Auth:** телефон + OTP. Access JWT (15m) — **in-memory**. Refresh opaque hex 64 (30d) — **localStorage** (Admin публичен, не за VPN; принято на MVP, cookie-flow — future). Silent single-flight refresh на `401 invalid_token|token_revoked`; провал → разлогин на `/login`. `pending_role_select` → экран выбора садика.
 - **i18n данные:** канонический ключ — **`kk`** (BCP 47) во всех новых и legacy модулях (backend B22b sweep, см. OPEN_QUESTIONS §A19). Legacy `kz` принимается на input один релиз (backend нормализует → `kk` через `normalizeLegacyKzLocale`), удаляется в backend B23. Фронт **шлёт и читает только `kk`**. `lib/jsonb-i18n.ts` сохраняет fallback на `kz` для чтения непромигрированных старых записей (DB-миграция `B22I18nKzToKk` идёт параллельно). Заголовок `x-custom-lang: ru|kk` (никогда `en`/`kz`) из текущей локали.

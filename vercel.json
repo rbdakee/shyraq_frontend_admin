@@ -6,10 +6,6 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "http://194.238.42.156:5678/api/$1"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
