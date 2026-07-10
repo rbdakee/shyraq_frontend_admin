@@ -164,7 +164,7 @@ export function SpecialistTypesTab() {
                       onClick={() => setModal({ mode: 'edit', type: st })}
                     >
                       <PencilIcon className="size-4" />
-                      {t('specialties.edit.submit')}
+                      {t('common:actions.edit')}
                     </Button>
                     <Button
                       variant="ghost"
