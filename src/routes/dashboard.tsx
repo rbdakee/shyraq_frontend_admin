@@ -204,6 +204,38 @@ export default function DashboardPage() {
 
   const { isMobile } = useBreakpoint();
 
+  const paymentMetrics = paymentsQuery.data
+    ? [
+        {
+          label: t('paid'),
+          count: paymentsQuery.data.paid.count,
+          amount: paymentsQuery.data.paid.amount,
+          tone: 'success' as const,
+        },
+        {
+          label: t('pending'),
+          count: paymentsQuery.data.pending.count,
+          amount: paymentsQuery.data.pending.amount,
+          tone: 'neutral' as const,
+        },
+        {
+          label: t('overdue'),
+          count: paymentsQuery.data.overdue.count,
+          amount: paymentsQuery.data.overdue.amount,
+          tone: 'error' as const,
+        },
+        {
+          label: t('refunded'),
+          count: paymentsQuery.data.refunded.count,
+          amount: paymentsQuery.data.refunded.amount,
+          tone: 'info' as const,
+        },
+      ]
+    : [];
+
+  const providers = paymentsQuery.data?.providers ?? [];
+  const maxProviderAmount = Math.max(...providers.map((p) => p.amount), 1);
+
   if (isMobile) {
     return (
       <>
@@ -393,42 +425,111 @@ export default function DashboardPage() {
               <div className="m-quick-label">{t('mobile_mark', { defaultValue: 'Отметить' })}</div>
             </button>
           </div>
+
+          {/* Finances */}
+          <div className="m-section-h">
+            <div className="m-section-title">{t('finances')}</div>
+            <button
+              type="button"
+              className="m-section-link"
+              onClick={() => navigate('/billing/invoices')}
+            >
+              {t('go_to_invoices')}
+            </button>
+          </div>
+          {summaryQuery.isPending ? (
+            <div className="m-card">
+              <SkeletonBox height={60} />
+            </div>
+          ) : summaryQuery.isError ? (
+            <div className="m-card">
+              <ErrorState onRetry={() => summaryQuery.refetch()} />
+            </div>
+          ) : (
+            <div className="m-card">
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="rounded-[8px] bg-[var(--bg-sunken)] p-3">
+                  <div className="text-[11px] text-[color:var(--text-3)]">{t('mtd_revenue')}</div>
+                  <div className="mt-0.5 text-[18px] font-bold">
+                    {formatMoney(summaryQuery.data.mtd_revenue)}
+                  </div>
+                </div>
+                <div className="rounded-[8px] bg-[var(--bg-sunken)] p-3">
+                  <div className="text-[11px] text-[color:var(--text-3)]">{t('ytd_revenue')}</div>
+                  <div className="mt-0.5 text-[18px] font-bold">
+                    {formatMoney(summaryQuery.data.ytd_revenue)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Payments overview */}
+          <div className="m-section-h">
+            <div className="m-section-title">{t('payments_overview')}</div>
+          </div>
+          {paymentsQuery.isPending ? (
+            <div className="m-card">
+              <SkeletonBox height={140} />
+            </div>
+          ) : paymentsQuery.isError ? (
+            <div className="m-card">
+              <ErrorState onRetry={() => paymentsQuery.refetch()} />
+            </div>
+          ) : (
+            <div className="m-card flex flex-col gap-3">
+              <PeriodPicker
+                value={paymentsPeriod}
+                onChange={setPaymentsPeriod}
+                className="w-full"
+              />
+              <div className="text-[11px] text-[color:var(--text-3)]">
+                {paymentsPeriod.from ? format(paymentsPeriod.from, 'dd.MM.yyyy') : '...'} —{' '}
+                {paymentsPeriod.to ? format(paymentsPeriod.to, 'dd.MM.yyyy') : '...'}
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                {paymentMetrics.map((s) => (
+                  <div key={s.label} className="rounded-[8px] border border-[var(--line)] p-2.5">
+                    <Badge variant={s.tone}>{s.label}</Badge>
+                    <div className="mt-1.5 text-[18px] font-bold leading-tight">{s.count}</div>
+                    <div className="mt-0.5 text-[11px] text-[color:var(--text-3)]">
+                      {formatMoney(s.amount)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="rounded-[8px] border border-[var(--line)] bg-[var(--bg-subtle)] p-2.5">
+                <div className="text-[11px] font-semibold text-[color:var(--text-2)]">
+                  {t('by_providers')}
+                </div>
+                <div className="mt-1.5">
+                  {providers.map((p) => (
+                    <div key={p.provider} className="flex items-center gap-2 py-1 text-[12px]">
+                      <span className="w-[70px] shrink-0 truncate">{p.provider}</span>
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-[var(--bg-sunken)]">
+                        <div
+                          className="h-full rounded-full bg-[var(--primary)]"
+                          style={{
+                            width: `${(p.amount / maxProviderAmount) * 100}%`,
+                          }}
+                        />
+                      </div>
+                      <span className="w-[40px] shrink-0 text-right font-semibold tabular-nums">
+                        {Math.round(p.amount / 1000)}к
+                      </span>
+                    </div>
+                  ))}
+                  {providers.length === 0 && (
+                    <div className="text-[11px] text-[color:var(--text-4)]">—</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </>
     );
   }
-
-  const paymentMetrics = paymentsQuery.data
-    ? [
-        {
-          label: t('paid'),
-          count: paymentsQuery.data.paid.count,
-          amount: paymentsQuery.data.paid.amount,
-          tone: 'success' as const,
-        },
-        {
-          label: t('pending'),
-          count: paymentsQuery.data.pending.count,
-          amount: paymentsQuery.data.pending.amount,
-          tone: 'neutral' as const,
-        },
-        {
-          label: t('overdue'),
-          count: paymentsQuery.data.overdue.count,
-          amount: paymentsQuery.data.overdue.amount,
-          tone: 'error' as const,
-        },
-        {
-          label: t('refunded'),
-          count: paymentsQuery.data.refunded.count,
-          amount: paymentsQuery.data.refunded.amount,
-          tone: 'info' as const,
-        },
-      ]
-    : [];
-
-  const providers = paymentsQuery.data?.providers ?? [];
-  const maxProviderAmount = Math.max(...providers.map((p) => p.amount), 1);
 
   return (
     <div className="flex flex-col gap-[14px]">
