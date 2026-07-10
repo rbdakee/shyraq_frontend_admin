@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
+import { Fab } from '@/components/ui/fab';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -318,6 +319,49 @@ export default function RefundsListPage() {
     [t, tz, paymentsMap, childrenMap],
   );
 
+  const dialogs = (
+    <>
+      <CreateRefundModal open={createOpen} onOpenChange={setCreateOpen} />
+
+      <DestructiveConfirm
+        open={!!approveTarget}
+        onOpenChange={(v) => {
+          if (!v) setApproveTarget(null);
+        }}
+        title={t('refunds.approve_confirm.title')}
+        description={t('refunds.approve_confirm.description')}
+        confirmLabel={t('refunds.actions.approve')}
+        onConfirm={handleApprove}
+        loading={approveMutation.isPending}
+      />
+
+      <DestructiveConfirm
+        open={!!rejectTarget}
+        onOpenChange={(v) => {
+          if (!v) setRejectTarget(null);
+        }}
+        title={t('refunds.reject_confirm.title')}
+        description={t('refunds.reject_confirm.description')}
+        confirmLabel={t('refunds.actions.reject')}
+        requireReason
+        minLen={1}
+        maxLen={500}
+        onConfirm={handleReject}
+        loading={rejectMutation.isPending}
+      />
+
+      <ProcessRefundDialog
+        open={!!processTarget}
+        onOpenChange={(v) => {
+          if (!v) setProcessTarget(null);
+        }}
+        isKaspi={processTargetIsKaspi}
+        onConfirm={handleProcess}
+        loading={processMutation.isPending}
+      />
+    </>
+  );
+
   if (isMobile) {
     const filteredItems = data.filter((r) => {
       if (mobileTab === 'pending') return r.status === 'pending';
@@ -448,11 +492,67 @@ export default function RefundsListPage() {
                       {t(`refunds.status.${r.status}`)}
                     </Badge>
                   </div>
+                  {r.status === 'pending' && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 8,
+                        marginTop: 10,
+                        borderTop: '1px solid var(--line)',
+                        paddingTop: 10,
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="m-btn"
+                        style={{ flex: 1, fontSize: 13 }}
+                        onClick={() => setRejectTarget(r.id)}
+                      >
+                        <XIcon className="size-3.5" />
+                        {t('refunds.actions.reject')}
+                      </button>
+                      <button
+                        type="button"
+                        className="m-btn primary"
+                        style={{ flex: 1, fontSize: 13 }}
+                        onClick={() => setApproveTarget(r.id)}
+                      >
+                        <CheckIcon className="size-3.5" />
+                        {t('refunds.actions.approve')}
+                      </button>
+                    </div>
+                  )}
+                  {r.status === 'approved' && (
+                    <div
+                      style={{
+                        display: 'flex',
+                        gap: 8,
+                        marginTop: 10,
+                        borderTop: '1px solid var(--line)',
+                        paddingTop: 10,
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="m-btn primary"
+                        style={{ flex: 1, fontSize: 13 }}
+                        onClick={() => setProcessTarget(r.id)}
+                      >
+                        <PlayIcon className="size-3.5" />
+                        {t('refunds.actions.process')}
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
           </div>
         </>
+        <Fab onClick={() => setCreateOpen(true)} aria-label={t('refunds.create_button')}>
+          <PlusIcon className="size-6" />
+        </Fab>
+
+        {dialogs}
       </>
     );
   }
@@ -529,47 +629,7 @@ export default function RefundsListPage() {
         toolbar={toolbar}
       />
 
-      <CreateRefundModal open={createOpen} onOpenChange={setCreateOpen} />
-
-      {/* Approve confirm */}
-      <DestructiveConfirm
-        open={!!approveTarget}
-        onOpenChange={(v) => {
-          if (!v) setApproveTarget(null);
-        }}
-        title={t('refunds.approve_confirm.title')}
-        description={t('refunds.approve_confirm.description')}
-        confirmLabel={t('refunds.actions.approve')}
-        onConfirm={handleApprove}
-        loading={approveMutation.isPending}
-      />
-
-      {/* Reject confirm with reason */}
-      <DestructiveConfirm
-        open={!!rejectTarget}
-        onOpenChange={(v) => {
-          if (!v) setRejectTarget(null);
-        }}
-        title={t('refunds.reject_confirm.title')}
-        description={t('refunds.reject_confirm.description')}
-        confirmLabel={t('refunds.actions.reject')}
-        requireReason
-        minLen={1}
-        maxLen={500}
-        onConfirm={handleReject}
-        loading={rejectMutation.isPending}
-      />
-
-      {/* Process confirm (Kaspi → requires history-check ack) */}
-      <ProcessRefundDialog
-        open={!!processTarget}
-        onOpenChange={(v) => {
-          if (!v) setProcessTarget(null);
-        }}
-        isKaspi={processTargetIsKaspi}
-        onConfirm={handleProcess}
-        loading={processMutation.isPending}
-      />
+      {dialogs}
     </div>
   );
 }
