@@ -318,7 +318,10 @@ function MobileView({
   isFetchingMore,
   onLoadMore,
 }: MobileViewProps) {
-  const { t } = useTranslation(['diagnostics', 'staff', 'common']);
+  const { t, i18n } = useTranslation(['diagnostics', 'staff', 'common']);
+  const locale = i18n.language;
+  const specTypesQuery = useSpecialistTypes();
+  const activeSpecTypes = specTypesQuery.data ?? [];
 
   const specFilters = [
     { key: 'all', label: t('common:mobile_filter_all'), count: templates.length },

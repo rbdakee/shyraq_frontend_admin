@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, Controller, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
@@ -229,7 +229,7 @@ function SpecialistTypeModal({
   const updateMut = useUpdateSpecialistType();
 
   const form = useForm<ModalForm>({
-    resolver: zodResolver(ModalSchema),
+    resolver: zodResolver(ModalSchema) as Resolver<ModalForm>,
     defaultValues: {
       code: editType?.code ?? '',
       name_ru: editType?.name_i18n.ru ?? '',
