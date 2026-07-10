@@ -151,6 +151,10 @@
     "sms": "SMS",
     "qr": "QR",
     "shifts": "Ауысымдар",
-    "iin": "ЖСН"
+    "iin": "ЖСН",
+    "actions_title": "Әрекеттер",
+    "edit_profile": "Профильді өңдеу",
+    "revoke_qr": "Барлық QR кері қайтару",
+    "assign_group": "Топ тағайындау"
   }
 }

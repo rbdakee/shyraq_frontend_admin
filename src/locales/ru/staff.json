@@ -151,6 +151,10 @@
     "sms": "SMS",
     "qr": "QR",
     "shifts": "Смены",
-    "iin": "ИИН"
+    "iin": "ИИН",
+    "actions_title": "Действия",
+    "edit_profile": "Редактировать профиль",
+    "revoke_qr": "Отозвать все QR",
+    "assign_group": "Назначить группу"
   }
 }

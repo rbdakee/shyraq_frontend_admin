@@ -17,6 +17,9 @@ import {
   MailIcon,
   CalendarIcon,
   CheckIcon,
+  ShieldOffIcon,
+  ShieldCheckIcon,
+  UsersIcon,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -49,6 +52,7 @@ import { useSpecialistTypes } from '@/hooks/use-specialist-types';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
+import { FullScreenSheet } from '@/components/forms/full-screen-sheet';
 import { mapValidationErrors } from '@/components/forms/map-validation-errors';
 import { formatDate, formatPhone, getInitials } from '@/lib/format';
 import { specialistTypeLabel } from '@/lib/specialist-type';
@@ -111,6 +115,9 @@ export default function StaffDetailPage() {
   const [assignGroupOpen, setAssignGroupOpen] = useState(false);
   const [selectedGroupId, setSelectedGroupId] = useState('');
   const [editingRole, setEditingRole] = useState<string>('mentor');
+  const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
+  const [mobileEditOpen, setMobileEditOpen] = useState(false);
+  const [mobileAssignOpen, setMobileAssignOpen] = useState(false);
 
   const updateMutation = useUpdateStaff(id ?? '');
   const deactivateMutation = useDeactivateStaff(id ?? '');
@@ -130,7 +137,7 @@ export default function StaffDetailPage() {
     },
   });
 
-  function startEdit() {
+  function resetEditForm() {
     if (!staff) return;
     editForm.reset({
       full_name: staff.full_name ?? '',
@@ -140,7 +147,17 @@ export default function StaffDetailPage() {
       fired_at: staff.fired_at ? staff.fired_at.slice(0, 10) : '',
     });
     setEditingRole(staff.role);
+  }
+
+  function startEdit() {
+    resetEditForm();
     setEditing(true);
+  }
+
+  function startMobileEdit() {
+    resetEditForm();
+    setMobileActionsOpen(false);
+    setMobileEditOpen(true);
   }
 
   function cancelEdit() {
@@ -166,6 +183,7 @@ export default function StaffDetailPage() {
         onSuccess: () => {
           toast.success(t('detail.profile.success'));
           setEditing(false);
+          setMobileEditOpen(false);
         },
         onError: (err) => {
           const mapped = mapValidationErrors(err, editForm.setError);
@@ -226,6 +244,7 @@ export default function StaffDetailPage() {
       {
         onSuccess: () => {
           setAssignGroupOpen(false);
+          setMobileAssignOpen(false);
           setSelectedGroupId('');
           toast.success(t('detail.groups.assign_success'));
         },
@@ -261,7 +280,12 @@ export default function StaffDetailPage() {
           back
           flat
           action={
-            <button type="button" className="m-iconbtn ghost" aria-label={t('actions.edit')}>
+            <button
+              type="button"
+              className="m-iconbtn ghost"
+              aria-label={t('mobile.actions_title')}
+              onClick={() => setMobileActionsOpen(true)}
+            >
               <EllipsisIcon />
             </button>
           }
@@ -365,6 +389,316 @@ export default function StaffDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Mobile actions sheet */}
+        <FullScreenSheet
+          open={mobileActionsOpen}
+          onOpenChange={setMobileActionsOpen}
+          title={t('mobile.actions_title')}
+          description={t('mobile.actions_title')}
+        >
+          <div className="flex flex-col gap-2">
+            <button type="button" className="m-list-row w-full text-left" onClick={startMobileEdit}>
+              <div className="flex size-10 items-center justify-center rounded-[10px] bg-[var(--primary-soft)] text-[color:var(--primary)]">
+                <EditIcon className="size-[18px]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="m-row-title">{t('mobile.edit_profile')}</div>
+              </div>
+              <ChevronRightIcon className="size-4 shrink-0 text-[color:var(--text-4)]" />
+            </button>
+
+            <button
+              type="button"
+              className="m-list-row w-full text-left"
+              onClick={() => {
+                setMobileActionsOpen(false);
+                setRevokeQrOpen(true);
+              }}
+            >
+              <div className="flex size-10 items-center justify-center rounded-[10px] bg-[var(--warning-soft)] text-[color:var(--warning-fg)]">
+                <QrCodeIcon className="size-[18px]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="m-row-title">{t('mobile.revoke_qr')}</div>
+              </div>
+              <ChevronRightIcon className="size-4 shrink-0 text-[color:var(--text-4)]" />
+            </button>
+
+            {isMentor && (
+              <button
+                type="button"
+                className="m-list-row w-full text-left"
+                onClick={() => {
+                  setMobileActionsOpen(false);
+                  setSelectedGroupId('');
+                  setMobileAssignOpen(true);
+                }}
+              >
+                <div className="flex size-10 items-center justify-center rounded-[10px] bg-[var(--info-soft)] text-[color:var(--info-fg)]">
+                  <UsersIcon className="size-[18px]" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="m-row-title">{t('mobile.assign_group')}</div>
+                </div>
+                <ChevronRightIcon className="size-4 shrink-0 text-[color:var(--text-4)]" />
+              </button>
+            )}
+
+            {isActive ? (
+              <button
+                type="button"
+                className="m-list-row w-full text-left"
+                onClick={() => {
+                  setMobileActionsOpen(false);
+                  setDeactivateOpen(true);
+                }}
+              >
+                <div className="flex size-10 items-center justify-center rounded-[10px] bg-[var(--danger-soft)] text-[color:var(--danger-fg)]">
+                  <ShieldOffIcon className="size-[18px]" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="m-row-title text-[color:var(--danger-fg)]">
+                    {t('detail.deactivate')}
+                  </div>
+                </div>
+                <ChevronRightIcon className="size-4 shrink-0 text-[color:var(--text-4)]" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="m-list-row w-full text-left"
+                onClick={() => {
+                  setMobileActionsOpen(false);
+                  setActivateOpen(true);
+                }}
+              >
+                <div className="flex size-10 items-center justify-center rounded-[10px] bg-[var(--success-soft)] text-[color:var(--success-fg)]">
+                  <ShieldCheckIcon className="size-[18px]" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="m-row-title">{t('detail.activate')}</div>
+                </div>
+                <ChevronRightIcon className="size-4 shrink-0 text-[color:var(--text-4)]" />
+              </button>
+            )}
+          </div>
+        </FullScreenSheet>
+
+        {/* Mobile edit profile sheet */}
+        <FullScreenSheet
+          open={mobileEditOpen}
+          onOpenChange={(open) => {
+            setMobileEditOpen(open);
+            if (!open) editForm.reset();
+          }}
+          title={t('mobile.edit_profile')}
+          description={t('detail.profile.title')}
+          footer={
+            <Button
+              className="w-full"
+              disabled={updateMutation.isPending}
+              onClick={editForm.handleSubmit(handleEditSubmit)}
+            >
+              {t('detail.profile.save')}
+            </Button>
+          }
+        >
+          <form onSubmit={editForm.handleSubmit(handleEditSubmit)} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                {t('detail.profile.full_name')}
+              </Label>
+              <Input
+                {...editForm.register('full_name')}
+                aria-invalid={!!editForm.formState.errors.full_name}
+              />
+              {editForm.formState.errors.full_name && (
+                <p className="text-[12px] text-[color:var(--danger-fg)]">
+                  {editForm.formState.errors.full_name.message}
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                {t('detail.profile.phone')}
+              </Label>
+              <Input
+                value={staff.phone ? formatPhone(staff.phone) : '—'}
+                disabled
+                className="text-[color:var(--text-3)]"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                {t('detail.profile.role')}
+              </Label>
+              <Controller
+                control={editForm.control}
+                name="role"
+                render={({ field }) => (
+                  <Select
+                    value={field.value}
+                    onValueChange={(v) => {
+                      field.onChange(v);
+                      setEditingRole(v);
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">{t('role.admin')}</SelectItem>
+                      <SelectItem value="mentor">{t('role.mentor')}</SelectItem>
+                      <SelectItem value="specialist">{t('role.specialist')}</SelectItem>
+                      <SelectItem value="reception">{t('role.reception')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+
+            {editingRole === 'specialist' && (
+              <div className="flex flex-col gap-1.5">
+                <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                  {t('detail.profile.specialist_type')}
+                </Label>
+                <Controller
+                  control={editForm.control}
+                  name="specialist_type"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value ?? SPECIALIST_NONE}
+                      onValueChange={(v) => field.onChange(v === SPECIALIST_NONE ? undefined : v)}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={SPECIALIST_NONE}>—</SelectItem>
+                        {activeSpecTypes.map((st) => (
+                          <SelectItem key={st.code} value={st.code}>
+                            {specialistTypeLabel(st.code, activeSpecTypes, locale)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            )}
+
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                {t('detail.profile.hired_at')}
+              </Label>
+              <Input type="date" {...editForm.register('hired_at')} />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                {t('detail.profile.fired_at')}
+              </Label>
+              <Input type="date" {...editForm.register('fired_at')} placeholder="—" />
+            </div>
+          </form>
+        </FullScreenSheet>
+
+        {/* Mobile assign group sheet (mentor only) */}
+        <FullScreenSheet
+          open={mobileAssignOpen}
+          onOpenChange={(open) => {
+            setMobileAssignOpen(open);
+            if (!open) setSelectedGroupId('');
+          }}
+          title={t('detail.groups.assign_title')}
+          description={t('detail.groups.assign_title')}
+          footer={
+            <Button
+              className="w-full"
+              disabled={
+                !selectedGroupId || selectedGroupId === '__pick__' || assignMentor.isPending
+              }
+              onClick={handleAssignGroup}
+            >
+              {t('detail.groups.assign')}
+            </Button>
+          }
+        >
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+              {t('detail.groups.columns.group')}
+            </Label>
+            <Select value={selectedGroupId || '__pick__'} onValueChange={setSelectedGroupId}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder={t('detail.groups.select_group')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__pick__" disabled>
+                  {t('detail.groups.select_group')}
+                </SelectItem>
+                {(groupsQuery.data ?? [])
+                  .filter((g) => !g.archived_at)
+                  .map((g) => (
+                    <SelectItem key={g.id} value={g.id}>
+                      {g.name} &middot; {g.capacity}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </FullScreenSheet>
+
+        {/* Shared modals: DestructiveConfirm for revoke QR + deactivate */}
+        <DestructiveConfirm
+          open={revokeQrOpen}
+          onOpenChange={setRevokeQrOpen}
+          title={t('modals.revoke_all_qr.title')}
+          description={t('modals.revoke_all_qr.description')}
+          confirmLabel={t('modals.revoke_all_qr.confirm')}
+          cancelLabel={t('modals.revoke_all_qr.cancel')}
+          onConfirm={handleRevokeAllQr}
+          loading={revokeAllQrMutation.isPending}
+        />
+
+        <DestructiveConfirm
+          open={deactivateOpen}
+          onOpenChange={setDeactivateOpen}
+          title={t('modals.deactivate.title')}
+          description={t('modals.deactivate.description')}
+          confirmLabel={t('modals.deactivate.confirm')}
+          cancelLabel={t('modals.deactivate.cancel')}
+          onConfirm={handleDeactivate}
+          loading={deactivateMutation.isPending}
+        />
+
+        {/* Activate confirmation dialog */}
+        <Dialog open={activateOpen} onOpenChange={setActivateOpen}>
+          <DialogContent className="sm:max-w-[440px] rounded-[var(--r-xl)] border-[var(--line)] bg-[var(--bg-elev)] p-0 shadow-[var(--shadow-3)]">
+            <DialogHeader className="px-[22px] pt-[18px] pb-3">
+              <DialogTitle className="text-[17px] font-bold tracking-[-0.01em] text-[color:var(--text-1)]">
+                {t('modals.activate.title')}
+              </DialogTitle>
+              <DialogDescription className="text-[13px] text-[color:var(--text-3)]">
+                {t('modals.activate.description')}
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="-mx-0 -mb-0 rounded-b-[var(--r-xl)] border-t border-[var(--line)] bg-transparent px-[22px] py-[14px]">
+              <Button
+                variant="outline"
+                onClick={() => setActivateOpen(false)}
+                className="border-[var(--border)] bg-[var(--bg-elev)] text-[color:var(--text-1)] hover:bg-[var(--bg-sunken)]"
+              >
+                {t('modals.activate.cancel')}
+              </Button>
+              <Button onClick={handleActivate} disabled={activateMutation.isPending}>
+                {t('modals.activate.confirm')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </>
     );
   }
