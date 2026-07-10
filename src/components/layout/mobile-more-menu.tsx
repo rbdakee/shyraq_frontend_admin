@@ -8,9 +8,11 @@ import {
   CalendarIcon,
   SoupIcon,
   NewspaperIcon,
+  CreditCardIcon,
   TagIcon,
   GiftIcon,
   RefreshCwIcon,
+  StarIcon,
   ReceiptIcon,
   ClipboardIcon,
   ScanIcon,
@@ -94,6 +96,11 @@ export default function MobileMoreMenu() {
       title: t('nav.group_billing'),
       items: [
         {
+          icon: CreditCardIcon,
+          label: t('nav.payments'),
+          route: '/billing/payments',
+        },
+        {
           icon: TagIcon,
           label: t('nav.tariffs'),
           route: '/billing/tariff-plans',
@@ -107,6 +114,11 @@ export default function MobileMoreMenu() {
           icon: RefreshCwIcon,
           label: t('nav.refunds'),
           route: '/billing/refunds',
+        },
+        {
+          icon: StarIcon,
+          label: t('nav.holidays'),
+          route: '/billing/holidays',
         },
         {
           icon: ReceiptIcon,
