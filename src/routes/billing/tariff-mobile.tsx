@@ -12,6 +12,10 @@ import {
 } from '@/hooks/use-tariff-assignments';
 import { useChildrenList } from '@/hooks/use-children';
 import { formatMoney } from '@/lib/format';
+import {
+  CreateTariffPlanModal,
+  EditTariffPlanModal,
+} from '@/routes/billing/tariff-plans/tariff-plan-form';
 
 type TabKey = 'plans' | 'assignments';
 
@@ -24,6 +28,8 @@ export default function TariffMobile() {
     ? 'assignments'
     : 'plans';
   const [tab, setTab] = useState<TabKey>(initialTab);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editingPlan, setEditingPlan] = useState<TariffPlanResponseDto | null>(null);
 
   const plansQuery = useTariffPlansList({});
   const plans = plansQuery.data ?? [];
@@ -57,6 +63,7 @@ export default function TariffMobile() {
             type="button"
             className="m-iconbtn primary"
             aria-label={t('tariff_plans.create_button')}
+            onClick={() => setCreateOpen(true)}
           >
             <PlusIcon className="size-5" />
           </button>
@@ -95,7 +102,7 @@ export default function TariffMobile() {
               </div>
             )}
             {plans.map((plan) => (
-              <TariffPlanCard key={plan.id} plan={plan} />
+              <TariffPlanCard key={plan.id} plan={plan} onEdit={() => setEditingPlan(plan)} />
             ))}
           </div>
         )}
@@ -113,15 +120,25 @@ export default function TariffMobile() {
           </div>
         )}
       </>
+
+      <CreateTariffPlanModal open={createOpen} onOpenChange={setCreateOpen} />
+      {editingPlan && (
+        <EditTariffPlanModal plan={editingPlan} onClose={() => setEditingPlan(null)} />
+      )}
     </>
   );
 }
 
-function TariffPlanCard({ plan }: { plan: TariffPlanResponseDto }) {
+function TariffPlanCard({ plan, onEdit }: { plan: TariffPlanResponseDto; onEdit: () => void }) {
   const { t } = useTranslation('billing');
 
   return (
-    <div className="m-card" style={{ padding: 16, opacity: plan.is_active ? 1 : 0.7 }}>
+    <button
+      type="button"
+      onClick={onEdit}
+      className="m-card w-full text-left"
+      style={{ padding: 16, opacity: plan.is_active ? 1 : 0.7 }}
+    >
       <div className="mb-2 flex items-start justify-between">
         <div>
           <div className="text-[15.5px] font-bold tracking-[-0.01em]">{plan.name}</div>
@@ -154,7 +171,7 @@ function TariffPlanCard({ plan }: { plan: TariffPlanResponseDto }) {
         </div>
         <ChevronRightIcon className="size-4 text-[color:var(--text-4)]" />
       </div>
-    </div>
+    </button>
   );
 }
 

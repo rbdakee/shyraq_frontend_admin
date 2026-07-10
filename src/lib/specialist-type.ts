@@ -15,3 +15,13 @@ export function specialistTypeLabel(
   const loc = locale === 'kk' ? 'kk' : 'ru';
   return found.name_i18n[loc] || found.name_i18n.ru || found.name_i18n.kk || code;
 }
+
+// Builds the `name_i18n` payload from the paired RU/KK inputs, dropping blank
+// languages (backend requires at least one non-empty). Shared by the desktop
+// and mobile create/edit forms.
+export function buildSpecialistTypeNameI18n(ru: string, kk: string): { ru?: string; kk?: string } {
+  return {
+    ...(ru.trim() ? { ru: ru.trim() } : {}),
+    ...(kk.trim() ? { kk: kk.trim() } : {}),
+  };
+}

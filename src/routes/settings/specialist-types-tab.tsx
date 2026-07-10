@@ -18,11 +18,13 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { FullScreenSheet } from '@/components/forms/full-screen-sheet';
 import { PairedI18nField } from '@/components/forms/paired-i18n-field';
 import { DestructiveConfirm } from '@/components/feedback/destructive-confirm';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { ErrorState } from '@/components/feedback/error-state';
 import { SkeletonBox } from '@/components/feedback/skeleton';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import {
   useSpecialistTypes,
   useCreateSpecialistType,
@@ -30,13 +32,14 @@ import {
   useDeleteSpecialistType,
   type SpecialistType,
 } from '@/hooks/use-specialist-types';
-import { specialistTypeLabel } from '@/lib/specialist-type';
+import { specialistTypeLabel, buildSpecialistTypeNameI18n } from '@/lib/specialist-type';
 import { isAppError, getErrorCode, toI18nKey } from '@/lib/error-map';
 
 const CODE_RE = /^[a-z][a-z0-9_]{1,63}$/;
 
 export function SpecialistTypesTab() {
   const { t, i18n } = useTranslation('settings');
+  const { isMobile } = useBreakpoint();
   const locale = i18n.language;
   const listQuery = useSpecialistTypes({ include_inactive: true });
   const types = listQuery.data ?? [];
@@ -93,6 +96,106 @@ export function SpecialistTypesTab() {
     });
   }
 
+  // Shared load/error/empty state element, or null when data is ready to render.
+  const stateEl = listQuery.isPending ? (
+    <SkeletonBox height={200} />
+  ) : listQuery.isError ? (
+    <ErrorState onRetry={() => void listQuery.refetch()} />
+  ) : types.length === 0 ? (
+    <EmptyState title={t('specialties.empty')} />
+  ) : null;
+
+  const modals = (
+    <>
+      {modal && <SpecialistTypeModal state={modal} onClose={() => setModal(null)} />}
+
+      <DestructiveConfirm
+        open={deleteTarget !== null}
+        onOpenChange={(v) => {
+          if (!v) setDeleteTarget(null);
+        }}
+        title={t('specialties.delete_confirm_title')}
+        description={t('specialties.delete_confirm_body')}
+        confirmLabel={t('specialties.delete_confirm_action')}
+        onConfirm={handleDelete}
+        loading={deleteMut.isPending}
+      />
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <>
+        <div className="flex flex-col gap-3">
+          <Button onClick={() => setModal({ mode: 'create' })} className="w-full justify-center">
+            <PlusIcon className="size-4" />
+            {t('specialties.add')}
+          </Button>
+
+          {stateEl ?? (
+            <div className="flex flex-col gap-2.5">
+              {types.map((st) => (
+                <div key={st.id} className="m-card" style={{ padding: 14 }}>
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[14px] font-semibold text-[color:var(--text-1)]">
+                          {specialistTypeLabel(st.code, types, locale)}
+                        </span>
+                        {st.is_system && (
+                          <Badge variant="neutral" className="text-[10px]">
+                            {t('specialties.system')}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="mt-0.5 font-mono text-[11px] text-[color:var(--text-3)]">
+                        {st.code}
+                      </div>
+                    </div>
+                    <Badge variant={st.is_active ? 'success' : 'neutral'} dot>
+                      {st.is_active ? t('specialties.active') : t('specialties.inactive')}
+                    </Badge>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2 border-t border-line pt-2.5">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                      onClick={() => setModal({ mode: 'edit', type: st })}
+                    >
+                      <PencilIcon className="size-4" />
+                      {t('specialties.edit.submit')}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleActive(st)}
+                      disabled={updateMut.isPending}
+                    >
+                      {st.is_active ? t('specialties.deactivate') : t('specialties.activate')}
+                    </Button>
+                    {!st.is_system && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-[color:var(--danger)] hover:bg-[var(--danger-soft)]"
+                        onClick={() => setDeleteTarget(st)}
+                        aria-label={t('specialties.delete')}
+                      >
+                        <Trash2Icon className="size-4" />
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        {modals}
+      </>
+    );
+  }
+
   return (
     <div className="rounded-[var(--r-lg)] border border-line bg-bg-elev">
       <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
@@ -106,18 +209,8 @@ export function SpecialistTypesTab() {
         </Button>
       </div>
 
-      {listQuery.isPending ? (
-        <div className="p-5">
-          <SkeletonBox height={200} />
-        </div>
-      ) : listQuery.isError ? (
-        <div className="p-5">
-          <ErrorState onRetry={() => void listQuery.refetch()} />
-        </div>
-      ) : types.length === 0 ? (
-        <div className="p-5">
-          <EmptyState title={t('specialties.empty')} />
-        </div>
+      {stateEl ? (
+        <div className="p-5">{stateEl}</div>
       ) : (
         <table className="w-full text-left text-[13.5px]">
           <thead>
@@ -183,19 +276,7 @@ export function SpecialistTypesTab() {
         </table>
       )}
 
-      {modal && <SpecialistTypeModal state={modal} onClose={() => setModal(null)} />}
-
-      <DestructiveConfirm
-        open={deleteTarget !== null}
-        onOpenChange={(v) => {
-          if (!v) setDeleteTarget(null);
-        }}
-        title={t('specialties.delete_confirm_title')}
-        description={t('specialties.delete_confirm_body')}
-        confirmLabel={t('specialties.delete_confirm_action')}
-        onConfirm={handleDelete}
-        loading={deleteMut.isPending}
-      />
+      {modals}
     </div>
   );
 }
@@ -222,6 +303,7 @@ function SpecialistTypeModal({
   onClose: () => void;
 }) {
   const { t } = useTranslation('settings');
+  const { isMobile } = useBreakpoint();
   const isEdit = state.mode === 'edit';
   const editType = isEdit ? state.type : null;
 
@@ -239,10 +321,7 @@ function SpecialistTypeModal({
   });
 
   function onSubmit(data: ModalForm) {
-    const name_i18n = {
-      ...(data.name_ru.trim() ? { ru: data.name_ru.trim() } : {}),
-      ...(data.name_kk.trim() ? { kk: data.name_kk.trim() } : {}),
-    };
+    const name_i18n = buildSpecialistTypeNameI18n(data.name_ru, data.name_kk);
 
     if (isEdit && editType) {
       updateMut.mutate(
@@ -284,6 +363,104 @@ function SpecialistTypeModal({
   }
 
   const pending = createMut.isPending || updateMut.isPending;
+  const title = isEdit ? t('specialties.edit.title') : t('specialties.create.title');
+
+  const fields = (
+    <>
+      {/* Code */}
+      <div className="flex flex-col gap-1.5">
+        <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+          {t('specialties.create.code')}
+          {!isEdit && <span className="text-[color:var(--danger)]"> *</span>}
+        </Label>
+        <Input
+          {...form.register('code')}
+          disabled={isEdit}
+          placeholder="art_therapist"
+          aria-invalid={!!form.formState.errors.code}
+        />
+        <span className="text-[12px] text-[color:var(--text-3)]">
+          {isEdit ? t('specialties.edit.code_readonly') : t('specialties.create.code_hint')}
+        </span>
+        {form.formState.errors.code && (
+          <p className="text-[12px] text-[color:var(--danger-fg)]">
+            {t(form.formState.errors.code.message ?? '')}
+          </p>
+        )}
+      </div>
+
+      {/* Name (i18n) */}
+      <div className="flex flex-col gap-1.5">
+        <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+          {t('specialties.create.name')}
+          <span className="text-[color:var(--danger)]"> *</span>
+        </Label>
+        <Controller
+          control={form.control}
+          name="name_ru"
+          render={({ field: ruField }) => (
+            <Controller
+              control={form.control}
+              name="name_kk"
+              render={({ field: kkField }) => (
+                <PairedI18nField
+                  value={{ ru: ruField.value, kk: kkField.value }}
+                  onChange={(val) => {
+                    ruField.onChange(val.ru);
+                    kkField.onChange(val.kk);
+                  }}
+                  as="input"
+                />
+              )}
+            />
+          )}
+        />
+        {form.formState.errors.name_ru && (
+          <p className="text-[12px] text-[color:var(--danger-fg)]">
+            {t(form.formState.errors.name_ru.message ?? '')}
+          </p>
+        )}
+      </div>
+
+      {/* Active toggle */}
+      <Controller
+        control={form.control}
+        name="is_active"
+        render={({ field }) => (
+          <label className="flex items-center gap-2 text-[13px] text-[color:var(--text-2)]">
+            <Switch checked={field.value} onCheckedChange={field.onChange} />
+            {t('specialties.active')}
+          </label>
+        )}
+      />
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <FullScreenSheet
+        open
+        onOpenChange={(v) => {
+          if (!v) onClose();
+        }}
+        title={title}
+        description={title}
+      >
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          {fields}
+          <div className="flex gap-2 pt-1">
+            <Button type="button" variant="outline" onClick={onClose} className="flex-1">
+              {t('specialties.cancel')}
+            </Button>
+            <Button type="submit" disabled={pending} className="flex-1">
+              {pending && <Loader2Icon className="size-4 animate-spin" />}
+              {isEdit ? t('specialties.edit.submit') : t('specialties.create.submit')}
+            </Button>
+          </div>
+        </form>
+      </FullScreenSheet>
+    );
+  }
 
   return (
     <Dialog
@@ -295,7 +472,7 @@ function SpecialistTypeModal({
       <DialogContent className="sm:max-w-[460px] rounded-[var(--r-xl)] border-[var(--line)] bg-[var(--bg-elev)] p-0 shadow-[var(--shadow-3)]">
         <DialogHeader className="px-[22px] pt-[18px] pb-3">
           <DialogTitle className="text-[17px] font-bold tracking-[-0.01em] text-[color:var(--text-1)]">
-            {isEdit ? t('specialties.edit.title') : t('specialties.create.title')}
+            {title}
           </DialogTitle>
         </DialogHeader>
 
@@ -303,72 +480,7 @@ function SpecialistTypeModal({
           onSubmit={form.handleSubmit(onSubmit)}
           className="flex flex-col gap-4 px-[22px] pb-[18px]"
         >
-          {/* Code */}
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
-              {t('specialties.create.code')}
-              {!isEdit && <span className="text-[color:var(--danger)]"> *</span>}
-            </Label>
-            <Input
-              {...form.register('code')}
-              disabled={isEdit}
-              placeholder="art_therapist"
-              aria-invalid={!!form.formState.errors.code}
-            />
-            <span className="text-[12px] text-[color:var(--text-3)]">
-              {isEdit ? t('specialties.edit.code_readonly') : t('specialties.create.code_hint')}
-            </span>
-            {form.formState.errors.code && (
-              <p className="text-[12px] text-[color:var(--danger-fg)]">
-                {t(form.formState.errors.code.message ?? '')}
-              </p>
-            )}
-          </div>
-
-          {/* Name (i18n) */}
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
-              {t('specialties.create.name')}
-              <span className="text-[color:var(--danger)]"> *</span>
-            </Label>
-            <Controller
-              control={form.control}
-              name="name_ru"
-              render={({ field: ruField }) => (
-                <Controller
-                  control={form.control}
-                  name="name_kk"
-                  render={({ field: kkField }) => (
-                    <PairedI18nField
-                      value={{ ru: ruField.value, kk: kkField.value }}
-                      onChange={(val) => {
-                        ruField.onChange(val.ru);
-                        kkField.onChange(val.kk);
-                      }}
-                      as="input"
-                    />
-                  )}
-                />
-              )}
-            />
-            {form.formState.errors.name_ru && (
-              <p className="text-[12px] text-[color:var(--danger-fg)]">
-                {t(form.formState.errors.name_ru.message ?? '')}
-              </p>
-            )}
-          </div>
-
-          {/* Active toggle */}
-          <Controller
-            control={form.control}
-            name="is_active"
-            render={({ field }) => (
-              <label className="flex items-center gap-2 text-[13px] text-[color:var(--text-2)]">
-                <Switch checked={field.value} onCheckedChange={field.onChange} />
-                {t('specialties.active')}
-              </label>
-            )}
-          />
+          {fields}
 
           <DialogFooter className="-mx-0 -mb-0 rounded-b-[var(--r-xl)] border-t border-[var(--line)] bg-transparent px-[22px] py-[14px]">
             <Button
