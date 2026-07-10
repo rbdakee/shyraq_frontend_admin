@@ -192,6 +192,13 @@ export const router = createBrowserRouter([
             },
           },
           {
+            path: 'content/stories',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/content/stories');
+              return { Component };
+            },
+          },
+          {
             path: 'content/:id',
             lazy: async () => {
               const { default: Component } = await import('@/routes/content/$id');

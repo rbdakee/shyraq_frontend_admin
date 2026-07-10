@@ -45,14 +45,15 @@ import { SkeletonLine, SkeletonBox } from '@/components/feedback/skeleton';
 import { useStaff, useUpdateStaff, useDeactivateStaff, useActivateStaff } from '@/hooks/use-staff';
 import { useGroups, useAssignGroupMentor } from '@/hooks/use-groups';
 import { useRevokeAllUserQr } from '@/hooks/use-children';
+import { useSpecialistTypes } from '@/hooks/use-specialist-types';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
 import { mapValidationErrors } from '@/components/forms/map-validation-errors';
 import { formatDate, formatPhone, getInitials } from '@/lib/format';
+import { specialistTypeLabel } from '@/lib/specialist-type';
 import { toI18nKey } from '@/lib/error-map';
-import { DEFAULT_TIMEZONE, SPECIALIST_TYPES } from '@/lib/constants';
-import type { SpecialistType } from '@/lib/constants';
+import { DEFAULT_TIMEZONE } from '@/lib/constants';
 
 type StaffData = NonNullable<ReturnType<typeof useStaff>['data']>;
 type StaffRole = StaffData['role'];
@@ -90,13 +91,16 @@ type EditStaffForm = z.infer<typeof EditStaffSchema>;
 
 export default function StaffDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { t } = useTranslation('staff');
+  const { t, i18n } = useTranslation('staff');
+  const locale = i18n.language;
   const tErrors = useTranslation('errors').t;
   const { isMobile } = useBreakpoint();
   const tz = DEFAULT_TIMEZONE;
 
   const staffQuery = useStaff(id ?? '');
   const staff = staffQuery.data;
+  const specTypesQuery = useSpecialistTypes();
+  const activeSpecTypes = specTypesQuery.data ?? [];
 
   useBreadcrumbLabel(id, staff?.full_name);
 
@@ -152,7 +156,7 @@ export default function StaffDetailPage() {
         specialist_type:
           data.role === 'specialist'
             ? data.specialist_type
-              ? (data.specialist_type as SpecialistType)
+              ? data.specialist_type
               : undefined
             : null,
         hired_at: data.hired_at || null,
@@ -403,7 +407,7 @@ export default function StaffDetailPage() {
               <span className="size-1 rounded-full bg-[var(--text-4)]" />
               <span>
                 {staff.specialist_type
-                  ? t(`specialist_type.${staff.specialist_type}`)
+                  ? specialistTypeLabel(staff.specialist_type, activeSpecTypes, locale)
                   : t(`role.${staff.role}`)}
               </span>
               {staff.hired_at && (
@@ -534,9 +538,9 @@ export default function StaffDetailPage() {
                           </SelectTrigger>
                           <SelectContent>
                             <SelectItem value={SPECIALIST_NONE}>—</SelectItem>
-                            {SPECIALIST_TYPES.map((st) => (
-                              <SelectItem key={st} value={st}>
-                                {t(`specialist_type.${st}`)}
+                            {activeSpecTypes.map((st) => (
+                              <SelectItem key={st.code} value={st.code}>
+                                {specialistTypeLabel(st.code, activeSpecTypes, locale)}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -731,6 +735,11 @@ function ProfileReadOnly({
   t: (key: string, opts?: Record<string, string>) => string;
   tz: string;
 }) {
+  const { i18n } = useTranslation('staff');
+  const locale = i18n.language;
+  const specTypesQuery = useSpecialistTypes();
+  const activeSpecTypes = specTypesQuery.data ?? [];
+
   return (
     <div className="mt-3 flex flex-col gap-3">
       <div className="grid grid-cols-2 gap-3">
@@ -760,7 +769,9 @@ function ProfileReadOnly({
               {t('detail.profile.specialist_type')}
             </span>
             <span className="text-[14px] text-[color:var(--text-1)]">
-              {staff.specialist_type ? t(`specialist_type.${staff.specialist_type}`) : '—'}
+              {staff.specialist_type
+                ? specialistTypeLabel(staff.specialist_type, activeSpecTypes, locale)
+                : '—'}
             </span>
           </div>
         )}

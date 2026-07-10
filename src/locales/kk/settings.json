@@ -9,7 +9,49 @@
   "tab_design": "Дизайн",
   "tab_payments": "Төлем",
   "tab_fiscal": "Фискалдық параметрлер",
+  "tab_specialties": "Мамандықтар",
   "tab_subscription": "Жазылым",
+
+  "specialties": {
+    "title": "Мамандықтар анықтамалығы",
+    "subtitle": "Балабақшаңыздың маман түрлері",
+    "add": "Мамандық қосу",
+    "col_name": "Атауы",
+    "col_code": "Коды",
+    "col_status": "Күйі",
+    "system": "Жүйелік",
+    "active": "Белсенді",
+    "inactive": "Өшірілген",
+    "deactivate": "Өшіру",
+    "activate": "Қосу",
+    "delete": "Жою",
+    "empty": "Мамандықтар әзірге жоқ",
+    "deactivate_success": "Мамандық өшірілді",
+    "activate_success": "Мамандық қосылды",
+    "delete_confirm_title": "Мамандықты жою керек пе?",
+    "delete_confirm_body": "Бұл әрекет қайтарылмайды. Мамандық анықтамалықтан жойылады.",
+    "delete_confirm_action": "Жою",
+    "delete_success": "Мамандық жойылды",
+    "in_use": "Қолданылуда: {{staff}} қызметкер, {{templates}} шаблон. Жоюдың орнына өшіріңіз.",
+    "code_invalid": "Латын әрпі/сан/астын сызу, әріптен басталады (2–64)",
+    "code_taken": "Мұндай код бар",
+    "name_required": "Кемінде бір тілде атауын көрсетіңіз",
+    "cancel": "Бас тарту",
+    "create": {
+      "title": "Жаңа мамандық",
+      "code": "Коды",
+      "code_hint": "Латын әрпі, snake_case (мыс. art_therapist). Кейін өзгертуге болмайды.",
+      "name": "Атауы (RU/KK)",
+      "submit": "Жасау",
+      "success": "Мамандық жасалды"
+    },
+    "edit": {
+      "title": "Мамандықты өңдеу",
+      "code_readonly": "Кодты өзгертуге болмайды",
+      "submit": "Сақтау",
+      "success": "Мамандық жаңартылды"
+    }
+  },
 
   "pay_kaspi_title": "Kaspi Pay",
   "pay_kaspi_sub": "Балабақшаның кассалық аккаунты",
@@ -52,6 +94,10 @@
 
   "general_logo": "Логотип",
   "upload_logo": "Логотипті жүктеу",
+  "logo_delete": "Логотипті жою",
+  "logo_hint": "PNG немесе JPG, 5 МБ дейін, шаршы 1:1",
+  "logo_upload_success": "Логотип жүктелді",
+  "logo_delete_success": "Логотип жойылды",
 
   "ops_time_currency": "Уақыт және валюта",
   "field_timezone": "Уақыт белдеуі",

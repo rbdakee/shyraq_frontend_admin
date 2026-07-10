@@ -54,6 +54,8 @@
       "activity": "Активность",
       "category": "Категория",
       "location": "Локация (опц.)",
+      "location_placeholder": "Выберите локацию",
+      "location_none": "Без локации",
       "description": "Описание (опц.)",
       "submit": "Добавить",
       "cancel": "Отмена"

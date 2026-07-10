@@ -46,6 +46,8 @@ export const KindergartenFullSchema = z.object({
   slug: z.string(),
   address: z.string().nullable(),
   phone: z.string().nullable(),
+  // Presigned S3 URL (TTL ~1h, N11) or null when no logo uploaded. Render straight into <img>.
+  logo_url: z.string().nullable().optional(),
   plan: z.string(),
   settings: KindergartenSettingsSchema,
   is_active: z.boolean(),
@@ -70,4 +72,24 @@ export async function updateMySettings(
 ): Promise<KindergartenFull> {
   const raw: unknown = await apiClient.patch('kindergartens/me/settings', { json: body }).json();
   return KindergartenFullSchema.parse(raw);
+}
+
+// --- Logo (N11) ---
+
+const KindergartenLogoResponseSchema = z.object({
+  logo_url: z.string().nullable(),
+});
+
+export type KindergartenLogoResponse = z.infer<typeof KindergartenLogoResponseSchema>;
+
+export async function uploadKindergartenLogo(file: File): Promise<KindergartenLogoResponse> {
+  const fd = new FormData();
+  fd.append('file', file);
+  const raw: unknown = await apiClient.post('admin/kindergartens/me/logo', { body: fd }).json();
+  return KindergartenLogoResponseSchema.parse(raw);
+}
+
+export async function deleteKindergartenLogo(): Promise<KindergartenLogoResponse> {
+  const raw: unknown = await apiClient.delete('admin/kindergartens/me/logo').json();
+  return KindergartenLogoResponseSchema.parse(raw);
 }

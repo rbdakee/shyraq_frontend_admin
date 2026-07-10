@@ -40,7 +40,8 @@ import type {
   TemplateFieldType,
   UpdateDiagnosticTemplateBody,
 } from '@/hooks/use-diagnostic-templates';
-import { SPECIALIST_TYPES } from '@/lib/constants';
+import { useSpecialistTypes } from '@/hooks/use-specialist-types';
+import { specialistTypeLabel } from '@/lib/specialist-type';
 import { slugifyKey } from '@/lib/format';
 import { isAppError, toI18nKey } from '@/lib/error-map';
 
@@ -133,8 +134,11 @@ interface TemplateEditorProps {
 }
 
 export function TemplateEditor({ mode, template, schemaLocked = false }: TemplateEditorProps) {
-  const { t } = useTranslation(['diagnostics', 'staff', 'common', 'errors']);
+  const { t, i18n } = useTranslation(['diagnostics', 'staff', 'common', 'errors']);
+  const locale = i18n.language;
   const navigate = useNavigate();
+  const specTypesQuery = useSpecialistTypes();
+  const activeSpecTypes = specTypesQuery.data ?? [];
   const createMutation = useCreateDiagnosticTemplate();
   const updateMutation = useUpdateDiagnosticTemplate(template?.id ?? '');
   const [hasEntriesLock, setHasEntriesLock] = useState(schemaLocked);
@@ -262,9 +266,9 @@ export function TemplateEditor({ mode, template, schemaLocked = false }: Templat
                           />
                         </SelectTrigger>
                         <SelectContent>
-                          {SPECIALIST_TYPES.map((st) => (
-                            <SelectItem key={st} value={st}>
-                              {t(`staff:specialist_type.${st}`)}
+                          {activeSpecTypes.map((st) => (
+                            <SelectItem key={st.code} value={st.code}>
+                              {specialistTypeLabel(st.code, activeSpecTypes, locale)}
                             </SelectItem>
                           ))}
                         </SelectContent>

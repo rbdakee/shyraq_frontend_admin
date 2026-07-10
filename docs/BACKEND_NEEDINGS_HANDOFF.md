@@ -14,18 +14,20 @@
 
 ## Сводка
 
-| ID  | Тема                                                                           | Статус              | Затронутые экраны                                                          |
-| --- | ------------------------------------------------------------------------------ | ------------------- | -------------------------------------------------------------------------- |
-| N1  | Дашборд: `summary` + `payments-overview` отсутствуют                           | `blocked`           | `/` (Дашборд) — KPI, Финансы, Обзор оплат                                  |
-| N2  | ~~`GuardianDto` без ФИО/телефона пользователя~~ **resolved 2026-06-10**        | `resolved`          | `/children/:id` → вкладка «Опекуны»                                        |
-| N3  | Storage `child_photo` не реализован                                            | `blocked` (подфича) | `/children/new`, `/children/:id` → фото                                    |
-| N4  | `GET /users/me` без `roles[]`/`kindergartens[]`; нет session-restore с ролями  | `forward-looking`   | Восстановление сессии после hard-reload (роли для будущего RBAC)           |
-| N5  | Enrollments DTO без поля пола ребёнка                                          | `forward-looking`   | `/enrollments` → child после `card_created` с пустым `gender`              |
-| N6  | `InvoiceResponseDto` без массивов payments/refunds/fiscal_receipts             | `degraded`          | `/billing/invoices/:id` → секции Оплаты/Возвраты/Фискальные                |
-| N7  | Parent-request DTO без отображаемых имён автора/заявителя                      | `degraded`          | `/parent-requests`, `/parent-requests/:id` → тред, шапка, список           |
-| N8  | `StaffMemberDto` без user display-полей (`full_name`/`phone` null)             | `degraded`          | `/staff` → колонки ФИО, телефон, аватар-инициалы                           |
-| N9  | Schedule week-snapshots copy без per-group фильтра (только глобально на садик) | `degraded`          | `/schedule/weeks` → CTA «Скопировать неделю» только глобальный             |
-| N10 | ~~Schedule slot без поля `category` (тип слота)~~ **resolved 2026-06-11**      | `resolved`          | `/schedule/templates/:id` → цвет/категория слота (Урок/Активность/Еда/Сон) |
+| ID  | Тема                                                                                        | Статус              | Затронутые экраны                                                                 |
+| --- | ------------------------------------------------------------------------------------------- | ------------------- | --------------------------------------------------------------------------------- |
+| N1  | Дашборд: `summary` + `payments-overview` отсутствуют                                        | `blocked`           | `/` (Дашборд) — KPI, Финансы, Обзор оплат                                         |
+| N2  | ~~`GuardianDto` без ФИО/телефона пользователя~~ **resolved 2026-06-10**                     | `resolved`          | `/children/:id` → вкладка «Опекуны»                                               |
+| N3  | Storage `child_photo` не реализован                                                         | `blocked` (подфича) | `/children/new`, `/children/:id` → фото                                           |
+| N4  | `GET /users/me` без `roles[]`/`kindergartens[]`; нет session-restore с ролями               | `forward-looking`   | Восстановление сессии после hard-reload (роли для будущего RBAC)                  |
+| N5  | Enrollments DTO без поля пола ребёнка                                                       | `forward-looking`   | `/enrollments` → child после `card_created` с пустым `gender`                     |
+| N6  | `InvoiceResponseDto` без массивов payments/refunds/fiscal_receipts                          | `degraded`          | `/billing/invoices/:id` → секции Оплаты/Возвраты/Фискальные                       |
+| N7  | Parent-request DTO без отображаемых имён автора/заявителя                                   | `degraded`          | `/parent-requests`, `/parent-requests/:id` → тред, шапка, список                  |
+| N8  | `StaffMemberDto` без user display-полей (`full_name`/`phone` null)                          | `degraded`          | `/staff` → колонки ФИО, телефон, аватар-инициалы                                  |
+| N9  | Schedule week-snapshots copy без per-group фильтра (только глобально на садик)              | `degraded`          | `/schedule/weeks` → CTA «Скопировать неделю» только глобальный                    |
+| N10 | ~~Schedule slot без поля `category` (тип слота)~~ **resolved 2026-06-11**                   | `resolved`          | `/schedule/templates/:id` → цвет/категория слота (Урок/Активность/Еда/Сон)        |
+| N11 | ~~Нет endpoint/поля логотипа садика (`logo_url` + upload)~~ **resolved 2026-07-10**         | `resolved`          | `/settings` → вкладка «Общие», карточка «Логотип» (загрузка/удаление/превью)      |
+| N12 | ~~`specialist_type` — фиксированный enum; нет admin-managed типов~~ **resolved 2026-07-10** | `resolved`          | `/staff`, `/diagnostics`, `/settings` → вкладка «Специальности» (CRUD-справочник) |
 
 ---
 
@@ -188,6 +190,65 @@
 **Acceptance.** `POST/PATCH .../slots` с `category` персистит/возвращает; `GET …/templates/:id` отдаёт `category` на каждом слоте; невалидный `category` → 400.
 
 **Источник.** Запрос владельца (2026-06-10). **Действие фронта (когда backend отдаст поле):** заменить keyword-`getSlotTone` на чтение `slot.category`; добавить Select «Категория» (Урок/Активность/Еда/Сон) в форму слота; обновить легенду (Прогулка → Активность); обновить HANDOFF §10 (DTO) + DESIGN. До этого — цвет по-прежнему угадывается по названию.
+
+---
+
+## N11 — Логотип садика: нет endpoint загрузки и поля `logo_url` · `resolved` (2026-07-10)
+
+**Решение (backend deployed, LOGO_AND_SPECIALIST_TYPES_FRONTEND_GUIDE §1).** Добавлено поле `logo_url: string|null` (presigned, TTL ~1ч) в `KindergartenDto`/`ParentKindergartenDto`; `POST /admin/kindergartens/me/logo` (multipart `file`, image/\*, ≤5 МБ) → `{logo_url}`; `DELETE …/me/logo` → `{logo_url:null}` (идемпотентно). Коды: `logo_required`/`logo_type_invalid`/`logo_too_large` (400), `kindergarten_not_found` (404).
+
+**Сделано на фронте (2026-07-10).** `api/kindergartens.ts` += `logo_url` в `KindergartenFullSchema` + `uploadKindergartenLogo`/`deleteKindergartenLogo`; `use-kindergarten.ts` += `useUploadKindergartenLogo`/`useDeleteKindergartenLogo` (инвалидируют `kindergarten.full`/`me`). GeneralTab: превью `<img src={logo_url}>` (fallback-плейсхолдер), кнопка «Загрузить» (client-валидация тип/≤5 МБ + backend), кнопка «Удалить». i18n `settings.logo_*` + `errors.logo_*`/`kindergarten_not_found`. ⚠️ На dev `logo_url` = `/api/v1/media/…` (нужен auth-заголовок → в чистом `<img>` не грузится; в проде presigned S3 работает).
+
+_Исходный gap ниже — для истории._
+
+---
+
+## ~~N11 (исходный запрос)~~ — Логотип садика: нет endpoint загрузки и поля `logo_url`
+
+**Нужно фронту.** `/settings` → вкладка «Общие», карточка «Логотип» (дизайн `styles.css`/handoff): превью `LOGO 1:1` + кнопка «Загрузить логотип». Кнопка должна выбирать файл и сохранять логотип садика; превью — показывать текущий. Логотип нужен и другим клиентам (Parent/Staff app рендерят брендинг садика).
+
+**Live backend (проверено, `/docs-json`).** По `logo`/`avatar`/`image` в схемах садика — **ничего**. `KindergartenResponseDto` не содержит поля логотипа. `/api/v1/kindergartens/me` — только `GET`; изменение — только `PATCH /api/v1/kindergartens/me/settings` (свободный JSONB `settings`). Отдельного media-upload для садика нет (есть только `POST /api/v1/admin/content/upload-media` — для контент-постов, не для брендинга садика).
+
+**Влияние.** Кнопка «Загрузить логотип» физически некуда не шлёт → оставлена как есть (не мёртвый обработчик-заглушка). Превью показывает статичный плейсхолдер `LOGO 1:1`.
+
+**Предлагаемый контракт.**
+
+- Поле `logo_url: string | null` в `KindergartenResponseDto` (публично-читаемый media-URL, как у контент-медиа).
+- `POST /api/v1/admin/kindergartens/me/logo` (multipart `file`, image/\*, ≤ N МБ) → `{ logo_url }`; заменяет предыдущий (best-effort delete старого файла из storage).
+- (Опц.) `DELETE …/logo` — сбросить логотип.
+
+**Backward-compat.** Аддитивно: `logo_url` nullable; прочие клиенты игнорируют.
+
+**Источник.** Запрос владельца (2026-07-10). **Действие фронта (когда backend отдаст):** повесить `onChange` на скрытый file-input у кнопки, показать превью из `kg.logo_url`, залить через новый endpoint; обновить HANDOFF (§ Settings) + DESIGN. Временный воркэраунд через `settings.logo_url` **отклонён владельцем** (хрупко, другие клиенты не увидят).
+
+---
+
+## N12 — `specialist_type`: справочник специальностей (admin-managed) · `resolved` (2026-07-10)
+
+**Решение (backend deployed, LOGO_AND_SPECIALIST_TYPES_FRONTEND_GUIDE §2).** `specialist_type` теперь **код из per-садик справочника** (не enum), валидируется бэком. Модель `{id, code, name_i18n{ru,kk}, is_system, is_active, sort_order}`. CRUD `GET/POST/PATCH/DELETE /admin/specialist-types` (`?include_inactive`). 6 системных строк засижены в каждом садике (включая новый `doctor_nutritionist` = «Врач Нутрициолог»; `nutritionist` = «Диетолог» остаётся). staff/diagnostics валидируют код против активного справочника → `400 specialist_type_unknown`. Коды: `specialist_type_unknown`/`_not_found`/`_code_taken`/`_name_required`/`_system_immutable`/`_in_use` (details `{staff_members, diagnostic_templates}`).
+
+**Сделано на фронте (2026-07-10).** `api/specialist-types.ts` + `use-specialist-types.ts` (CRUD) + `qk.specialistTypes` + `lib/specialist-type.ts` (`specialistTypeLabel(code, dict, locale)` c fallback на код). Хардкод убран: `SPECIALIST_TYPES`/`SpecialistType` из `constants.ts`, `SpecialistTypeEnum` из `api/staff.ts` (теперь `specialist_type: string`), мапа `specialist_type.*` из `staff.json`. Метки везде из словаря: staff (список/фильтр/создание/детали/edit), diagnostics (список/фильтр/редактор). Новый CRUD-экран — вкладка «Специальности» в `/settings` (`specialist-types-tab.tsx`): список (incl. inactive), create (code+name*i18n+active), edit (code read-only), toggle active, delete с гардом `_in_use`/скрыт для системных. i18n `settings.specialties.*` + `errors.specialist_type*\*`. ⚠️ «Нейропсихолог (Психолог)»: клиентский override снят — метка теперь из словаря; переименовать `psychologist` можно в новом справочнике (или backend PATCH), дефолт бэка = «Психолог».
+
+_Исходный gap ниже — для истории._
+
+---
+
+## ~~N12 (исходный запрос)~~ — `specialist_type`: фиксированный enum, нет нового «Нутрициолог» и нет admin-managed типов
+
+**Нужно фронту.** Экран добавления сотрудника-специалиста (`/staff`) даёт выбрать специальность. Владелец хочет: (1) **добавить нового специалиста «Врач Нутрициолог»** (отдельно от существующего «Диетолог»), и (2) в идеале — **чтобы админ сам мог заводить типы специалистов**, которые есть в его садике (динамический справочник per-садик).
+
+**Live backend (проверено, `/docs-json`).** `specialist_type` — **жёсткий enum на бэкенде**: `psychologist | speech_therapist | music_teacher | physical_ed | nutritionist`. Присутствует в `CreateStaffMemberDto`, `UpdateStaffMemberDto`, фильтре `GET /admin/staff`, и завязан на `diagnostic_templates.specialist_type` (диагностики скоупятся по типу). Любое значение вне enum → 400. Фронт добавить новый рабочий тип **не может** (бэкенд отвергнет).
+
+**Влияние.** Сейчас на фронте: метка `psychologist` переименована в «Нейропсихолог (Психолог)» (чисто i18n, значение то же — сделано). «Врач Нутрициолог» **не добавлен** — нет enum-кода. Динамический справочник типов невозможен без backend-модели.
+
+**Предлагаемый контракт (два уровня).**
+
+- **Минимум (быстро):** добавить в enum `specialist_type` значение для «Врач Нутрициолог» (напр. `doctor_nutritionist`) — в `CreateStaffMemberDto`/`UpdateStaffMemberDto`/фильтре + разрешить как `diagnostic_templates.specialist_type`. Фронт добавит только i18n-метку.
+- **Полноценно (то, что просит владелец):** admin-managed справочник специальностей per-садик — таблица `specialist_types(kindergarten_id, code, name_i18n, is_active)` + CRUD `GET/POST/PATCH/DELETE /api/v1/admin/specialist-types`; `staff_member.specialist_type` и `diagnostic_templates.specialist_type` ссылаются на `code`. Тогда фронт строит CRUD-экран справочника + Select тянет из него (метки — из backend `name_i18n`, а не из фронт-i18n).
+
+**Backward-compat.** Минимум — аддитивное расширение enum. Полноценно — миграция: сид существующих 5 значений как системных строк справочника (не удаляемых).
+
+**Источник.** Запрос владельца (2026-07-10). **Действие фронта (когда backend отдаст):** минимум — добавить метку в `staff.json` (ru+kk) + значение в `SpecialistTypeEnum` (`src/api/staff.ts`); полноценно — новый модуль справочника + заменить фронт-i18n-мапу на backend-`name_i18n`. Пока — заведена запись, метка не добавляется (иначе Select предложит невалидное значение).
 
 ---
 

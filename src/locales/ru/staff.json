@@ -36,14 +36,6 @@
     "reception": "Ресепшн"
   },
 
-  "specialist_type": {
-    "psychologist": "Психолог",
-    "speech_therapist": "Логопед",
-    "music_teacher": "Музыкальный руководитель",
-    "physical_ed": "Физкультура",
-    "nutritionist": "Диетолог"
-  },
-
   "status": {
     "active": "Активен",
     "inactive": "Неактивен"

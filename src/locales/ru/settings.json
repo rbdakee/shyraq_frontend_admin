@@ -9,7 +9,49 @@
   "tab_design": "Дизайн",
   "tab_payments": "Оплата",
   "tab_fiscal": "Фискальные настройки",
+  "tab_specialties": "Специальности",
   "tab_subscription": "Подписка",
+
+  "specialties": {
+    "title": "Справочник специальностей",
+    "subtitle": "Типы специалистов вашего садика",
+    "add": "Добавить специальность",
+    "col_name": "Название",
+    "col_code": "Код",
+    "col_status": "Статус",
+    "system": "Системная",
+    "active": "Активна",
+    "inactive": "Выключена",
+    "deactivate": "Выключить",
+    "activate": "Включить",
+    "delete": "Удалить",
+    "empty": "Специальностей пока нет",
+    "deactivate_success": "Специальность выключена",
+    "activate_success": "Специальность включена",
+    "delete_confirm_title": "Удалить специальность?",
+    "delete_confirm_body": "Это действие необратимо. Специальность удалится из справочника садика.",
+    "delete_confirm_action": "Удалить",
+    "delete_success": "Специальность удалена",
+    "in_use": "Используется: {{staff}} сотр., {{templates}} шаблонов. Выключите вместо удаления.",
+    "code_invalid": "Латиница/цифры/подчёркивание, начинается с буквы (2–64)",
+    "code_taken": "Такой код уже есть",
+    "name_required": "Укажите название хотя бы на одном языке",
+    "cancel": "Отмена",
+    "create": {
+      "title": "Новая специальность",
+      "code": "Код",
+      "code_hint": "Латиница, snake_case (напр. art_therapist). Изменить потом нельзя.",
+      "name": "Название (RU/KK)",
+      "submit": "Создать",
+      "success": "Специальность создана"
+    },
+    "edit": {
+      "title": "Изменить специальность",
+      "code_readonly": "Код изменить нельзя",
+      "submit": "Сохранить",
+      "success": "Специальность обновлена"
+    }
+  },
 
   "pay_kaspi_title": "Kaspi Pay",
   "pay_kaspi_sub": "Кассовый аккаунт садика",
@@ -52,6 +94,10 @@
 
   "general_logo": "Логотип",
   "upload_logo": "Загрузить логотип",
+  "logo_delete": "Удалить логотип",
+  "logo_hint": "PNG или JPG, до 5 МБ, квадрат 1:1",
+  "logo_upload_success": "Логотип загружен",
+  "logo_delete_success": "Логотип удалён",
 
   "ops_time_currency": "Время и валюта",
   "field_timezone": "Часовой пояс",

@@ -96,5 +96,15 @@
   "lifecycle_job_not_in_failed_state": "Задача не находится в состоянии ошибки",
   "forbidden": "Доступ запрещён",
   "user_not_found": "Пользователь не найден",
-  "user_no_relationship_to_kindergarten": "Пользователь не связан с садиком"
+  "user_no_relationship_to_kindergarten": "Пользователь не связан с садиком",
+  "kindergarten_not_found": "Садик не найден",
+  "logo_required": "Выберите файл логотипа",
+  "logo_type_invalid": "Логотип должен быть изображением",
+  "logo_too_large": "Логотип превышает 5 МБ",
+  "specialist_type_unknown": "Неизвестная специальность",
+  "specialist_type_not_found": "Специальность не найдена",
+  "specialist_type_code_taken": "Такой код специальности уже есть",
+  "specialist_type_name_required": "Укажите название специальности",
+  "specialist_type_system_immutable": "Системную специальность нельзя удалить — выключите её",
+  "specialist_type_in_use": "Специальность используется — выключите вместо удаления"
 }

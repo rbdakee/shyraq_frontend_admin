@@ -21,7 +21,9 @@ import type {
   WeekSnapshotListFilters,
   ActivityEventListFilters,
 } from '@/api/schedule';
+import type { SpecialistTypeListFilters } from '@/api/specialist-types';
 import type { StaffListFilters } from '@/api/staff';
+import type { StoryListFilters } from '@/api/stories';
 import type { TariffAssignmentListFilters } from '@/api/tariff-assignments';
 import type { TariffPlanListFilters } from '@/api/tariff-plans';
 
@@ -68,6 +70,11 @@ export const qk = {
     all: ['staff'] as const,
     list: (filters: StaffListFilters = {}) => ['staff', 'list', filters] as const,
     detail: (id: string) => ['staff', 'detail', id] as const,
+  },
+  specialistTypes: {
+    all: ['specialist-types'] as const,
+    list: (filters: SpecialistTypeListFilters = {}) =>
+      ['specialist-types', 'list', filters] as const,
   },
   invoices: {
     all: ['invoices'] as const,
@@ -130,6 +137,10 @@ export const qk = {
     all: ['content'] as const,
     list: (filters: ContentListFilters = {}) => ['content', 'list', filters] as const,
     detail: (id: string) => ['content', 'detail', id] as const,
+  },
+  stories: {
+    all: ['stories'] as const,
+    list: (filters: StoryListFilters = {}) => ['stories', 'list', filters] as const,
   },
   attendance: {
     all: ['attendance'] as const,

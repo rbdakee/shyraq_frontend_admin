@@ -64,6 +64,13 @@ export const KNOWN_ERROR_CODES = [
   'role_not_assignable',
   'mentor_one_active_group_violation',
   'group_primary_conflict',
+  // specialist-types dictionary (N12)
+  'specialist_type_unknown',
+  'specialist_type_not_found',
+  'specialist_type_code_taken',
+  'specialist_type_name_required',
+  'specialist_type_system_immutable',
+  'specialist_type_in_use',
   // locations/cameras §9
   'location_not_found',
   'location_in_use',
@@ -105,6 +112,11 @@ export const KNOWN_ERROR_CODES = [
   'holiday_not_found',
   // kindergarten settings §25
   'fiscal_settings_forbidden',
+  'kindergarten_not_found',
+  // kindergarten logo (N11)
+  'logo_required',
+  'logo_type_invalid',
+  'logo_too_large',
   // refunds §16
   'refund_not_found',
   'payment_not_found',

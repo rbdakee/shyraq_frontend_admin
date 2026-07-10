@@ -36,14 +36,6 @@
     "reception": "Ресепшн"
   },
 
-  "specialist_type": {
-    "psychologist": "Психолог",
-    "speech_therapist": "Логопед",
-    "music_teacher": "Музыка жетекшісі",
-    "physical_ed": "Дене шынықтыру",
-    "nutritionist": "Диетолог"
-  },
-
   "status": {
     "active": "Белсенді",
     "inactive": "Белсенді емес"

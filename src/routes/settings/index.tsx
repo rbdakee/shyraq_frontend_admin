@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -19,6 +19,7 @@ import {
   ChevronRightIcon,
   CheckIcon,
   UploadIcon,
+  Trash2Icon,
   Loader2Icon,
   AlertTriangleIcon,
 } from 'lucide-react';
@@ -42,7 +43,12 @@ import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useUiStore } from '@/stores/ui-store';
 import { THEMES, RADII, type ThemeName, type RadiusName } from '@/lib/themes';
 import { useSessionStore } from '@/stores/session-store';
-import { useKindergartenFull, useUpdateKindergartenSettings } from '@/hooks/use-kindergarten';
+import {
+  useKindergartenFull,
+  useUpdateKindergartenSettings,
+  useUploadKindergartenLogo,
+  useDeleteKindergartenLogo,
+} from '@/hooks/use-kindergarten';
 import {
   useKaspiStatus,
   useInitKaspiConnect,
@@ -52,6 +58,7 @@ import {
   type KaspiStatus,
 } from '@/hooks/use-kaspi';
 import { mapValidationErrors } from '@/components/forms/map-validation-errors';
+import { SpecialistTypesTab } from './specialist-types-tab';
 import { isAppError, getErrorCode, toI18nKey } from '@/lib/error-map';
 import { formatDateTime } from '@/lib/format';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
@@ -88,6 +95,10 @@ function parseOptNum(v: string): number | undefined {
   const n = Number(v);
   return Number.isNaN(n) ? undefined : n;
 }
+
+// Logo upload constraints (N11): backend enforces ≤5 MB image/* — mirror client-side
+// for instant feedback; backend re-validates regardless.
+const LOGO_MAX_BYTES = 5 * 1024 * 1024;
 
 export default function SettingsPage() {
   const { t } = useTranslation('common');
@@ -398,6 +409,7 @@ function DesktopSettings() {
           </TabsTrigger>
           <TabsTrigger value="payments">{t('tab_payments')}</TabsTrigger>
           <TabsTrigger value="fiscal">{t('tab_fiscal')}</TabsTrigger>
+          <TabsTrigger value="specialties">{t('tab_specialties')}</TabsTrigger>
           <TabsTrigger value="subscription">{t('tab_subscription')}</TabsTrigger>
         </TabsList>
 
@@ -416,6 +428,9 @@ function DesktopSettings() {
         <TabsContent value="fiscal">
           <FiscalTab kg={kg} />
         </TabsContent>
+        <TabsContent value="specialties">
+          <SpecialistTypesTab />
+        </TabsContent>
         <TabsContent value="subscription">
           <SubscriptionTab kg={kg} />
         </TabsContent>
@@ -428,11 +443,49 @@ function DesktopSettings() {
 
 function GeneralTab({ kg }: { kg: NonNullable<ReturnType<typeof useKindergartenFull>['data']> }) {
   const { t } = useTranslation('settings');
+  const fileRef = useRef<HTMLInputElement>(null);
+  const uploadLogo = useUploadKindergartenLogo();
+  const deleteLogo = useDeleteKindergartenLogo();
+
+  const busy = uploadLogo.isPending || deleteLogo.isPending;
+
+  function handleLogoError(err: unknown) {
+    if (isAppError(err)) {
+      toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
+    } else {
+      toast.error(t('errors:unknown_error'));
+    }
+    console.error(err);
+  }
+
+  function handleFilePicked(file: File | undefined) {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error(t('errors:logo_type_invalid'));
+      return;
+    }
+    if (file.size > LOGO_MAX_BYTES) {
+      toast.error(t('errors:logo_too_large'));
+      return;
+    }
+    uploadLogo.mutate(file, {
+      onSuccess: () => toast.success(t('logo_upload_success')),
+      onError: handleLogoError,
+    });
+  }
+
+  function handleDeleteLogo() {
+    deleteLogo.mutate(undefined, {
+      onSuccess: () => toast.success(t('logo_delete_success')),
+      onError: handleLogoError,
+    });
+  }
 
   // WHY read-only: the live backend exposes no PATCH for top-level kindergarten
   // fields (name/address/phone) — only PATCH /kindergartens/me/settings (the JSONB
   // settings bag, edited on the Operations tab). Editing identity fields here would
   // be a no-op, so we present them read-only. See OPEN_QUESTIONS §C17 / BACKEND_NEEDINGS.
+  // (The logo IS editable — dedicated N11 upload/delete endpoints.)
   const readonlyCls =
     'h-9 w-full rounded-[var(--r-md)] border border-line bg-bg-sunken px-3 text-[14px] text-text-3 outline-none';
 
@@ -463,16 +516,48 @@ function GeneralTab({ kg }: { kg: NonNullable<ReturnType<typeof useKindergartenF
       </div>
       <div className="rounded-[var(--r-lg)] border border-line bg-bg-elev p-4">
         <div className="mb-2 text-[15px] font-bold text-text-1">{t('general_logo')}</div>
-        <div className="mb-3 flex aspect-square w-full items-center justify-center rounded-[var(--r-md)] bg-bg-sunken text-[13px] text-text-3">
-          LOGO 1:1
+        <div className="mb-3 flex aspect-square w-full items-center justify-center overflow-hidden rounded-[var(--r-md)] bg-bg-sunken text-[13px] text-text-3">
+          {kg.logo_url ? (
+            <img src={kg.logo_url} alt={kg.name} className="size-full object-contain" />
+          ) : (
+            'LOGO 1:1'
+          )}
         </div>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            handleFilePicked(e.target.files?.[0]);
+            e.target.value = '';
+          }}
+        />
         <button
           type="button"
-          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[var(--r-md)] border border-line bg-bg-elev text-[13px] font-semibold text-text-1 hover:bg-bg-sunken"
+          disabled={busy}
+          onClick={() => fileRef.current?.click()}
+          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[var(--r-md)] border border-line bg-bg-elev text-[13px] font-semibold text-text-1 hover:bg-bg-sunken disabled:opacity-60"
         >
-          <UploadIcon className="size-3.5" />
+          {uploadLogo.isPending ? (
+            <Loader2Icon className="size-3.5 animate-spin" />
+          ) : (
+            <UploadIcon className="size-3.5" />
+          )}
           {t('upload_logo')}
         </button>
+        {kg.logo_url && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={handleDeleteLogo}
+            className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-[var(--r-md)] border border-[var(--danger)] bg-transparent text-[13px] font-semibold text-[var(--danger)] hover:bg-[var(--danger-soft)] disabled:opacity-60"
+          >
+            <Trash2Icon className="size-3.5" />
+            {t('logo_delete')}
+          </button>
+        )}
+        <div className="mt-2 text-[12px] text-text-3">{t('logo_hint')}</div>
       </div>
     </div>
   );

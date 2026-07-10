@@ -30,7 +30,8 @@ import {
   useDeactivateDiagnosticTemplate,
 } from '@/hooks/use-diagnostic-templates';
 import type { DiagnosticTemplate } from '@/hooks/use-diagnostic-templates';
-import { SPECIALIST_TYPES } from '@/lib/constants';
+import { useSpecialistTypes } from '@/hooks/use-specialist-types';
+import { specialistTypeLabel } from '@/lib/specialist-type';
 import { isAppError, toI18nKey } from '@/lib/error-map';
 
 const EMPTY_ITEMS: DiagnosticTemplate[] = [];
@@ -38,9 +39,13 @@ const EMPTY_ITEMS: DiagnosticTemplate[] = [];
 type StatusFilter = 'all' | 'active' | 'inactive';
 
 export default function DiagnosticsTemplatesPage() {
-  const { t } = useTranslation(['diagnostics', 'staff', 'common', 'errors']);
+  const { t, i18n } = useTranslation(['diagnostics', 'staff', 'common', 'errors']);
+  const locale = i18n.language;
   const { isMobile } = useBreakpoint();
   const navigate = useNavigate();
+
+  const specTypesQuery = useSpecialistTypes();
+  const activeSpecTypes = specTypesQuery.data ?? [];
 
   const [specFilter, setSpecFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -126,9 +131,9 @@ export default function DiagnosticsTemplatesPage() {
               <SelectItem value="all">
                 {t('diagnostics:filters.specialist_type_placeholder')}
               </SelectItem>
-              {SPECIALIST_TYPES.map((st) => (
-                <SelectItem key={st} value={st}>
-                  {t(`staff:specialist_type.${st}`)}
+              {activeSpecTypes.map((st) => (
+                <SelectItem key={st.code} value={st.code}>
+                  {specialistTypeLabel(st.code, activeSpecTypes, locale)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -206,9 +211,7 @@ export default function DiagnosticsTemplatesPage() {
                 >
                   <td>
                     <Badge variant="info">
-                      {t(`staff:specialist_type.${tp.specialist_type}`, {
-                        defaultValue: tp.specialist_type,
-                      })}
+                      {specialistTypeLabel(tp.specialist_type, activeSpecTypes, locale)}
                     </Badge>
                   </td>
                   <td>
@@ -319,11 +322,13 @@ function MobileView({
 
   const specFilters = [
     { key: 'all', label: t('common:mobile_filter_all'), count: templates.length },
-    ...SPECIALIST_TYPES.map((st) => ({
-      key: st,
-      label: t(`staff:specialist_type.${st}`),
-      count: templates.filter((tp) => tp.specialist_type === st).length,
-    })).filter((sf) => sf.count > 0),
+    ...activeSpecTypes
+      .map((st) => ({
+        key: st.code,
+        label: specialistTypeLabel(st.code, activeSpecTypes, locale),
+        count: templates.filter((tp) => tp.specialist_type === st.code).length,
+      }))
+      .filter((sf) => sf.count > 0),
   ];
 
   const filtered =
@@ -391,9 +396,7 @@ function MobileView({
                 <div className="mb-2 flex items-start justify-between">
                   <div className="min-w-0 flex-1">
                     <Badge variant="info" dot className="text-[10.5px]">
-                      {t(`staff:specialist_type.${tp.specialist_type}`, {
-                        defaultValue: tp.specialist_type,
-                      })}
+                      {specialistTypeLabel(tp.specialist_type, activeSpecTypes, locale)}
                     </Badge>
                     <div className="mt-1.5 text-[14.5px] font-bold tracking-[-0.005em]">
                       {tp.name}
