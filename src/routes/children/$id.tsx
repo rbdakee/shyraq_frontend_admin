@@ -49,7 +49,8 @@ import {
 import { useGroups } from '@/hooks/use-groups';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
-import { formatDate } from '@/lib/format';
+import { formatDate, getInitials, formatPhone } from '@/lib/format';
+import { resolveGuardianName, guardianStatusVariant } from '@/lib/guardian';
 import { toI18nKey } from '@/lib/error-map';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
 import { TransferModalContext } from './transfer-modal-context';
@@ -317,22 +318,32 @@ export default function ChildDetailPage() {
                 {t('no_data', { defaultValue: '—' })}
               </div>
             ) : (
-              guardians.map((g) => (
-                <div key={g.id} className="m-list-row">
-                  <div className="m-avatar guardian">
-                    {g.role === 'primary' ? 'P' : g.role === 'secondary' ? 'S' : 'N'}
-                  </div>
-                  <div>
-                    <div className="m-row-title">
-                      {t(`detail.guardian_role.${g.role}`, { defaultValue: g.role })}
+              guardians.map((g) => {
+                const guardianName = resolveGuardianName(g);
+                const phone = g.user_phone ? formatPhone(g.user_phone) : null;
+                const roleLabel = t(`detail.guardians.role.${g.role}`);
+                return (
+                  <div key={g.id} className="m-list-row">
+                    <div className="m-avatar guardian">{getInitials(guardianName)}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="m-row-title truncate">
+                        {guardianName ?? phone ?? t('no_data', { defaultValue: '—' })}
+                      </div>
+                      <div className="m-row-sub truncate">
+                        {roleLabel}
+                        {guardianName && phone ? ` · ${phone}` : ''}
+                      </div>
                     </div>
-                    <div className="m-row-sub">
-                      {t(`detail.guardian_status.${g.status}`, { defaultValue: g.status })}
-                    </div>
+                    <Badge
+                      variant={guardianStatusVariant(g.status)}
+                      dot
+                      className="shrink-0 text-[10px]"
+                    >
+                      {t(`detail.guardians.status.${g.status}`)}
+                    </Badge>
                   </div>
-                  <ChevronRightIcon className="m-row-chev size-4" />
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 

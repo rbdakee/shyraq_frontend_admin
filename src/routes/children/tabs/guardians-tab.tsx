@@ -55,9 +55,13 @@ import {
 } from '@/hooks/use-children';
 import { getErrorCode, toI18nKey } from '@/lib/error-map';
 import { getInitials, formatPhone } from '@/lib/format';
-
-type GuardianRole = 'primary' | 'secondary' | 'nanny';
-type GuardianStatus = 'pending_approval' | 'approved' | 'rejected' | 'revoked';
+import {
+  resolveGuardianName,
+  guardianStatusVariant,
+  guardianRoleVariant,
+  type GuardianRole,
+  type GuardianStatus,
+} from '@/lib/guardian';
 
 interface GuardianDto {
   id: string;
@@ -101,34 +105,6 @@ const InviteGuardianSchema = z
   );
 
 type InviteGuardianForm = z.infer<typeof InviteGuardianSchema>;
-
-function guardianStatusVariant(
-  status: GuardianStatus,
-): 'warning' | 'success' | 'error' | 'neutral' {
-  const map: Record<GuardianStatus, 'warning' | 'success' | 'error' | 'neutral'> = {
-    pending_approval: 'warning',
-    approved: 'success',
-    rejected: 'error',
-    revoked: 'neutral',
-  };
-  return map[status];
-}
-
-// Backend sets full_name = phone for phone-invited users without a profile yet →
-// treat "name equals phone" (and null) as "no real name set".
-function resolveGuardianName(g: GuardianDto): string | null {
-  if (!g.user_full_name || g.user_full_name === g.user_phone) return null;
-  return g.user_full_name;
-}
-
-function guardianRoleVariant(role: GuardianRole): 'default' | 'info' | 'neutral' {
-  const map: Record<GuardianRole, 'default' | 'info' | 'neutral'> = {
-    primary: 'default',
-    secondary: 'neutral',
-    nanny: 'info',
-  };
-  return map[role];
-}
 
 export default function GuardiansTab({ childId }: { childId: string }) {
   const { t } = useTranslation('children');
