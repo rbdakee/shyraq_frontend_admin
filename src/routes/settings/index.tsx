@@ -23,6 +23,8 @@ import {
   Trash2Icon,
   Loader2Icon,
   AlertTriangleIcon,
+  SlidersHorizontalIcon,
+  CrownIcon,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -112,7 +114,9 @@ export default function SettingsPage() {
   const setTheme = useUiStore((s) => s.setTheme);
   const setRadius = useUiStore((s) => s.setRadius);
   const kg = useSessionStore((s) => s.currentKindergarten);
-  const [sheet, setSheet] = useState<'general' | 'specialties' | null>(null);
+  const [sheet, setSheet] = useState<
+    'general' | 'specialties' | 'operations' | 'payments' | 'fiscal' | 'subscription' | null
+  >(null);
 
   if (!isMobile) {
     return <DesktopSettings />;
@@ -140,6 +144,22 @@ export default function SettingsPage() {
               <div>{t('mobile_settings_general')}</div>
               <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
                 {t('mobile_settings_general_sub')}
+              </div>
+            </div>
+            <ChevronRightIcon style={{ width: 16, height: 16, color: 'var(--text-4)' }} />
+          </button>
+          <button
+            type="button"
+            className="m-drawer-item w-full text-left"
+            onClick={() => setSheet('operations')}
+          >
+            <div className="m-drawer-ic">
+              <SlidersHorizontalIcon />
+            </div>
+            <div className="grow">
+              <div>{t('mobile_settings_operations')}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
+                {t('mobile_settings_operations_sub')}
               </div>
             </div>
             <ChevronRightIcon style={{ width: 16, height: 16, color: 'var(--text-4)' }} />
@@ -189,30 +209,54 @@ export default function SettingsPage() {
           <div className="m-section-title">{t('mobile_settings_section_billing')}</div>
         </div>
         <div className="m-card flush">
-          <div className="m-drawer-item">
+          <button
+            type="button"
+            className="m-drawer-item w-full text-left"
+            onClick={() => setSheet('payments')}
+          >
             <div className="m-drawer-ic">
               <CreditCardIcon />
             </div>
             <div className="grow">
-              <div>{t('mobile_settings_providers')}</div>
-              <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Kaspi, Halyk</div>
+              <div>{t('mobile_settings_payments')}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
+                {t('mobile_settings_payments_sub')}
+              </div>
             </div>
-            <Badge variant="success" dot className="text-[10px]">
-              2/2
-            </Badge>
-          </div>
-          <div className="m-drawer-item">
+            <ChevronRightIcon style={{ width: 16, height: 16, color: 'var(--text-4)' }} />
+          </button>
+          <button
+            type="button"
+            className="m-drawer-item w-full text-left"
+            onClick={() => setSheet('fiscal')}
+          >
             <div className="m-drawer-ic">
               <ReceiptIcon />
             </div>
             <div className="grow">
-              <div>{t('mobile_settings_ofd')}</div>
-              <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Onlinekassa.kz</div>
+              <div>{t('mobile_settings_fiscal')}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
+                {t('mobile_settings_fiscal_sub')}
+              </div>
             </div>
-            <Badge variant="success" dot className="text-[10px]">
-              OK
-            </Badge>
-          </div>
+            <ChevronRightIcon style={{ width: 16, height: 16, color: 'var(--text-4)' }} />
+          </button>
+          <button
+            type="button"
+            className="m-drawer-item w-full text-left"
+            onClick={() => setSheet('subscription')}
+          >
+            <div className="m-drawer-ic info">
+              <CrownIcon />
+            </div>
+            <div className="grow">
+              <div>{t('mobile_settings_subscription')}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
+                {t('mobile_settings_subscription_sub')}
+              </div>
+            </div>
+            <ChevronRightIcon style={{ width: 16, height: 16, color: 'var(--text-4)' }} />
+          </button>
         </div>
 
         {/* Notifications section */}
@@ -390,8 +434,71 @@ export default function SettingsPage() {
       >
         <SpecialistTypesTab />
       </FullScreenSheet>
+
+      <FullScreenSheet
+        open={sheet === 'operations'}
+        onOpenChange={(v) => {
+          if (!v) setSheet(null);
+        }}
+        title={t('mobile_settings_operations')}
+        description={t('mobile_settings_operations_sub')}
+        footer={
+          <button
+            type="submit"
+            form="ops-form"
+            className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-[var(--r-md)] bg-primary text-[14px] font-semibold text-on-primary hover:bg-[var(--primary-hover)] active:bg-[var(--primary-active)]"
+          >
+            {t('actions.save')}
+          </button>
+        }
+      >
+        <WithKgData>{(kgData) => <OperationsTab kg={kgData} />}</WithKgData>
+      </FullScreenSheet>
+
+      <FullScreenSheet
+        open={sheet === 'payments'}
+        onOpenChange={(v) => {
+          if (!v) setSheet(null);
+        }}
+        title={t('mobile_settings_payments')}
+        description={t('mobile_settings_payments_sub')}
+      >
+        <PaymentsTab />
+      </FullScreenSheet>
+
+      <FullScreenSheet
+        open={sheet === 'fiscal'}
+        onOpenChange={(v) => {
+          if (!v) setSheet(null);
+        }}
+        title={t('mobile_settings_fiscal')}
+        description={t('mobile_settings_fiscal_sub')}
+      >
+        <WithKgData>{(kgData) => <FiscalTab kg={kgData} />}</WithKgData>
+      </FullScreenSheet>
+
+      <FullScreenSheet
+        open={sheet === 'subscription'}
+        onOpenChange={(v) => {
+          if (!v) setSheet(null);
+        }}
+        title={t('mobile_settings_subscription')}
+        description={t('mobile_settings_subscription_sub')}
+      >
+        <WithKgData>{(kgData) => <SubscriptionTab kg={kgData} />}</WithKgData>
+      </FullScreenSheet>
     </>
   );
+}
+
+type KgFull = NonNullable<ReturnType<typeof useKindergartenFull>['data']>;
+
+function WithKgData({ children }: { children: (kg: KgFull) => React.ReactNode }) {
+  const kgQuery = useKindergartenFull();
+  if (kgQuery.isPending) return <SkeletonBox height={280} />;
+  if (kgQuery.isError || !kgQuery.data)
+    return <ErrorState onRetry={() => void kgQuery.refetch()} />;
+  return <>{children(kgQuery.data)}</>;
 }
 
 // Mobile "General" settings body: read-only contacts + N11 logo card.
@@ -743,7 +850,7 @@ function OperationsTab({
         <div className="rounded-[var(--r-lg)] border border-line bg-bg-elev p-5">
           <div className="mb-3 text-[15px] font-bold text-text-1">{t('ops_time_currency')}</div>
           <form id="ops-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-[14px]">
+            <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
               <FieldWrapper label={t('field_timezone')} error={errors.timezone?.message}>
                 <select
                   {...register('timezone')}
@@ -767,7 +874,7 @@ function OperationsTab({
                 </select>
               </FieldWrapper>
             </div>
-            <div className="grid grid-cols-2 gap-[14px]">
+            <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
               <FieldWrapper
                 label={t('field_late_pickup_fee')}
                 error={errors.late_pickup_fee_amount?.message}
@@ -807,7 +914,7 @@ function OperationsTab({
         <div className="rounded-[var(--r-lg)] border border-line bg-bg-elev p-5">
           <div className="mb-3 text-[15px] font-bold text-text-1">{t('ops_prepay_discounts')}</div>
           <div className="mb-3 text-[12px] text-text-3">{t('ops_prepay_hint')}</div>
-          <div className="grid grid-cols-2 gap-[14px]">
+          <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
             <FieldWrapper label={t('field_prepay_3m')}>
               <input
                 type="number"
@@ -825,7 +932,7 @@ function OperationsTab({
               />
             </FieldWrapper>
           </div>
-          <div className="mt-[14px] grid grid-cols-2 gap-[14px]">
+          <div className="mt-[14px] grid grid-cols-1 gap-[14px] sm:grid-cols-2">
             <FieldWrapper label={t('field_prepay_12m')}>
               <input
                 type="number"
