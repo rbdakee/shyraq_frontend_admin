@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { toast } from 'sonner';
 import { PlusIcon, MoreHorizontalIcon, CheckIcon, XIcon, InfoIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -52,6 +51,7 @@ import {
   useApproveChildGuardian,
   useRejectChildGuardian,
   useRevokeAllUserQr,
+  type GuardianDto,
 } from '@/hooks/use-children';
 import { getErrorCode, toI18nKey } from '@/lib/error-map';
 import { getInitials, formatPhone } from '@/lib/format';
@@ -59,52 +59,10 @@ import {
   resolveGuardianName,
   guardianStatusVariant,
   guardianRoleVariant,
+  InviteGuardianSchema,
+  type InviteGuardianForm,
   type GuardianRole,
-  type GuardianStatus,
 } from '@/lib/guardian';
-
-interface GuardianDto {
-  id: string;
-  kindergarten_id: string;
-  child_id: string;
-  user_id: string;
-  user_full_name: string | null;
-  user_phone: string | null;
-  role: GuardianRole;
-  status: GuardianStatus;
-  has_approval_rights: boolean;
-  can_pickup: boolean;
-  permissions: Record<string, boolean>;
-  approved_by: string | null;
-  approved_at: string | null;
-  revoked_by: string | null;
-  revoked_at: string | null;
-  permissions_updated_by: string | null;
-  permissions_updated_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-const InviteGuardianSchema = z
-  .object({
-    user_phone: z.string().optional(),
-    user_id: z.string().optional(),
-    role: z.enum(['primary', 'secondary', 'nanny']),
-    can_pickup: z.boolean(),
-  })
-  .refine(
-    (data) => {
-      const hasPhone = !!data.user_phone;
-      const hasId = !!data.user_id;
-      return (hasPhone || hasId) && !(hasPhone && hasId);
-    },
-    {
-      path: ['user_phone'],
-      message: 'invite_guardian_xor',
-    },
-  );
-
-type InviteGuardianForm = z.infer<typeof InviteGuardianSchema>;
 
 export default function GuardiansTab({ childId }: { childId: string }) {
   const { t } = useTranslation('children');

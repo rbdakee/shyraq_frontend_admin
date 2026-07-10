@@ -30,7 +30,10 @@ import type {
   InviteGuardianBody,
   UpdateGuardianBody,
   OffsetPaginationParams,
+  GuardianDto,
 } from '@/api/children';
+
+export type { GuardianDto };
 import { MEDIA_PRESIGNED_REFETCH_MS } from '@/lib/constants';
 import { qk } from './query-keys';
 

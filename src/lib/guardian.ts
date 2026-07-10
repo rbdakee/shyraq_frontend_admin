@@ -1,8 +1,28 @@
-// Pure guardian display helpers, shared by the desktop guardians table and the
-// mobile child-card guardians list.
+import { z } from 'zod';
 
 export type GuardianRole = 'primary' | 'secondary' | 'nanny';
 export type GuardianStatus = 'pending_approval' | 'approved' | 'rejected' | 'revoked';
+
+export const InviteGuardianSchema = z
+  .object({
+    user_phone: z.string().optional(),
+    user_id: z.string().optional(),
+    role: z.enum(['primary', 'secondary', 'nanny']),
+    can_pickup: z.boolean(),
+  })
+  .refine(
+    (data) => {
+      const hasPhone = !!data.user_phone;
+      const hasId = !!data.user_id;
+      return (hasPhone || hasId) && !(hasPhone && hasId);
+    },
+    {
+      path: ['user_phone'],
+      message: 'invite_guardian_xor',
+    },
+  );
+
+export type InviteGuardianForm = z.infer<typeof InviteGuardianSchema>;
 
 // Backend sets full_name = phone for phone-invited users without a profile yet →
 // treat "name equals phone" (and null) as "no real name set".

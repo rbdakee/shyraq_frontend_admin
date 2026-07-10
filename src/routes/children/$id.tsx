@@ -14,6 +14,9 @@ import {
   QrCodeIcon,
   ReceiptIcon,
   EllipsisIcon,
+  PlusIcon,
+  CheckIcon,
+  XIcon,
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -22,6 +25,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Dialog,
   DialogContent,
@@ -36,22 +48,39 @@ import { DestructiveConfirm } from '@/components/feedback/destructive-confirm';
 import { ErrorState } from '@/components/feedback/error-state';
 import { SkeletonLine, SkeletonBox } from '@/components/feedback/skeleton';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
+import { FullScreenSheet } from '@/components/forms/full-screen-sheet';
 import TariffBlock from './_components/tariff-block';
 import { EntityCombobox } from '@/components/forms/entity-combobox';
 import type { ComboboxOption } from '@/components/forms/entity-combobox';
+import { FieldErrorDisplay } from '@/components/forms/form-error';
+import { mapValidationErrors } from '@/components/forms/map-validation-errors';
 import {
   useChild,
   useTransferChildGroup,
   useArchiveChild,
   useReactivateChild,
   useActivateChild,
+  useInviteChildGuardian,
+  useApproveChildGuardian,
+  useRejectChildGuardian,
+  useRevokeChildGuardian,
+  useUpdateChildGuardian,
+  useRevokeAllUserQr,
+  type GuardianDto,
 } from '@/hooks/use-children';
 import { useGroups } from '@/hooks/use-groups';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import { formatDate, getInitials, formatPhone } from '@/lib/format';
-import { resolveGuardianName, guardianStatusVariant } from '@/lib/guardian';
-import { toI18nKey } from '@/lib/error-map';
+import {
+  resolveGuardianName,
+  guardianStatusVariant,
+  guardianRoleVariant,
+  InviteGuardianSchema,
+  type InviteGuardianForm,
+  type GuardianRole,
+} from '@/lib/guardian';
+import { getErrorCode, toI18nKey } from '@/lib/error-map';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
 import { TransferModalContext } from './transfer-modal-context';
 
@@ -240,6 +269,141 @@ export default function ChildDetailPage() {
 
   const { isMobile } = useBreakpoint();
 
+  const inviteGuardianMutation = useInviteChildGuardian(id ?? '');
+  const approveGuardianMutation = useApproveChildGuardian(id ?? '');
+  const rejectGuardianMutation = useRejectChildGuardian(id ?? '');
+  const revokeGuardianMutation = useRevokeChildGuardian(id ?? '');
+  const updateGuardianMutation = useUpdateChildGuardian(id ?? '');
+  const revokeAllQrMutation = useRevokeAllUserQr();
+
+  const [mobileGuardianDetail, setMobileGuardianDetail] = useState<GuardianDto | null>(null);
+  const [mobileInviteOpen, setMobileInviteOpen] = useState(false);
+  const [mobileEditRole, setMobileEditRole] = useState<GuardianRole>('secondary');
+  const [mobileEditCanPickup, setMobileEditCanPickup] = useState(true);
+  const [mobileEditOpen, setMobileEditOpen] = useState(false);
+  const [mobileRevokeOpen, setMobileRevokeOpen] = useState(false);
+  const [mobileRejectOpen, setMobileRejectOpen] = useState(false);
+  const [mobileRevokeQrOpen, setMobileRevokeQrOpen] = useState(false);
+  const [mobileActingGuardianId, setMobileActingGuardianId] = useState<string | null>(null);
+
+  const mobileInviteForm = useForm<InviteGuardianForm>({
+    resolver: zodResolver(InviteGuardianSchema),
+    defaultValues: { user_phone: '', user_id: '', role: 'secondary', can_pickup: true },
+  });
+
+  function handleMobileInvite(data: InviteGuardianForm) {
+    inviteGuardianMutation.mutate(
+      {
+        user_phone: data.user_phone || undefined,
+        user_id: data.user_id || undefined,
+        role: data.role,
+        can_pickup: data.can_pickup,
+      },
+      {
+        onSuccess: () => {
+          setMobileInviteOpen(false);
+          mobileInviteForm.reset();
+          toast.success(t('modals.invite_guardian.success'));
+        },
+        onError: (err) => {
+          const mapped = mapValidationErrors(err, mobileInviteForm.setError);
+          if (!mapped) {
+            toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
+          }
+          console.error(err);
+        },
+      },
+    );
+  }
+
+  function handleMobileApproveGuardian(guardianId: string) {
+    setMobileActingGuardianId(guardianId);
+    approveGuardianMutation.mutate(guardianId, {
+      onSuccess: () => {
+        setMobileGuardianDetail(null);
+        toast.success(t('detail.guardians.approve_success'));
+      },
+      onError: (err) => {
+        if (getErrorCode(err) === 'invalid_guardian_status_transition') {
+          void childQuery.refetch();
+          setMobileGuardianDetail(null);
+        }
+        toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
+        console.error(err);
+      },
+      onSettled: () => setMobileActingGuardianId(null),
+    });
+  }
+
+  function handleMobileRejectGuardian(guardianId: string) {
+    setMobileActingGuardianId(guardianId);
+    rejectGuardianMutation.mutate(guardianId, {
+      onSuccess: () => {
+        setMobileRejectOpen(false);
+        setMobileGuardianDetail(null);
+        toast.success(t('detail.guardians.reject_success'));
+      },
+      onError: (err) => {
+        setMobileRejectOpen(false);
+        if (getErrorCode(err) === 'invalid_guardian_status_transition') {
+          void childQuery.refetch();
+          setMobileGuardianDetail(null);
+        }
+        toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
+        console.error(err);
+      },
+      onSettled: () => setMobileActingGuardianId(null),
+    });
+  }
+
+  function handleMobileRevokeGuardian(guardianId: string) {
+    revokeGuardianMutation.mutate(guardianId, {
+      onSuccess: () => {
+        setMobileRevokeOpen(false);
+        setMobileGuardianDetail(null);
+        toast.success(t('modals.revoke_guardian.success'));
+      },
+      onError: (err) => {
+        toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
+        console.error(err);
+      },
+    });
+  }
+
+  function handleMobileEditGuardian(
+    guardian: GuardianDto,
+    updates: { role?: GuardianRole; can_pickup?: boolean },
+  ) {
+    updateGuardianMutation.mutate(
+      { guardianId: guardian.id, body: updates },
+      {
+        onSuccess: () => {
+          setMobileEditOpen(false);
+          setMobileGuardianDetail(null);
+          toast.success(t('detail.profile.success'));
+        },
+        onError: (err) => {
+          toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
+          console.error(err);
+        },
+      },
+    );
+  }
+
+  function handleMobileRevokeAllQr(userId: string) {
+    revokeAllQrMutation.mutate(userId, {
+      onSuccess: (data) => {
+        setMobileRevokeQrOpen(false);
+        setMobileGuardianDetail(null);
+        toast.success(t('modals.revoke_all_qr.success', { count: data.revokedCount }));
+      },
+      onError: (err) => {
+        toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
+        console.error(err);
+      },
+    });
+  }
+
   if (childQuery.isPending) {
     return (
       <div className="flex flex-col gap-4">
@@ -311,11 +475,19 @@ export default function ChildDetailPage() {
           {/* Guardians section */}
           <div className="m-section-h">
             <div className="m-section-title">{t('detail.tabs.guardians')}</div>
+            <button
+              type="button"
+              className="m-iconbtn ghost"
+              onClick={() => setMobileInviteOpen(true)}
+              aria-label={t('detail.guardians.add')}
+            >
+              <PlusIcon className="size-5" />
+            </button>
           </div>
           <div className="m-card flush">
             {guardians.length === 0 ? (
-              <div className="p-4 text-center text-[13px] text-text-3">
-                {t('no_data', { defaultValue: '—' })}
+              <div className="p-4 text-center text-[13px] text-[color:var(--text-3)]">
+                {t('detail.guardians.empty')}
               </div>
             ) : (
               guardians.map((g) => {
@@ -323,7 +495,12 @@ export default function ChildDetailPage() {
                 const phone = g.user_phone ? formatPhone(g.user_phone) : null;
                 const roleLabel = t(`detail.guardians.role.${g.role}`);
                 return (
-                  <div key={g.id} className="m-list-row">
+                  <button
+                    key={g.id}
+                    type="button"
+                    className="m-list-row w-full text-left"
+                    onClick={() => setMobileGuardianDetail(g)}
+                  >
                     <div className="m-avatar guardian">{getInitials(guardianName)}</div>
                     <div className="min-w-0 flex-1">
                       <div className="m-row-title truncate">
@@ -341,7 +518,8 @@ export default function ChildDetailPage() {
                     >
                       {t(`detail.guardians.status.${g.status}`)}
                     </Badge>
-                  </div>
+                    <ChevronRightIcon className="size-4 shrink-0 text-[color:var(--text-4)]" />
+                  </button>
                 );
               })
             )}
@@ -383,6 +561,302 @@ export default function ChildDetailPage() {
           maxLen={500}
           onConfirm={handleArchive}
           loading={archiveMutation.isPending}
+        />
+
+        {/* Guardian detail sheet */}
+        <FullScreenSheet
+          open={!!mobileGuardianDetail}
+          onOpenChange={(open) => {
+            if (!open) setMobileGuardianDetail(null);
+          }}
+          title={
+            mobileGuardianDetail
+              ? (resolveGuardianName(mobileGuardianDetail) ??
+                (mobileGuardianDetail.user_phone
+                  ? formatPhone(mobileGuardianDetail.user_phone)
+                  : t('no_data', { defaultValue: '—' })))
+              : ''
+          }
+          description={t('detail.guardians.title')}
+        >
+          {mobileGuardianDetail && (
+            <div className="flex flex-col gap-4">
+              <div className="m-card flush">
+                <div className="m-kv">
+                  <span className="k">{t('detail.guardians.columns.phone')}</span>
+                  <span className="v font-mono">
+                    {mobileGuardianDetail.user_phone
+                      ? formatPhone(mobileGuardianDetail.user_phone)
+                      : '—'}
+                  </span>
+                </div>
+                <div className="m-kv">
+                  <span className="k">{t('detail.guardians.columns.role')}</span>
+                  <span className="v">
+                    <Badge variant={guardianRoleVariant(mobileGuardianDetail.role)}>
+                      {t(`detail.guardians.role.${mobileGuardianDetail.role}`)}
+                    </Badge>
+                  </span>
+                </div>
+                <div className="m-kv">
+                  <span className="k">{t('detail.guardians.columns.status')}</span>
+                  <span className="v">
+                    <Badge variant={guardianStatusVariant(mobileGuardianDetail.status)} dot>
+                      {t(`detail.guardians.status.${mobileGuardianDetail.status}`)}
+                    </Badge>
+                  </span>
+                </div>
+                <div className="m-kv">
+                  <span className="k">{t('detail.guardians.columns.can_pickup')}</span>
+                  <span className="v">
+                    {mobileGuardianDetail.can_pickup ? (
+                      <CheckIcon className="size-4 text-[color:var(--success)]" />
+                    ) : (
+                      <XIcon className="size-4 text-[color:var(--text-4)]" />
+                    )}
+                  </span>
+                </div>
+                <div className="m-kv">
+                  <span className="k">{t('detail.guardians.columns.approval_rights')}</span>
+                  <span className="v">
+                    {mobileGuardianDetail.has_approval_rights ? (
+                      <CheckIcon className="size-4 text-[color:var(--success)]" />
+                    ) : (
+                      <XIcon className="size-4 text-[color:var(--text-4)]" />
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              {mobileGuardianDetail.status === 'pending_approval' && (
+                <div className="flex gap-2">
+                  <Button
+                    className="flex-1"
+                    onClick={() => handleMobileApproveGuardian(mobileGuardianDetail.id)}
+                    disabled={mobileActingGuardianId === mobileGuardianDetail.id}
+                  >
+                    <CheckIcon className="size-4" />
+                    {t('detail.guardians.approve')}
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    variant="destructive"
+                    onClick={() => setMobileRejectOpen(true)}
+                    disabled={mobileActingGuardianId === mobileGuardianDetail.id}
+                  >
+                    <XIcon className="size-4" />
+                    {t('detail.guardians.reject')}
+                  </Button>
+                </div>
+              )}
+
+              <div className="flex flex-col gap-2">
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    setMobileEditRole(mobileGuardianDetail.role);
+                    setMobileEditCanPickup(mobileGuardianDetail.can_pickup);
+                    setMobileEditOpen(true);
+                  }}
+                >
+                  {t('detail.guardians.edit_role')}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full text-[color:var(--danger)]"
+                  onClick={() => setMobileRevokeOpen(true)}
+                >
+                  {t('detail.guardians.revoke_access')}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full text-[color:var(--danger)]"
+                  onClick={() => setMobileRevokeQrOpen(true)}
+                >
+                  {t('detail.guardians.revoke_all_qr')}
+                </Button>
+              </div>
+            </div>
+          )}
+        </FullScreenSheet>
+
+        {/* Invite guardian sheet */}
+        <FullScreenSheet
+          open={mobileInviteOpen}
+          onOpenChange={(open) => {
+            setMobileInviteOpen(open);
+            if (!open) mobileInviteForm.reset();
+          }}
+          title={t('modals.invite_guardian.title')}
+          description={t('detail.guardians.add')}
+          footer={
+            <Button
+              className="w-full"
+              disabled={inviteGuardianMutation.isPending}
+              onClick={mobileInviteForm.handleSubmit(handleMobileInvite)}
+            >
+              {t('modals.invite_guardian.confirm')}
+            </Button>
+          }
+        >
+          <form
+            onSubmit={mobileInviteForm.handleSubmit(handleMobileInvite)}
+            className="flex flex-col gap-4"
+          >
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                {t('modals.invite_guardian.phone_label')}
+              </Label>
+              <Input
+                {...mobileInviteForm.register('user_phone')}
+                placeholder={t('modals.invite_guardian.phone_placeholder')}
+              />
+              {mobileInviteForm.formState.errors.user_phone && (
+                <FieldErrorDisplay message={t('modals.invite_guardian.xor_error')} />
+              )}
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                {t('modals.invite_guardian.user_id_label')}
+              </Label>
+              <Input
+                {...mobileInviteForm.register('user_id')}
+                placeholder={t('modals.invite_guardian.user_id_placeholder')}
+              />
+              <p className="text-[11px] text-[color:var(--text-4)]">
+                {t('modals.invite_guardian.phone_or_user_id_hint')}
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                {t('modals.invite_guardian.role_label')}
+              </Label>
+              <Controller
+                control={mobileInviteForm.control}
+                name="role"
+                render={({ field }) => (
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t('modals.invite_guardian.role_placeholder')} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="primary">{t('detail.guardians.role.primary')}</SelectItem>
+                      <SelectItem value="secondary">
+                        {t('detail.guardians.role.secondary')}
+                      </SelectItem>
+                      <SelectItem value="nanny">{t('detail.guardians.role.nanny')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              />
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Controller
+                control={mobileInviteForm.control}
+                name="can_pickup"
+                render={({ field }) => (
+                  <Switch checked={field.value} onCheckedChange={field.onChange} />
+                )}
+              />
+              <Label className="text-[13px]">{t('modals.invite_guardian.can_pickup_label')}</Label>
+            </div>
+          </form>
+        </FullScreenSheet>
+
+        {/* Edit guardian role sheet */}
+        <FullScreenSheet
+          open={mobileEditOpen}
+          onOpenChange={setMobileEditOpen}
+          title={t('detail.guardians.edit_role')}
+          description={t('detail.guardians.edit_role')}
+          footer={
+            <Button
+              className="w-full"
+              disabled={updateGuardianMutation.isPending}
+              onClick={() => {
+                if (mobileGuardianDetail) {
+                  handleMobileEditGuardian(mobileGuardianDetail, {
+                    role: mobileEditRole,
+                    can_pickup: mobileEditCanPickup,
+                  });
+                }
+              }}
+            >
+              {t('detail.profile.save')}
+            </Button>
+          }
+        >
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                {t('modals.invite_guardian.role_label')}
+              </Label>
+              <Select
+                value={mobileEditRole}
+                onValueChange={(v) => setMobileEditRole(v as GuardianRole)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="primary">{t('detail.guardians.role.primary')}</SelectItem>
+                  <SelectItem value="secondary">{t('detail.guardians.role.secondary')}</SelectItem>
+                  <SelectItem value="nanny">{t('detail.guardians.role.nanny')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Switch checked={mobileEditCanPickup} onCheckedChange={setMobileEditCanPickup} />
+              <Label className="text-[13px]">{t('modals.invite_guardian.can_pickup_label')}</Label>
+            </div>
+          </div>
+        </FullScreenSheet>
+
+        {/* Revoke guardian access */}
+        <DestructiveConfirm
+          open={mobileRevokeOpen}
+          onOpenChange={setMobileRevokeOpen}
+          title={t('modals.revoke_guardian.title')}
+          description={t('modals.revoke_guardian.description')}
+          confirmLabel={t('modals.revoke_guardian.confirm')}
+          cancelLabel={t('modals.revoke_guardian.cancel')}
+          onConfirm={() => {
+            if (mobileGuardianDetail) handleMobileRevokeGuardian(mobileGuardianDetail.id);
+          }}
+          loading={revokeGuardianMutation.isPending}
+        />
+
+        {/* Reject guardian request */}
+        <DestructiveConfirm
+          open={mobileRejectOpen}
+          onOpenChange={setMobileRejectOpen}
+          title={t('modals.reject_guardian.title')}
+          description={t('modals.reject_guardian.description')}
+          confirmLabel={t('modals.reject_guardian.confirm')}
+          cancelLabel={t('modals.reject_guardian.cancel')}
+          onConfirm={() => {
+            if (mobileGuardianDetail) handleMobileRejectGuardian(mobileGuardianDetail.id);
+          }}
+          loading={rejectGuardianMutation.isPending}
+        />
+
+        {/* Revoke all QR */}
+        <DestructiveConfirm
+          open={mobileRevokeQrOpen}
+          onOpenChange={setMobileRevokeQrOpen}
+          title={t('modals.revoke_all_qr.title')}
+          description={t('modals.revoke_all_qr.description')}
+          confirmLabel={t('modals.revoke_all_qr.confirm')}
+          cancelLabel={t('modals.revoke_all_qr.cancel')}
+          onConfirm={() => {
+            if (mobileGuardianDetail) handleMobileRevokeAllQr(mobileGuardianDetail.user_id);
+          }}
+          loading={revokeAllQrMutation.isPending}
         />
       </TransferModalContext.Provider>
     );
