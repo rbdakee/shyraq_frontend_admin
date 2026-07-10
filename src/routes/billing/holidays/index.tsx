@@ -174,6 +174,65 @@ export default function HolidaysPage() {
     [deleteMutation, t],
   );
 
+  const sharedDialogs = (
+    <>
+      {/* Edit dialog */}
+      {editingHoliday && (
+        <HolidayFormDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setEditingHoliday(null);
+          }}
+          title={t('holidays.edit_title')}
+          defaultValues={{
+            date: editingHoliday.date,
+            name_ru: resolveJsonbI18n(editingHoliday.name as JsonbI18n, 'ru'),
+            name_kk: resolveJsonbI18n(editingHoliday.name as JsonbI18n, 'kk'),
+            is_billable: editingHoliday.is_billable,
+          }}
+          onSubmit={(values) => {
+            updateMutation.mutate(
+              {
+                id: editingHoliday.id,
+                body: {
+                  name: { ru: values.name_ru, kk: values.name_kk || undefined },
+                  is_billable: values.is_billable,
+                },
+              },
+              {
+                onSuccess: () => {
+                  toast.success(t('holidays.edit_success'));
+                  setEditingHoliday(null);
+                },
+                onError: (err: unknown) => {
+                  toast.error(t(toI18nKey(err)));
+                },
+              },
+            );
+          }}
+          loading={updateMutation.isPending}
+          submitLabel={t('holidays.edit_submit')}
+          dateDisabled
+        />
+      )}
+
+      {/* Delete confirm */}
+      <DestructiveConfirm
+        open={!!deletingHoliday}
+        onOpenChange={(open) => {
+          if (!open) setDeletingHoliday(null);
+        }}
+        title={t('holidays.delete_title')}
+        description={t('holidays.delete_description')}
+        confirmLabel={t('holidays.delete_confirm')}
+        onConfirm={() => {
+          if (deletingHoliday) handleDelete(deletingHoliday);
+        }}
+        loading={deleteMutation.isPending}
+      />
+    </>
+  );
+
   if (!isMobile) {
     return (
       <div className="space-y-6 p-6">
@@ -376,60 +435,7 @@ export default function HolidaysPage() {
           submitLabel={t('holidays.create_submit')}
         />
 
-        {/* Edit dialog */}
-        {editingHoliday && (
-          <HolidayFormDialog
-            open
-            onOpenChange={(open) => {
-              if (!open) setEditingHoliday(null);
-            }}
-            title={t('holidays.edit_title')}
-            defaultValues={{
-              date: editingHoliday.date,
-              name_ru: resolveJsonbI18n(editingHoliday.name as JsonbI18n, 'ru'),
-              name_kk: resolveJsonbI18n(editingHoliday.name as JsonbI18n, 'kk'),
-              is_billable: editingHoliday.is_billable,
-            }}
-            onSubmit={(values) => {
-              updateMutation.mutate(
-                {
-                  id: editingHoliday.id,
-                  body: {
-                    name: { ru: values.name_ru, kk: values.name_kk || undefined },
-                    is_billable: values.is_billable,
-                  },
-                },
-                {
-                  onSuccess: () => {
-                    toast.success(t('holidays.edit_success'));
-                    setEditingHoliday(null);
-                  },
-                  onError: (err: unknown) => {
-                    toast.error(t(toI18nKey(err)));
-                  },
-                },
-              );
-            }}
-            loading={updateMutation.isPending}
-            submitLabel={t('holidays.edit_submit')}
-            dateDisabled
-          />
-        )}
-
-        {/* Delete confirm */}
-        <DestructiveConfirm
-          open={!!deletingHoliday}
-          onOpenChange={(open) => {
-            if (!open) setDeletingHoliday(null);
-          }}
-          title={t('holidays.delete_title')}
-          description={t('holidays.delete_description')}
-          confirmLabel={t('holidays.delete_confirm')}
-          onConfirm={() => {
-            if (deletingHoliday) handleDelete(deletingHoliday);
-          }}
-          loading={deleteMutation.isPending}
-        />
+        {sharedDialogs}
       </div>
     );
   }
@@ -553,35 +559,62 @@ export default function HolidaysPage() {
               const nameRu = resolveJsonbI18n(h.name as JsonbI18n, 'ru');
               const nameKk = resolveJsonbI18n(h.name as JsonbI18n, 'kk');
               return (
-                <div key={h.id} className="m-list-row">
+                <div key={h.id} className="m-list-row" style={{ cursor: 'pointer' }}>
                   <div
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 12,
-                      background: 'var(--danger-soft)',
-                      color: 'var(--danger-fg)',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 700,
+                    role="button"
+                    tabIndex={0}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12 }}
+                    onClick={() => setEditingHoliday(h)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setEditingHoliday(h);
+                      }
                     }}
                   >
-                    <div style={{ fontSize: 18, lineHeight: 1 }}>{dayNum}</div>
-                    <div style={{ fontSize: 8, opacity: 0.7, marginTop: 1 }}>
-                      {monthLabel.slice(0, 3).toUpperCase()}
+                    <div
+                      style={{
+                        width: 44,
+                        height: 44,
+                        borderRadius: 12,
+                        background: 'var(--danger-soft)',
+                        color: 'var(--danger-fg)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 700,
+                        flexShrink: 0,
+                      }}
+                    >
+                      <div style={{ fontSize: 18, lineHeight: 1 }}>{dayNum}</div>
+                      <div style={{ fontSize: 8, opacity: 0.7, marginTop: 1 }}>
+                        {monthLabel.slice(0, 3).toUpperCase()}
+                      </div>
                     </div>
-                  </div>
-                  <div>
-                    <div className="m-row-title" style={{ fontSize: '13.5px' }}>
-                      {nameRu}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="m-row-title" style={{ fontSize: '13.5px' }}>
+                        {nameRu}
+                      </div>
+                      <div className="m-row-sub">{nameKk}</div>
                     </div>
-                    <div className="m-row-sub">{nameKk}</div>
+                    <Badge variant="neutral" dot>
+                      {h.is_billable
+                        ? t('holidays.billable_label')
+                        : t('mobile.holidays_not_tariff')}
+                    </Badge>
                   </div>
-                  <Badge variant="neutral" dot>
-                    {h.is_billable ? t('holidays.billable_label') : t('mobile.holidays_not_tariff')}
-                  </Badge>
+                  <button
+                    type="button"
+                    className="m-iconbtn ghost"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeletingHoliday(h);
+                    }}
+                    aria-label={t('holidays.delete_action')}
+                  >
+                    <TrashIcon className="size-4" style={{ color: 'var(--danger-fg)' }} />
+                  </button>
                 </div>
               );
             })}
@@ -615,6 +648,8 @@ export default function HolidaysPage() {
         loading={createMutation.isPending}
         submitLabel={t('holidays.create_submit')}
       />
+
+      {sharedDialogs}
     </>
   );
 }

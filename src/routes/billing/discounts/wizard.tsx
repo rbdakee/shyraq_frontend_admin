@@ -496,6 +496,54 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
     [childrenQuery.data],
   );
 
+  const lifecycleDialogs = (
+    <>
+      <DestructiveConfirm
+        open={activateConfirm}
+        onOpenChange={setActivateConfirm}
+        title={t('discounts.wizard.activate_confirm.title')}
+        description={
+          watchNotify
+            ? t('discounts.wizard.activate_confirm.description_with_notify')
+            : t('discounts.wizard.activate_confirm.description')
+        }
+        confirmLabel={t('discounts.wizard.activate_confirm.confirm')}
+        onConfirm={handleActivate}
+        loading={isSaving}
+      />
+
+      <DestructiveConfirm
+        open={pauseConfirm}
+        onOpenChange={setPauseConfirm}
+        title={t('discounts.pause_confirm.title')}
+        description={t('discounts.pause_confirm.description')}
+        confirmLabel={t('discounts.actions.pause')}
+        onConfirm={handlePause}
+        loading={pauseMutation.isPending}
+      />
+
+      <DestructiveConfirm
+        open={resumeConfirm}
+        onOpenChange={setResumeConfirm}
+        title={t('discounts.resume_confirm.title')}
+        description={t('discounts.resume_confirm.description')}
+        confirmLabel={t('discounts.actions.resume')}
+        onConfirm={handleResume}
+        loading={resumeMutation.isPending}
+      />
+
+      <DestructiveConfirm
+        open={cancelConfirm}
+        onOpenChange={setCancelConfirm}
+        title={t('discounts.cancel_confirm.title')}
+        description={t('discounts.cancel_confirm.description')}
+        confirmLabel={t('discounts.actions.cancel')}
+        onConfirm={handleCancel}
+        loading={cancelMutation.isPending}
+      />
+    </>
+  );
+
   const MOBILE_TOTAL_STEPS = 4;
 
   if (isMobile) {
@@ -713,22 +761,80 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
           )}
         </div>
 
-        <StickyBottomBar>
-          <button type="button" className="m-btn" style={{ flex: 1 }} onClick={handleMobileBack}>
-            {t('mobile.discount_wizard_prev')}
-          </button>
-          <button
-            type="button"
-            className="m-btn primary"
-            style={{ flex: 2 }}
-            onClick={handleMobileNext}
-            disabled={isSaving}
-          >
-            {step < MOBILE_TOTAL_STEPS
-              ? t('mobile.discount_wizard_next')
-              : t('discounts.wizard.save_draft')}
-          </button>
-        </StickyBottomBar>
+        {!isReadOnly && (
+          <StickyBottomBar>
+            <button type="button" className="m-btn" style={{ flex: 1 }} onClick={handleMobileBack}>
+              {t('mobile.discount_wizard_prev')}
+            </button>
+            <button
+              type="button"
+              className="m-btn primary"
+              style={{ flex: 2 }}
+              onClick={handleMobileNext}
+              disabled={isSaving}
+            >
+              {step < MOBILE_TOTAL_STEPS
+                ? t('mobile.discount_wizard_next')
+                : t('discounts.wizard.save_draft')}
+            </button>
+          </StickyBottomBar>
+        )}
+
+        {isReadOnly && (
+          <StickyBottomBar>
+            {discount?.status === 'draft' && (
+              <button
+                type="button"
+                className="m-btn primary"
+                style={{ flex: 1 }}
+                onClick={() => setActivateConfirm(true)}
+                disabled={isSaving}
+                aria-label={t('discounts.actions.activate')}
+              >
+                <PlayIcon className="size-4" />
+                {t('discounts.actions.activate')}
+              </button>
+            )}
+            {discount?.status === 'active' && (
+              <button
+                type="button"
+                className="m-btn"
+                style={{ flex: 1 }}
+                onClick={() => setPauseConfirm(true)}
+                aria-label={t('discounts.actions.pause')}
+              >
+                <PauseIcon className="size-4" />
+                {t('discounts.actions.pause')}
+              </button>
+            )}
+            {discount?.status === 'paused' && (
+              <button
+                type="button"
+                className="m-btn primary"
+                style={{ flex: 1 }}
+                onClick={() => setResumeConfirm(true)}
+                aria-label={t('discounts.actions.resume')}
+              >
+                <RotateCcwIcon className="size-4" />
+                {t('discounts.actions.resume')}
+              </button>
+            )}
+            {(discount?.status === 'active' || discount?.status === 'paused') && (
+              <button
+                type="button"
+                className="m-btn"
+                style={{ flex: 1, color: 'var(--danger-fg)' }}
+                onClick={() => setCancelConfirm(true)}
+                aria-label={t('discounts.actions.cancel')}
+              >
+                <Trash2Icon className="size-4" />
+                {t('discounts.actions.cancel')}
+              </button>
+            )}
+          </StickyBottomBar>
+        )}
+
+        {lifecycleDialogs}
       </>
     );
   }
@@ -1541,50 +1647,7 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
         </div>
       </div>
 
-      {/* Confirm dialogs */}
-      <DestructiveConfirm
-        open={activateConfirm}
-        onOpenChange={setActivateConfirm}
-        title={t('discounts.wizard.activate_confirm.title')}
-        description={
-          watchNotify
-            ? t('discounts.wizard.activate_confirm.description_with_notify')
-            : t('discounts.wizard.activate_confirm.description')
-        }
-        confirmLabel={t('discounts.wizard.activate_confirm.confirm')}
-        onConfirm={handleActivate}
-        loading={isSaving}
-      />
-
-      <DestructiveConfirm
-        open={pauseConfirm}
-        onOpenChange={setPauseConfirm}
-        title={t('discounts.pause_confirm.title')}
-        description={t('discounts.pause_confirm.description')}
-        confirmLabel={t('discounts.actions.pause')}
-        onConfirm={handlePause}
-        loading={pauseMutation.isPending}
-      />
-
-      <DestructiveConfirm
-        open={resumeConfirm}
-        onOpenChange={setResumeConfirm}
-        title={t('discounts.resume_confirm.title')}
-        description={t('discounts.resume_confirm.description')}
-        confirmLabel={t('discounts.actions.resume')}
-        onConfirm={handleResume}
-        loading={resumeMutation.isPending}
-      />
-
-      <DestructiveConfirm
-        open={cancelConfirm}
-        onOpenChange={setCancelConfirm}
-        title={t('discounts.cancel_confirm.title')}
-        description={t('discounts.cancel_confirm.description')}
-        confirmLabel={t('discounts.actions.cancel')}
-        onConfirm={handleCancel}
-        loading={cancelMutation.isPending}
-      />
+      {lifecycleDialogs}
     </div>
   );
 }
