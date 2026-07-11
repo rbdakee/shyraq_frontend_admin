@@ -7,6 +7,13 @@ export const OTP_LOCK_SECONDS = 15 * 60;
 export const ENTITY_COMBOBOX_DEBOUNCE_MS = 300;
 export const SEARCH_DEBOUNCE_MS = 300;
 
+// WHY: billing lists (invoices/payments) resolve child_id -> full_name client-side
+// from a preloaded children list — the invoice/payment DTO carries no child name.
+// Load a generous, all-statuses page so names resolve for archived children too and
+// the child combobox can search the full roster of one kindergarten (not just the
+// first active page). If a садик ever exceeds this, embed child_name server-side.
+export const CHILD_LOOKUP_LIMIT = 1000;
+
 // specialist_type is no longer a hardcoded enum — it's an admin-managed per-kindergarten
 // dictionary (N12). See api/specialist-types.ts / lib/specialist-type.ts.
 

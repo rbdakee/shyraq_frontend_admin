@@ -47,7 +47,7 @@ import {
 import { useChildrenList } from '@/hooks/use-children';
 import { formatMoney, formatDate } from '@/lib/format';
 import { toI18nKey } from '@/lib/error-map';
-import { DEFAULT_TIMEZONE } from '@/lib/constants';
+import { DEFAULT_TIMEZONE, CHILD_LOOKUP_LIMIT } from '@/lib/constants';
 import { INVOICE_STATUS_BADGE } from './invoice-constants';
 
 const INVOICE_TYPES: InvoiceType[] = [
@@ -132,7 +132,7 @@ export default function InvoicesListPage() {
   const invoicesQuery = useInvoicesList(filters);
   const data = invoicesQuery.data ?? EMPTY_DATA;
 
-  const childrenQuery = useChildrenList({ status: 'active', limit: 200, offset: 0 });
+  const childrenQuery = useChildrenList({ limit: CHILD_LOOKUP_LIMIT, offset: 0 });
   const childrenMap = useMemo(
     () => new Map((childrenQuery.data?.data ?? []).map((c) => [c.id, c.full_name])),
     [childrenQuery.data],
