@@ -42,11 +42,13 @@
     },
 
     "filters": {
+      "sheet_title": "Сүзгілер",
       "status": "Күйі",
       "type": "Түрі",
       "child": "Бала",
       "due_date_from": "Мерзімі бастап",
       "due_date_to": "Мерзімі дейін",
+      "due_date": "Төлем мерзімі",
       "all_statuses": "Барлық күйлер",
       "all_types": "Барлық түрлер"
     },
@@ -183,8 +185,11 @@
     },
 
     "filters": {
+      "sheet_title": "Сүзгілер",
       "all_providers": "Барлық провайдерлер",
-      "all_statuses": "Барлық күйлер"
+      "all_statuses": "Барлық күйлер",
+      "date_range": "Кезең",
+      "search": "Іздеу"
     },
 
     "detail": {

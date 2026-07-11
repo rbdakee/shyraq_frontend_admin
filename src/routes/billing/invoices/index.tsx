@@ -9,6 +9,7 @@ import { type ColumnDef } from '@tanstack/react-table';
 import { PlusIcon, EyeIcon, DownloadIcon, Trash2Icon, FilterIcon } from 'lucide-react';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
+import { FilterBottomSheet } from '@/components/forms/filter-bottom-sheet';
 import { Fab } from '@/components/ui/fab';
 
 import { Button } from '@/components/ui/button';
@@ -115,6 +116,7 @@ export default function InvoicesListPage() {
   const [childFilter, setChildFilter] = useState<string | null>(null);
   const [dueDateRange, setDueDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [createOpen, setCreateOpen] = useState(false);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   const filters = useMemo(
     () => ({
@@ -285,7 +287,12 @@ export default function InvoicesListPage() {
           title={t('invoices.title')}
           sub={t('invoices.subtitle')}
           action={
-            <button type="button" className="m-iconbtn" aria-label="Filter">
+            <button
+              type="button"
+              className="m-iconbtn"
+              onClick={() => setFilterSheetOpen(true)}
+              aria-label={t('common:actions.filter')}
+            >
               <FilterIcon className="size-5" />
             </button>
           }
@@ -396,6 +403,55 @@ export default function InvoicesListPage() {
         <Fab onClick={() => setCreateOpen(true)}>
           <PlusIcon className="size-6" />
         </Fab>
+
+        <FilterBottomSheet
+          open={filterSheetOpen}
+          onOpenChange={setFilterSheetOpen}
+          title={t('invoices.filters.sheet_title')}
+          onReset={() => {
+            resetFilters();
+            setFilterSheetOpen(false);
+          }}
+          onApply={() => setFilterSheetOpen(false)}
+        >
+          <div className="flex flex-col gap-4">
+            <div>
+              <label className="mb-1 block text-[12px] font-semibold text-[color:var(--text-3)]">
+                {t('invoices.filters.type')}
+              </label>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('invoices.filters.all_types')}</SelectItem>
+                  {INVOICE_TYPES.map((tp) => (
+                    <SelectItem key={tp} value={tp}>
+                      {t(`invoices.type.${tp}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="mb-1 block text-[12px] font-semibold text-[color:var(--text-3)]">
+                {t('invoices.filters.child')}
+              </label>
+              <EntityCombobox
+                value={childFilter}
+                onChange={(val) => setChildFilter(val)}
+                fetchOptions={fetchChildOptions}
+                placeholder={t('invoices.filters.child')}
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-[12px] font-semibold text-[color:var(--text-3)]">
+                {t('invoices.filters.due_date')}
+              </label>
+              <PeriodPicker value={dueDateRange} onChange={setDueDateRange} className="w-full" />
+            </div>
+          </div>
+        </FilterBottomSheet>
       </>
     );
   }

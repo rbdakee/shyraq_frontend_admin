@@ -42,11 +42,13 @@
     },
 
     "filters": {
+      "sheet_title": "Фильтры",
       "status": "Статус",
       "type": "Тип",
       "child": "Ребёнок",
       "due_date_from": "Срок от",
       "due_date_to": "Срок до",
+      "due_date": "Срок оплаты",
       "all_statuses": "Все статусы",
       "all_types": "Все типы"
     },
@@ -183,8 +185,11 @@
     },
 
     "filters": {
+      "sheet_title": "Фильтры",
       "all_providers": "Все провайдеры",
-      "all_statuses": "Все статусы"
+      "all_statuses": "Все статусы",
+      "date_range": "Период",
+      "search": "Поиск"
     },
 
     "detail": {

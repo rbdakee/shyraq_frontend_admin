@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   listGroups,
   getGroup,
@@ -57,6 +57,28 @@ export function useGroupActiveMentor(groupId: string) {
     queryFn: () => getGroupActiveMentor(groupId),
     enabled: !!groupId,
   });
+}
+
+export function useGroupsChildrenCounts(groups: ReadonlyArray<{ id: string; capacity: number }>) {
+  const results = useQueries({
+    queries: groups.map((g) => ({
+      queryKey: qk.groups.children(g.id),
+      queryFn: () => listChildren({ current_group_id: g.id }),
+      enabled: !!g.id,
+    })),
+  });
+
+  let totalChildren = 0;
+  let overflowCount = 0;
+  for (let i = 0; i < results.length; i++) {
+    const total = results[i].data?.meta.total ?? 0;
+    totalChildren += total;
+    if (total > groups[i].capacity) {
+      overflowCount += 1;
+    }
+  }
+
+  return { totalChildren, overflowCount, results };
 }
 
 export function useGroupMentorHistory(groupId: string) {
