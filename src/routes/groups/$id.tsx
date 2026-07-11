@@ -14,6 +14,7 @@ import {
   SearchIcon,
   PlusIcon,
   ShieldOffIcon,
+  SlidersHorizontalIcon,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -139,6 +140,7 @@ export default function GroupDetailPage() {
   const [mobileActionsOpen, setMobileActionsOpen] = useState(false);
   const [assignMentorOpen, setAssignMentorOpen] = useState(false);
   const [unassignMentorOpen, setUnassignMentorOpen] = useState(false);
+  const [editParamsOpen, setEditParamsOpen] = useState(false);
   const [mobileSearchInput, setMobileSearchInput] = useState('');
   const [mobileDebouncedSearch, setMobileDebouncedSearch] = useState('');
   const mobileDebounceRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -544,6 +546,22 @@ export default function GroupDetailPage() {
           description={t('mobile.actions_title')}
         >
           <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              className="m-list-row w-full text-left"
+              onClick={() => {
+                setMobileActionsOpen(false);
+                setEditParamsOpen(true);
+              }}
+            >
+              <div className="flex size-10 items-center justify-center rounded-[10px] bg-[var(--primary-soft)] text-[color:var(--primary-fg)]">
+                <SlidersHorizontalIcon className="size-[18px]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="m-row-title">{t('mobile.edit_params')}</div>
+              </div>
+              <ChevronRightIcon className="size-4 shrink-0 text-[color:var(--text-4)]" />
+            </button>
             {!isArchived ? (
               <button
                 type="button"
@@ -632,6 +650,17 @@ export default function GroupDetailPage() {
               />
             </div>
           </form>
+        </FullScreenSheet>
+
+        <FullScreenSheet
+          open={editParamsOpen}
+          onOpenChange={setEditParamsOpen}
+          title={t('mobile.edit_params')}
+          description={t('detail.overview.params_title')}
+        >
+          <Suspense fallback={<TabSkeleton />}>
+            <OverviewTab groupId={id!} onSaved={() => setEditParamsOpen(false)} />
+          </Suspense>
         </FullScreenSheet>
 
         {dialogs}

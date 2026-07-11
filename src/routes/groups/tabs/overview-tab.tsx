@@ -36,9 +36,10 @@ type UpdateGroupForm = z.infer<typeof UpdateGroupSchema>;
 
 interface OverviewTabProps {
   groupId: string;
+  onSaved?: () => void;
 }
 
-export default function OverviewTab({ groupId }: OverviewTabProps) {
+export default function OverviewTab({ groupId, onSaved }: OverviewTabProps) {
   const { t } = useTranslation('groups');
   const tErrors = useTranslation('errors').t;
 
@@ -88,6 +89,7 @@ export default function OverviewTab({ groupId }: OverviewTabProps) {
       {
         onSuccess: () => {
           toast.success(t('detail.overview.save_success'));
+          onSaved?.();
         },
         onError: (error) => {
           const mapped = mapValidationErrors(error, setError);
@@ -100,7 +102,7 @@ export default function OverviewTab({ groupId }: OverviewTabProps) {
   });
 
   return (
-    <div className="grid grid-cols-[1fr_300px] gap-[14px]">
+    <div className="grid grid-cols-1 gap-[14px] lg:grid-cols-[1fr_300px]">
       {/* Left card: Form */}
       <div className="rounded-[var(--r-lg)] border border-[var(--line)] bg-[var(--bg-elev)] p-5 shadow-[var(--shyraq-shadow-1)]">
         <div className="text-[15px] font-semibold text-[color:var(--text-1)]">
