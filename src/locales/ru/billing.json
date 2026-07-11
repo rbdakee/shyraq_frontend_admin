@@ -471,6 +471,35 @@
         "or": "ИЛИ",
         "add": "Добавить условие",
         "value_placeholder": "Значение",
+        "num_placeholder": "Значение",
+        "days_placeholder": "Дней до срока",
+        "months_from": "От, мес.",
+        "months_to": "До, мес.",
+        "no_value": "Без значения",
+        "op": {
+          "gte": "≥",
+          "eq": "="
+        },
+        "errors": {
+          "invalid_number": "Введите целое число ≥ 0",
+          "invalid_range": "«От» не может быть больше «До»",
+          "required": "Обязательное поле"
+        },
+        "enum": {
+          "benefit_category": {
+            "multi_child": "Многодетная семья",
+            "disability": "Инвалидность",
+            "single_mother": "Мать-одиночка",
+            "mother_heroine": "Мать-героиня"
+          },
+          "payment_method": {
+            "kaspi_pay": "Kaspi Pay",
+            "halyk_epay": "Halyk ePay",
+            "bcc": "BCC",
+            "cash": "Наличные",
+            "bank_transfer": "Банковский перевод"
+          }
+        },
         "type": {
           "siblings_count": "Кол-во детей в семье",
           "prepayment_months": "Предоплата N месяцев",
@@ -534,6 +563,14 @@
         "description_with_notify": "Скидка станет активной. Push-уведомление отправится всем родителям таргета — отозвать push нельзя.",
         "confirm": "Активировать",
         "cancel": "Отмена"
+      },
+
+      "errors": {
+        "required": "Обязательное поле",
+        "invalid": "Некорректное значение",
+        "invalid_range": "«От» не может быть больше «До»",
+        "invalid_number": "Введите целое число ≥ 0",
+        "push_required": "Заполните текст уведомления на двух языках"
       },
 
       "success_create": "Черновик скидки создан",

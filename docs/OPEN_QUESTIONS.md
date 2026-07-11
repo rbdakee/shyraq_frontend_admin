@@ -311,6 +311,23 @@ Live OpenAPI inspection during manual QA showed `ContentListResponseDto = {items
 
 ---
 
+### A29 — Конструктор скидки: «Неизвестная ошибка» — два бага (error-envelope + форма `conditions`) · resolved (2026-07-11, live-verified)
+
+**Контекст.** Пользователь: конструктор скидки (`/billing/discounts/new`, `wizard.tsx`) после заполнения полей выдаёт «Неизвестная ошибка». Прогон под бэкдором `+77777777777` против live dev выявил **две** наложенные поломки:
+
+1. **Error-envelope (app-wide).** Глобальный `ValidationPipe` бэка отдаёт `{status, errors:{field: msg|nested}}` (см. handoff §2.3, live-подтверждён), а `error-map.ts::parseApiError` знал только nest-422 и доменный конверт → любая 422 схлопывалась в `unknown_error` → «Неизвестная ошибка». **Затрагивало весь Admin, не только скидки.**
+2. **Форма `conditions` расходилась с backend-контрактом.** `formToBody` слал `{op, rules:[{type, value:string}]}` и `{type:'age_range', age_from, age_to}`; каноничная схема (`backend/…/discount-conditions/conditions-evaluator.ts`) требует `{all_of|any_of:[…]}` с типизированными листьями (`op:'gte'|'eq'`+`value:int`, `from_months/to_months`, `in:[…]`, `days_before_due`, `from/to` ISO, голый `{type}`). Любое условие или таргет `age_range` → 422 `custom_discount_conditions_invalid`.
+
+**Дизайн↔контракт (CLAUDE §6).** Готовый дизайн (`screens-billing.jsx` `DiscountWizard`) для шага «Условия» — **статичный мок**: одно свободное текстовое поле `value` на условие (`onChange` — no-op). Он **физически не может** собрать типизированные листья, которые требует backend.
+
+**Решение (owner-approved: fix all three).** (1) `parseApiError` распознаёт `{status,errors}` и flatten'ит в `validation_error` details. (2+3) `formToBody`/`discountToDefaults` переписаны под каноничную схему; шаг 2 получил **типизированный value-cell по типу условия** (`ConditionValueEditor`: op+число / from-to мес. / диапазон дат / мультиселект `in[]` для benefit_category+payment_method / голый тип), сохранив row-лейаут дизайна; добавлена client-валидация перед submit (`validateAllThenJump`) + inline-ошибки, чтобы пустой push/битое условие не уходили в API. **Deviation от мока задокументирована здесь.** Revert path: если владелец захочет другой UX билдера — переверстать `ConditionValueEditor`, контракт-маппинг остаётся.
+
+**Не закрыто (вне scope, отдельно):** mobile-визард шагов уведомления не имеет, а backend требует `notification_title/body` при `notify_on_activation=true` (дефолт) даже для draft-create → mobile create скидки нереализуем без шага пуша или дефолта notify=off на mobile. Desktop (репортился) — исправлен. Требует решения владельца отдельным слайсом.
+
+**Связано:** handoff §2.3 (error-envelope), §18 (custom-discounts conditions schema).
+
+---
+
 ## B. Открытые (open — НЕ кодить до resolve)
 
 Формат записи:
