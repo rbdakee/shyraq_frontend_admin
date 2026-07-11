@@ -44,10 +44,10 @@ import {
   type InvoiceStatus,
   type InvoiceType,
 } from '@/hooks/use-invoices';
-import { useChildrenList } from '@/hooks/use-children';
+import { useAllChildren } from '@/hooks/use-children';
 import { formatMoney, formatDate } from '@/lib/format';
 import { toI18nKey } from '@/lib/error-map';
-import { DEFAULT_TIMEZONE, CHILD_LOOKUP_LIMIT } from '@/lib/constants';
+import { DEFAULT_TIMEZONE } from '@/lib/constants';
 import { INVOICE_STATUS_BADGE } from './invoice-constants';
 
 const INVOICE_TYPES: InvoiceType[] = [
@@ -132,9 +132,9 @@ export default function InvoicesListPage() {
   const invoicesQuery = useInvoicesList(filters);
   const data = invoicesQuery.data ?? EMPTY_DATA;
 
-  const childrenQuery = useChildrenList({ limit: CHILD_LOOKUP_LIMIT, offset: 0 });
+  const childrenQuery = useAllChildren();
   const childrenMap = useMemo(
-    () => new Map((childrenQuery.data?.data ?? []).map((c) => [c.id, c.full_name])),
+    () => new Map((childrenQuery.data ?? []).map((c) => [c.id, c.full_name])),
     [childrenQuery.data],
   );
 
@@ -167,7 +167,7 @@ export default function InvoicesListPage() {
   }, [data]);
 
   async function fetchChildOptions(query: string): Promise<ComboboxOption[]> {
-    const children = childrenQuery.data?.data ?? [];
+    const children = childrenQuery.data ?? [];
     const lowerQ = query.toLowerCase();
     return children
       .filter((c) => !lowerQ || c.full_name.toLowerCase().includes(lowerQ))
@@ -259,7 +259,7 @@ export default function InvoicesListPage() {
     [navigate, t],
   );
 
-  const childrenMapArr = childrenQuery.data?.data ?? [];
+  const childrenMapArr = childrenQuery.data ?? [];
 
   if (isMobile) {
     const statusChips: Array<{ value: string; label: string; count?: number }> = [

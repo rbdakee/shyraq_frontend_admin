@@ -235,6 +235,26 @@ export async function listChildren(filters: ChildListFilters = {}): Promise<Chil
   return ChildListResponseSchema.parse(data);
 }
 
+// WHY: the backend caps `limit` at 100 (ListChildrenQueryDto @Max(100)) — a single
+// oversized page 422s. Billing lists (invoices/payments) need the full roster to
+// resolve child_id -> full_name (the DTOs carry no child name), so page through 100
+// at a time until `total` is reached.
+const CHILDREN_PAGE_MAX = 100;
+
+export async function listAllChildren(
+  filters: Omit<ChildListFilters, 'limit' | 'offset'> = {},
+): Promise<ChildDto[]> {
+  const all: ChildDto[] = [];
+  let offset = 0;
+  for (;;) {
+    const page = await listChildren({ ...filters, limit: CHILDREN_PAGE_MAX, offset });
+    all.push(...page.data);
+    offset += CHILDREN_PAGE_MAX;
+    if (all.length >= page.meta.total || page.data.length === 0) break;
+  }
+  return all;
+}
+
 export async function createChild(body: CreateChildBody): Promise<ChildDto> {
   const data: unknown = await apiClient.post('children', { json: body }).json();
   return ChildDtoSchema.parse(data);

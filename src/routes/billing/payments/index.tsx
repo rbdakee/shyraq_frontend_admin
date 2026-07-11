@@ -24,9 +24,9 @@ import {
   type PaymentProvider,
   type PaymentStatus,
 } from '@/hooks/use-payments';
-import { useChildrenList } from '@/hooks/use-children';
+import { useAllChildren } from '@/hooks/use-children';
 import { formatMoney, formatDateTime } from '@/lib/format';
-import { DEFAULT_TIMEZONE, CHILD_LOOKUP_LIMIT } from '@/lib/constants';
+import { DEFAULT_TIMEZONE } from '@/lib/constants';
 import { PAYMENT_STATUS_BADGE, PROVIDER_I18N_KEYS } from './payment-constants';
 
 const PAYMENT_PROVIDERS: PaymentProvider[] = [
@@ -85,9 +85,9 @@ export default function PaymentsListPage() {
     );
   }, [allData, searchQuery]);
 
-  const childrenQuery = useChildrenList({ limit: CHILD_LOOKUP_LIMIT, offset: 0 });
+  const childrenQuery = useAllChildren();
   const childrenMap = useMemo(
-    () => new Map((childrenQuery.data?.data ?? []).map((c) => [c.id, c.full_name])),
+    () => new Map((childrenQuery.data ?? []).map((c) => [c.id, c.full_name])),
     [childrenQuery.data],
   );
 
