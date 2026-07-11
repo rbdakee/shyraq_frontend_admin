@@ -62,7 +62,7 @@ import {
   type CustomDiscountResponseDto,
 } from '@/hooks/use-custom-discounts';
 import { useGroups } from '@/hooks/use-groups';
-import { useChildrenList } from '@/hooks/use-children';
+import { useAllChildren } from '@/hooks/use-children';
 import { useTariffPlansList } from '@/hooks/use-tariff-plans';
 import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import { resolveJsonbI18n, type JsonbI18n } from '@/lib/jsonb-i18n';
@@ -594,6 +594,68 @@ function ConditionValueEditor({
   );
 }
 
+// Reactive multiselect chips for targeting (groups / children / tariffs). Reads and writes
+// `target_ids` via the form so the selected highlight updates immediately (a plain
+// getValues() read in render is not reactive). Shared by desktop and mobile.
+function TargetChips({
+  form,
+  items,
+  disabled,
+  loading,
+  loadingText,
+  emptyText,
+}: {
+  form: UseFormReturn<WizardForm>;
+  items: Array<{ id: string; label: string }>;
+  disabled?: boolean;
+  loading?: boolean;
+  loadingText: string;
+  emptyText: string;
+}) {
+  const selectedIds = useWatch({ control: form.control, name: 'target_ids' }) ?? [];
+
+  if (loading) {
+    return <p className="text-[12px] text-[color:var(--text-3)]">{loadingText}</p>;
+  }
+  if (items.length === 0) {
+    return <p className="text-[12px] text-[color:var(--text-3)]">{emptyText}</p>;
+  }
+
+  const toggle = (id: string) => {
+    const current = form.getValues('target_ids');
+    form.setValue(
+      'target_ids',
+      current.includes(id) ? current.filter((x) => x !== id) : [...current, id],
+      { shouldValidate: false },
+    );
+  };
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((it) => {
+        const selected = selectedIds.includes(it.id);
+        return (
+          <button
+            key={it.id}
+            type="button"
+            disabled={disabled}
+            onClick={() => toggle(it.id)}
+            className={cn(
+              'rounded-full border px-3 py-1 text-[12px] font-semibold cursor-pointer',
+              selected
+                ? 'border-[var(--primary)] bg-[var(--primary-soft)] text-[color:var(--primary-fg)]'
+                : 'border-[var(--border)] bg-[var(--bg-elev)] text-[color:var(--text-2)]',
+            )}
+          >
+            {it.label}
+            {selected && <XIcon className="ml-1 inline size-2.5" />}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 interface DiscountWizardPageProps {
   mode: 'create' | 'edit' | 'view';
   discountId?: string;
@@ -682,7 +744,9 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
   const cancelMutation = useCancelCustomDiscount();
 
   const groupsQuery = useGroups();
-  const childrenQuery = useChildrenList({ status: 'active', limit: 200, offset: 0 });
+  // Full active roster (paged past the backend's 100-cap) so the targeting multiselect
+  // shows every child — a single limit>100 request 422s (ListChildrenQueryDto @Max(100)).
+  const childrenQuery = useAllChildren({ status: 'active' });
   const tariffPlansQuery = useTariffPlansList({ is_active: true });
 
   const stepFieldMap: Record<number, Array<keyof WizardForm>> = {
@@ -854,7 +918,7 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
     createMutation.isPending || updateMutation.isPending || activateMutation.isPending;
 
   const childrenMap = useMemo(
-    () => new Map((childrenQuery.data?.data ?? []).map((c) => [c.id, c.full_name])),
+    () => new Map((childrenQuery.data ?? []).map((c) => [c.id, c.full_name])),
     [childrenQuery.data],
   );
 
@@ -906,7 +970,7 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
     </>
   );
 
-  const MOBILE_TOTAL_STEPS = 4;
+  const MOBILE_TOTAL_STEPS = 5;
 
   if (isMobile) {
     const mobileStepTitle: Record<number, string> = {
@@ -914,20 +978,13 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
       2: t('mobile.discount_wizard_step2_title'),
       3: t('discounts.wizard.step3'),
       4: t('discounts.wizard.step4'),
+      5: t('discounts.wizard.step5'),
     };
 
     async function handleMobileNext() {
       if (step >= MOBILE_TOTAL_STEPS) {
-        const ok = await form.trigger([
-          'valid_from',
-          'valid_until',
-          'priority',
-          'push_ru',
-          'push_kk',
-          'notify_on_activation',
-        ]);
-        if (!ok) return;
-        handleSaveDraft();
+        // Final step: validate the whole form (jumping to the first bad step) before save.
+        if (await validateAllThenJump()) handleSaveDraft();
         return;
       }
       void handleNext();
@@ -1000,12 +1057,22 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                   {t('discounts.wizard.basic.name_ru')}
                 </label>
                 <input className="input" {...form.register('name_ru')} />
+                {fieldError('name_ru') && (
+                  <p className="text-[11px] text-[color:var(--danger-fg)]">
+                    {fieldError('name_ru')}
+                  </p>
+                )}
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
                   {t('discounts.wizard.basic.name_kk')}
                 </label>
                 <input className="input" {...form.register('name_kk')} />
+                {fieldError('name_kk') && (
+                  <p className="text-[11px] text-[color:var(--danger-fg)]">
+                    {fieldError('name_kk')}
+                  </p>
+                )}
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
@@ -1025,6 +1092,11 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                   type="number"
                   {...form.register('amount', { valueAsNumber: true })}
                 />
+                {fieldError('amount') && (
+                  <p className="text-[11px] text-[color:var(--danger-fg)]">
+                    {fieldError('amount')}
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -1102,7 +1174,14 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                 <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
                   {t('discounts.wizard.targeting.title')}
                 </label>
-                <select className="select" {...form.register('target_type')}>
+                <select
+                  className="select"
+                  {...form.register('target_type')}
+                  onChange={(e) => {
+                    form.setValue('target_type', e.target.value as TargetType);
+                    form.setValue('target_ids', []);
+                  }}
+                >
                   {TARGET_OPTIONS.map((opt) => (
                     <option key={opt.id} value={opt.id}>
                       {t(`discounts.target_type.${opt.id}`)}
@@ -1110,6 +1189,89 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                   ))}
                 </select>
               </div>
+
+              {watchTargetType === 'groups' && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                    {t('discounts.wizard.targeting.select_groups')}
+                  </label>
+                  <TargetChips
+                    form={form}
+                    loading={groupsQuery.isLoading}
+                    loadingText={t('discounts.wizard.targeting.loading')}
+                    emptyText={t('discounts.wizard.targeting.empty')}
+                    items={(groupsQuery.data ?? []).map((g) => ({ id: g.id, label: g.name }))}
+                  />
+                </div>
+              )}
+
+              {watchTargetType === 'children' && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                    {t('discounts.wizard.targeting.select_children')}
+                  </label>
+                  <TargetChips
+                    form={form}
+                    loading={childrenQuery.isLoading}
+                    loadingText={t('discounts.wizard.targeting.loading')}
+                    emptyText={t('discounts.wizard.targeting.empty_children')}
+                    items={(childrenQuery.data ?? []).map((c) => ({
+                      id: c.id,
+                      label: c.full_name,
+                    }))}
+                  />
+                </div>
+              )}
+
+              {watchTargetType === 'tariff_types' && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                    {t('discounts.wizard.targeting.select_tariffs')}
+                  </label>
+                  <TargetChips
+                    form={form}
+                    loading={tariffPlansQuery.isLoading}
+                    loadingText={t('discounts.wizard.targeting.loading')}
+                    emptyText={t('discounts.wizard.targeting.empty')}
+                    items={(tariffPlansQuery.data ?? []).map((tp) => ({
+                      id: tp.id,
+                      label: tp.name,
+                    }))}
+                  />
+                </div>
+              )}
+
+              {watchTargetType === 'age_range' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                      {t('discounts.wizard.targeting.age_from')}
+                    </label>
+                    <input
+                      className="input"
+                      type="number"
+                      min={0}
+                      {...form.register('age_from', { valueAsNumber: true })}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                      {t('discounts.wizard.targeting.age_to')}
+                    </label>
+                    <input
+                      className="input"
+                      type="number"
+                      min={0}
+                      {...form.register('age_to', { valueAsNumber: true })}
+                    />
+                    {fieldError('age_to') && (
+                      <p className="text-[11px] text-[color:var(--danger-fg)]">
+                        {fieldError('age_to')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -1120,6 +1282,11 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                   {t('discounts.wizard.period.valid_from')}
                 </label>
                 <input className="input" type="date" {...form.register('valid_from')} />
+                {fieldError('valid_from') && (
+                  <p className="text-[11px] text-[color:var(--danger-fg)]">
+                    {fieldError('valid_from')}
+                  </p>
+                )}
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
@@ -1127,6 +1294,96 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                 </label>
                 <input className="input" type="date" {...form.register('valid_until')} />
               </div>
+            </div>
+          )}
+
+          {step === 5 && (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                  {t('discounts.wizard.priority.priority_label')}
+                </label>
+                <input
+                  className="input"
+                  type="number"
+                  min={0}
+                  {...form.register('priority', { valueAsNumber: true })}
+                />
+                <p className="text-[11px] text-[color:var(--text-3)]">
+                  {t('discounts.wizard.priority.priority_hint')}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col">
+                  <span className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                    {t('discounts.wizard.priority.stackable_label')}
+                  </span>
+                  <span className="text-[11px] text-[color:var(--text-3)]">
+                    {t('discounts.wizard.priority.stackable_hint')}
+                  </span>
+                </div>
+                <Controller
+                  control={form.control}
+                  name="stackable"
+                  render={({ field }) => (
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  )}
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                  {t('discounts.wizard.priority.notification_title')}
+                </span>
+                <Controller
+                  control={form.control}
+                  name="notify_on_activation"
+                  render={({ field }) => (
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  )}
+                />
+              </div>
+
+              {watchNotify && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                    {t('discounts.wizard.priority.notification_text')}
+                  </label>
+                  <Controller
+                    control={form.control}
+                    name="push_ru"
+                    render={({ field: ruField }) => (
+                      <Controller
+                        control={form.control}
+                        name="push_kk"
+                        render={({ field: kkField }) => (
+                          <PairedI18nField
+                            value={{ ru: ruField.value, kk: kkField.value }}
+                            onChange={(v) => {
+                              ruField.onChange(v.ru);
+                              kkField.onChange(v.kk);
+                            }}
+                            as="textarea"
+                            placeholder={t('discounts.wizard.priority.notification_placeholder')}
+                            rows={3}
+                          />
+                        )}
+                      />
+                    )}
+                  />
+                  {(fieldError('push_ru') || fieldError('push_kk')) && (
+                    <p className="text-[11px] text-[color:var(--danger-fg)]">
+                      {t('discounts.wizard.errors.push_required')}
+                    </p>
+                  )}
+                  <div className="flex gap-3 rounded-[var(--r-md)] border border-[var(--warning-soft-border)] bg-[var(--warning-soft)] p-3">
+                    <p className="text-[12px] text-[color:var(--warning-text)]">
+                      {t('discounts.wizard.priority.notification_warning')}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -1587,34 +1844,14 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                   <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
                     {t('discounts.wizard.targeting.select_groups')}
                   </Label>
-                  <div className="flex flex-wrap gap-2">
-                    {(groupsQuery.data ?? []).map((g) => {
-                      const selected = form.getValues('target_ids').includes(g.id);
-                      return (
-                        <button
-                          key={g.id}
-                          type="button"
-                          disabled={isReadOnly}
-                          onClick={() => {
-                            const current = form.getValues('target_ids');
-                            form.setValue(
-                              'target_ids',
-                              selected ? current.filter((x) => x !== g.id) : [...current, g.id],
-                            );
-                          }}
-                          className={cn(
-                            'rounded-full border px-3 py-1 text-[12px] font-semibold cursor-pointer',
-                            selected
-                              ? 'border-[var(--primary)] bg-[var(--primary-soft)] text-[color:var(--primary-fg)]'
-                              : 'border-[var(--border)] bg-[var(--bg-elev)] text-[color:var(--text-2)]',
-                          )}
-                        >
-                          {g.name}
-                          {selected && <XIcon className="ml-1 inline size-2.5" />}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <TargetChips
+                    form={form}
+                    disabled={isReadOnly}
+                    loading={groupsQuery.isLoading}
+                    loadingText={t('discounts.wizard.targeting.loading')}
+                    emptyText={t('discounts.wizard.targeting.empty')}
+                    items={(groupsQuery.data ?? []).map((g) => ({ id: g.id, label: g.name }))}
+                  />
                 </div>
               )}
 
@@ -1623,34 +1860,17 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                   <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
                     {t('discounts.wizard.targeting.select_children')}
                   </Label>
-                  <div className="flex flex-wrap gap-2">
-                    {(childrenQuery.data?.data ?? []).map((c) => {
-                      const selected = form.getValues('target_ids').includes(c.id);
-                      return (
-                        <button
-                          key={c.id}
-                          type="button"
-                          disabled={isReadOnly}
-                          onClick={() => {
-                            const current = form.getValues('target_ids');
-                            form.setValue(
-                              'target_ids',
-                              selected ? current.filter((x) => x !== c.id) : [...current, c.id],
-                            );
-                          }}
-                          className={cn(
-                            'rounded-full border px-3 py-1 text-[12px] font-semibold cursor-pointer',
-                            selected
-                              ? 'border-[var(--primary)] bg-[var(--primary-soft)] text-[color:var(--primary-fg)]'
-                              : 'border-[var(--border)] bg-[var(--bg-elev)] text-[color:var(--text-2)]',
-                          )}
-                        >
-                          {c.full_name}
-                          {selected && <XIcon className="ml-1 inline size-2.5" />}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <TargetChips
+                    form={form}
+                    disabled={isReadOnly}
+                    loading={childrenQuery.isLoading}
+                    loadingText={t('discounts.wizard.targeting.loading')}
+                    emptyText={t('discounts.wizard.targeting.empty_children')}
+                    items={(childrenQuery.data ?? []).map((c) => ({
+                      id: c.id,
+                      label: c.full_name,
+                    }))}
+                  />
                 </div>
               )}
 
@@ -1659,34 +1879,17 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                   <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
                     {t('discounts.wizard.targeting.select_tariffs')}
                   </Label>
-                  <div className="flex flex-wrap gap-2">
-                    {(tariffPlansQuery.data ?? []).map((tp) => {
-                      const selected = form.getValues('target_ids').includes(tp.id);
-                      return (
-                        <button
-                          key={tp.id}
-                          type="button"
-                          disabled={isReadOnly}
-                          onClick={() => {
-                            const current = form.getValues('target_ids');
-                            form.setValue(
-                              'target_ids',
-                              selected ? current.filter((x) => x !== tp.id) : [...current, tp.id],
-                            );
-                          }}
-                          className={cn(
-                            'rounded-full border px-3 py-1 text-[12px] font-semibold cursor-pointer',
-                            selected
-                              ? 'border-[var(--primary)] bg-[var(--primary-soft)] text-[color:var(--primary-fg)]'
-                              : 'border-[var(--border)] bg-[var(--bg-elev)] text-[color:var(--text-2)]',
-                          )}
-                        >
-                          {tp.name}
-                          {selected && <XIcon className="ml-1 inline size-2.5" />}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <TargetChips
+                    form={form}
+                    disabled={isReadOnly}
+                    loading={tariffPlansQuery.isLoading}
+                    loadingText={t('discounts.wizard.targeting.loading')}
+                    emptyText={t('discounts.wizard.targeting.empty')}
+                    items={(tariffPlansQuery.data ?? []).map((tp) => ({
+                      id: tp.id,
+                      label: tp.name,
+                    }))}
+                  />
                 </div>
               )}
 
