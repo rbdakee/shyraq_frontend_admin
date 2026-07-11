@@ -1,7 +1,13 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { type ColumnDef } from '@tanstack/react-table';
-import { CalendarIcon, PlusIcon, PencilIcon } from 'lucide-react';
+import {
+  CalendarIcon,
+  PlusIcon,
+  PencilIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -32,6 +38,8 @@ import { PeriodPicker } from '@/components/forms/period-picker';
 import { EntityCombobox } from '@/components/forms/entity-combobox';
 import type { ComboboxOption } from '@/components/forms/entity-combobox';
 import { mapValidationErrors } from '@/components/forms/map-validation-errors';
+import { FullScreenSheet } from '@/components/forms/full-screen-sheet';
+import { ErrorState } from '@/components/feedback/error-state';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
 import {
   useAttendanceEvents,
@@ -96,6 +104,7 @@ function CorrectionModal({
 }) {
   const { t } = useTranslation('attendance');
   const tErrors = useTranslation('errors').t;
+  const { isMobile } = useBreakpoint();
   const patchMutation = usePatchAttendanceEvent();
 
   const form = useForm<CorrectionForm>({
@@ -153,6 +162,79 @@ function CorrectionModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentEventId]);
 
+  const formFields = (
+    <>
+      <div className="flex flex-col gap-1.5">
+        <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+          {t('correction_modal.recorded_at')}
+        </Label>
+        <Input
+          type="datetime-local"
+          {...form.register('recordedAt')}
+          className="border-[var(--border)] bg-[var(--bg-elev)]"
+        />
+        {form.formState.errors.recordedAt && (
+          <span className="text-[12px] text-[color:var(--danger)]">
+            {form.formState.errors.recordedAt.message}
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+          {t('correction_modal.notes')}
+        </Label>
+        <Textarea
+          {...form.register('notes')}
+          placeholder={t('correction_modal.notes_placeholder')}
+          rows={3}
+          className="border-[var(--border)] bg-[var(--bg-elev)]"
+        />
+      </div>
+
+      {isCheckOut && (
+        <div className="flex flex-col gap-1.5">
+          <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+            {t('correction_modal.pickup_user')}
+          </Label>
+          <Input
+            {...form.register('pickupUserId')}
+            placeholder={t('correction_modal.pickup_user_placeholder')}
+            className="border-[var(--border)] bg-[var(--bg-elev)]"
+          />
+        </div>
+      )}
+    </>
+  );
+
+  if (isMobile) {
+    return (
+      <FullScreenSheet
+        open={open}
+        onOpenChange={(v) => {
+          if (!v) handleClose();
+          else onOpenChange(v);
+        }}
+        title={t('correction_modal.title')}
+        sub={childName}
+        description={t('correction_modal.title')}
+        footer={
+          <Button
+            className="w-full"
+            disabled={patchMutation.isPending}
+            onClick={form.handleSubmit(handleSubmit)}
+          >
+            {t('correction_modal.save')}
+          </Button>
+        }
+      >
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col gap-4">
+          {formFields}
+        </form>
+      </FullScreenSheet>
+    );
+  }
+
   return (
     <Dialog
       open={open}
@@ -173,46 +255,7 @@ function CorrectionModal({
           onSubmit={form.handleSubmit(handleSubmit)}
           className="flex flex-col gap-4 px-[22px] pb-[18px]"
         >
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
-              {t('correction_modal.recorded_at')}
-            </Label>
-            <Input
-              type="datetime-local"
-              {...form.register('recordedAt')}
-              className="border-[var(--border)] bg-[var(--bg-elev)]"
-            />
-            {form.formState.errors.recordedAt && (
-              <span className="text-[12px] text-[color:var(--danger)]">
-                {form.formState.errors.recordedAt.message}
-              </span>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-1.5">
-            <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
-              {t('correction_modal.notes')}
-            </Label>
-            <Textarea
-              {...form.register('notes')}
-              placeholder={t('correction_modal.notes_placeholder')}
-              rows={3}
-              className="border-[var(--border)] bg-[var(--bg-elev)]"
-            />
-          </div>
-
-          {isCheckOut && (
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
-                {t('correction_modal.pickup_user')}
-              </Label>
-              <Input
-                {...form.register('pickupUserId')}
-                placeholder={t('correction_modal.pickup_user_placeholder')}
-                className="border-[var(--border)] bg-[var(--bg-elev)]"
-              />
-            </div>
-          )}
+          {formFields}
 
           <DialogFooter className="-mx-0 -mb-0 rounded-b-[var(--r-xl)] border-t border-[var(--line)] bg-transparent px-[22px] py-[14px]">
             <Button type="button" variant="outline" onClick={handleClose}>
@@ -291,6 +334,19 @@ function MobileAttendance() {
       };
     });
   }, [dailyQuery.data, childrenMap, groupsMap]);
+
+  const tz = DEFAULT_TIMEZONE;
+  const [mOffset, setMOffset] = useState(0);
+  const [correctionEvent, setCorrectionEvent] = useState<AttendanceEvent | null>(null);
+  const [correctionOpen, setCorrectionOpen] = useState(false);
+
+  const eventsQuery = useAttendanceEvents({ limit: PAGE_SIZE, offset: mOffset });
+  const events = eventsQuery.data ?? [];
+  const hasMore = events.length === PAGE_SIZE;
+
+  const correctionChildName = correctionEvent
+    ? (childrenMap.get(correctionEvent.childId)?.name ?? '—')
+    : '—';
 
   return (
     <>
@@ -404,6 +460,98 @@ function MobileAttendance() {
           </div>
         ))}
       </div>
+
+      <div className="m-section-h">
+        <div className="m-section-title">{t('events_title')}</div>
+      </div>
+
+      {eventsQuery.isPending ? (
+        <div className="m-card flex flex-col gap-3 p-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-5 animate-pulse rounded bg-[var(--bg-3)]" />
+          ))}
+        </div>
+      ) : eventsQuery.isError ? (
+        <ErrorState onRetry={() => void eventsQuery.refetch()} />
+      ) : events.length === 0 ? (
+        <div className="m-card py-8 text-center text-[13px] text-[color:var(--text-3)]">
+          {t('empty.title')}
+        </div>
+      ) : (
+        <>
+          <div className="m-card p-0">
+            {events.map((ev) => {
+              const child = childrenMap.get(ev.childId);
+              const name = child?.name ?? '—';
+              return (
+                <button
+                  key={ev.id}
+                  type="button"
+                  className="m-list-row w-full text-left"
+                  aria-label={t('correction_modal.title')}
+                  onClick={() => {
+                    setCorrectionEvent(ev);
+                    setCorrectionOpen(true);
+                  }}
+                >
+                  <span className="shrink-0 font-mono text-[13px] tabular-nums text-[color:var(--text-2)]">
+                    {formatTimeOnly(ev.recordedAt, tz)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-[14px] font-semibold">{name}</div>
+                  </div>
+                  <Badge variant={EVENT_TYPE_BADGE[ev.eventType]}>
+                    {t(`event_type.${ev.eventType}`)}
+                  </Badge>
+                  <Badge variant={METHOD_BADGE[ev.method]}>{t(`method.${ev.method}`)}</Badge>
+                  <PencilIcon className="size-4 shrink-0 text-[color:var(--text-4)]" />
+                </button>
+              );
+            })}
+          </div>
+
+          {(mOffset > 0 || hasMore) && (
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-xs text-[color:var(--text-3)]">
+                {t('pagination.showing', {
+                  from: String(mOffset + 1),
+                  to: String(mOffset + events.length),
+                })}
+              </span>
+              <div className="flex gap-2">
+                {mOffset > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-label={t('pagination.prev')}
+                    onClick={() => setMOffset(Math.max(0, mOffset - PAGE_SIZE))}
+                  >
+                    <ChevronLeftIcon className="size-4" />
+                  </Button>
+                )}
+                {hasMore && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    aria-label={t('pagination.next')}
+                    onClick={() => setMOffset(mOffset + PAGE_SIZE)}
+                    disabled={eventsQuery.isFetching}
+                  >
+                    <ChevronRightIcon className="size-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      <CorrectionModal
+        event={correctionEvent}
+        open={correctionOpen}
+        onOpenChange={setCorrectionOpen}
+        childName={correctionChildName}
+      />
     </>
   );
 }
