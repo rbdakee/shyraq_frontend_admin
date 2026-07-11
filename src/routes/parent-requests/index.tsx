@@ -17,7 +17,7 @@ import type { CursorPagination } from '@/components/data-table/types';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
 import { FilterBottomSheet } from '@/components/forms/filter-bottom-sheet';
 import { useParentRequestsList } from '@/hooks/use-parent-requests';
-import { useChildrenList } from '@/hooks/use-children';
+import { useAllChildren } from '@/hooks/use-children';
 import { useGroups } from '@/hooks/use-groups';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { formatDateTime } from '@/lib/format';
@@ -94,7 +94,7 @@ export default function ParentRequestsListPage() {
 
   const requestsQuery = useParentRequestsList(filters);
   const groupsQuery = useGroups(ACTIVE_GROUP_FILTERS);
-  const childrenQuery = useChildrenList({ limit: 500, offset: 0 });
+  const childrenQuery = useAllChildren();
 
   const allItems = useMemo(
     () => requestsQuery.data?.pages.flatMap((p) => p.items) ?? EMPTY_ITEMS,
@@ -102,7 +102,7 @@ export default function ParentRequestsListPage() {
   );
 
   const childrenMap = useMemo(
-    () => new Map((childrenQuery.data?.data ?? []).map((c) => [c.id, c.full_name])),
+    () => new Map((childrenQuery.data ?? []).map((c) => [c.id, c.full_name])),
     [childrenQuery.data],
   );
 
@@ -248,7 +248,7 @@ export default function ParentRequestsListPage() {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">{t('filters.child')}</SelectItem>
-          {(childrenQuery.data?.data ?? []).map((c) => (
+          {(childrenQuery.data ?? []).map((c) => (
             <SelectItem key={c.id} value={c.id}>
               {c.full_name}
             </SelectItem>

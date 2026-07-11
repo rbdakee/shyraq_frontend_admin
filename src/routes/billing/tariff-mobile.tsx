@@ -17,7 +17,7 @@ import {
   useCloseTariffAssignment,
   type TariffAssignmentResponseDto,
 } from '@/hooks/use-tariff-assignments';
-import { useChildrenList } from '@/hooks/use-children';
+import { useAllChildren } from '@/hooks/use-children';
 import { formatMoney } from '@/lib/format';
 import { toI18nKey } from '@/lib/error-map';
 import {
@@ -48,8 +48,8 @@ export default function TariffMobile() {
   const assignmentsQuery = useTariffAssignmentsList({});
   const assignments = assignmentsQuery.data ?? [];
 
-  const childrenQuery = useChildrenList({ status: 'active', limit: 200, offset: 0 });
-  const childrenMap = new Map((childrenQuery.data?.data ?? []).map((c) => [c.id, c.full_name]));
+  const childrenQuery = useAllChildren();
+  const childrenMap = new Map((childrenQuery.data ?? []).map((c) => [c.id, c.full_name]));
 
   const deactivateMutation = useDeactivateTariffPlanById();
   const closeMutation = useCloseTariffAssignment();

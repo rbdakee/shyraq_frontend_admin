@@ -39,7 +39,7 @@ import {
   useParentRequestMessages,
   useAddParentRequestMessage,
 } from '@/hooks/use-parent-requests';
-import { useChildrenList } from '@/hooks/use-children';
+import { useAllChildren } from '@/hooks/use-children';
 import { useGroups } from '@/hooks/use-groups';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
@@ -101,11 +101,11 @@ export default function ParentRequestDetailPage() {
   const rejectMutation = useRejectParentRequest(id ?? '');
   const addMessageMutation = useAddParentRequestMessage(id ?? '');
 
-  const childrenQuery = useChildrenList({ limit: 500, offset: 0 });
+  const childrenQuery = useAllChildren();
   const groupsQuery = useGroups({ archived: false });
 
   const childrenMap = useMemo(
-    () => new Map((childrenQuery.data?.data ?? []).map((c) => [c.id, c])),
+    () => new Map((childrenQuery.data ?? []).map((c) => [c.id, c])),
     [childrenQuery.data],
   );
 

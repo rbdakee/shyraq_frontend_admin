@@ -59,7 +59,7 @@ import {
   type RefundStatus,
 } from '@/hooks/use-refunds';
 import { usePaymentsList } from '@/hooks/use-payments';
-import { useChildrenList } from '@/hooks/use-children';
+import { useAllChildren } from '@/hooks/use-children';
 import { formatMoney, formatDateTime } from '@/lib/format';
 import { toI18nKey } from '@/lib/error-map';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
@@ -108,9 +108,9 @@ export default function RefundsListPage() {
   const refundsQuery = useRefundsList(filters);
   const data = refundsQuery.data ?? EMPTY_DATA;
 
-  const childrenQuery = useChildrenList({ limit: 200, offset: 0 });
+  const childrenQuery = useAllChildren();
   const childrenMap = useMemo(
-    () => new Map((childrenQuery.data?.data ?? []).map((c) => [c.id, c.full_name])),
+    () => new Map((childrenQuery.data ?? []).map((c) => [c.id, c.full_name])),
     [childrenQuery.data],
   );
 

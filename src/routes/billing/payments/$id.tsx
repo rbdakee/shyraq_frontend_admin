@@ -18,7 +18,7 @@ import { JsonViewer } from '@/components/feedback/json-viewer';
 import { ErrorState } from '@/components/feedback/error-state';
 import { SkeletonLine, SkeletonBox } from '@/components/feedback/skeleton';
 import { usePayment, type PaymentResponseDto } from '@/hooks/use-payments';
-import { useChildrenList } from '@/hooks/use-children';
+import { useAllChildren } from '@/hooks/use-children';
 import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import { formatMoney, formatDateTime, getInitials } from '@/lib/format';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
@@ -59,9 +59,9 @@ export default function PaymentDetailPage() {
     payment ? t('payments.detail.title', { id: payment.id.slice(0, 8) }) : undefined,
   );
 
-  const childrenQuery = useChildrenList({ status: 'active', limit: 200, offset: 0 });
+  const childrenQuery = useAllChildren();
   const childName = useMemo(
-    () => childrenQuery.data?.data.find((c) => c.id === payment?.child_id)?.full_name ?? null,
+    () => childrenQuery.data?.find((c) => c.id === payment?.child_id)?.full_name ?? null,
     [childrenQuery.data, payment?.child_id],
   );
 

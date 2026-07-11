@@ -44,7 +44,7 @@ import {
   useCancelInvoice,
   type InvoiceStatus,
 } from '@/hooks/use-invoices';
-import { useChildrenList } from '@/hooks/use-children';
+import { useAllChildren } from '@/hooks/use-children';
 import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import { formatMoney, formatDate, getInitials } from '@/lib/format';
 import { toI18nKey, isAppError } from '@/lib/error-map';
@@ -75,9 +75,8 @@ export default function InvoiceDetailPage() {
     invoice ? t('invoices.detail.invoice_number', { id: invoice.id.slice(0, 8) }) : undefined,
   );
 
-  const childrenQuery = useChildrenList({ status: 'active', limit: 200, offset: 0 });
-  const childName =
-    childrenQuery.data?.data.find((c) => c.id === invoice?.child_id)?.full_name ?? null;
+  const childrenQuery = useAllChildren();
+  const childName = childrenQuery.data?.find((c) => c.id === invoice?.child_id)?.full_name ?? null;
 
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);

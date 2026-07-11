@@ -89,6 +89,7 @@ vi.mock('@/hooks/use-parent-requests', () => ({
 
 vi.mock('@/hooks/use-children', () => ({
   useChildrenList: () => ({ data: { data: [], meta: { total: 0 } } }),
+  useAllChildren: () => ({ data: [] }),
 }));
 
 vi.mock('@/hooks/use-groups', () => ({

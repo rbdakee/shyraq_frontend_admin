@@ -40,7 +40,7 @@ import {
   type TariffAssignmentResponseDto,
 } from '@/hooks/use-tariff-assignments';
 import { useTariffPlansList } from '@/hooks/use-tariff-plans';
-import { useChildrenList } from '@/hooks/use-children';
+import { useAllChildren } from '@/hooks/use-children';
 import { formatMoney, formatDate } from '@/lib/format';
 import { toI18nKey } from '@/lib/error-map';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
@@ -88,9 +88,9 @@ export default function TariffAssignmentsListPage() {
   const assignmentsQuery = useTariffAssignmentsList(filters);
   const data = assignmentsQuery.data ?? EMPTY_DATA;
 
-  const childrenQuery = useChildrenList({ status: 'active', limit: 200, offset: 0 });
+  const childrenQuery = useAllChildren();
   const childrenMap = useMemo(
-    () => new Map((childrenQuery.data?.data ?? []).map((c) => [c.id, c.full_name])),
+    () => new Map((childrenQuery.data ?? []).map((c) => [c.id, c.full_name])),
     [childrenQuery.data],
   );
 
@@ -301,7 +301,7 @@ function CreateAssignmentModal({
   const { t } = useTranslation('billing');
   const createMutation = useCreateTariffAssignment();
 
-  const childrenQuery = useChildrenList({ status: 'active', limit: 200, offset: 0 });
+  const childrenQuery = useAllChildren({ status: 'active' });
   const plansQuery = useTariffPlansList({ is_active: true });
 
   const planOptions: ComboboxOption[] = useMemo(
@@ -366,7 +366,7 @@ function CreateAssignmentModal({
   }
 
   async function fetchChildOptions(query: string): Promise<ComboboxOption[]> {
-    const children = childrenQuery.data?.data ?? [];
+    const children = childrenQuery.data ?? [];
     const lowerQ = query.toLowerCase();
     return children
       .filter((c) => !lowerQ || c.full_name.toLowerCase().includes(lowerQ))
