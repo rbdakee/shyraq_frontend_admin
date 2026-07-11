@@ -320,8 +320,8 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Overdue alert */}
-          {summaryQuery.data && summaryQuery.data.invoices_overdue_count > 0 && (
+          {/* Overdue alert — always visible when summary loaded (parity with desktop) */}
+          {summaryQuery.data && (
             <button
               type="button"
               onClick={() => navigate('/billing/invoices?status=overdue')}
