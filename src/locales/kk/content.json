@@ -4,9 +4,9 @@
   "create_post": "Пост жасау",
   "editor_title_new": "Жаңа пост",
   "editor_title_edit": "Постты өңдеу",
-  "tab_feed": "Контент таспасы",
-  "tab_qundylyq": "Qundylyq — ай тақырыбы",
-  "tab_stories": "Сторис",
+  "tab_feed": "Лента",
+  "tab_qundylyq": "Qyndylyq",
+  "tab_stories": "Stories",
   "stories": {
     "add": "Сторис қосу",
     "empty": "Белсенді сторис әзірге жоқ",

@@ -4,9 +4,9 @@
   "create_post": "Создать пост",
   "editor_title_new": "Новый пост",
   "editor_title_edit": "Редактирование поста",
-  "tab_feed": "Лента контента",
-  "tab_qundylyq": "Qundylyq — тема месяца",
-  "tab_stories": "Сторис",
+  "tab_feed": "Лента",
+  "tab_qundylyq": "Qyndylyq",
+  "tab_stories": "Stories",
   "stories": {
     "add": "Добавить сторис",
     "empty": "Активных сторис пока нет",
