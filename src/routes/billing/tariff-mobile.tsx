@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { PlusIcon, ChevronRightIcon, BanIcon, XCircleIcon } from 'lucide-react';
+import { PlusIcon, ChevronRightIcon, BanIcon, XCircleIcon, RefreshCwIcon } from 'lucide-react';
 
 import MobileTopBar from '@/components/layout/mobile-top-bar';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,7 @@ import {
   CreateTariffPlanModal,
   EditTariffPlanModal,
 } from '@/routes/billing/tariff-plans/tariff-plan-form';
+import { ReplaceAssignmentModal } from '@/routes/billing/tariff-assignments/replace-assignment-modal';
 
 type TabKey = 'plans' | 'assignments';
 
@@ -40,6 +41,7 @@ export default function TariffMobile() {
   const [editingPlan, setEditingPlan] = useState<TariffPlanResponseDto | null>(null);
   const [deactivatingPlanId, setDeactivatingPlanId] = useState<string | null>(null);
   const [closingAssignmentId, setClosingAssignmentId] = useState<string | null>(null);
+  const [replaceTarget, setReplaceTarget] = useState<TariffAssignmentResponseDto | null>(null);
 
   const plansQuery = useTariffPlansList({});
   const plans = plansQuery.data ?? [];
@@ -170,6 +172,7 @@ export default function TariffMobile() {
                 assignment={a}
                 childrenMap={childrenMap}
                 plans={plans}
+                onReplace={() => setReplaceTarget(a)}
                 onClose={() => setClosingAssignmentId(a.id)}
               />
             ))}
@@ -209,6 +212,15 @@ export default function TariffMobile() {
           cancelLabel={t('tariff_assignments.close.cancel')}
           onConfirm={() => handleCloseAssignment(closingAssignmentId)}
           loading={closeMutation.isPending}
+        />
+      )}
+
+      {replaceTarget && (
+        <ReplaceAssignmentModal
+          assignment={replaceTarget}
+          childName={childrenMap.get(replaceTarget.child_id)}
+          currentPlanName={plans.find((p) => p.id === replaceTarget.tariff_plan_id)?.name}
+          onClose={() => setReplaceTarget(null)}
         />
       )}
     </>
@@ -287,11 +299,13 @@ function AssignmentCard({
   assignment,
   childrenMap,
   plans,
+  onReplace,
   onClose,
 }: {
   assignment: TariffAssignmentResponseDto;
   childrenMap: Map<string, string>;
   plans: TariffPlanResponseDto[];
+  onReplace: () => void;
   onClose: () => void;
 }) {
   const { t } = useTranslation('billing');
@@ -314,7 +328,17 @@ function AssignmentCard({
           </div>
         </div>
       </div>
-      <div className="mt-2.5 flex justify-end border-t border-[var(--line)] pt-2.5">
+      <div className="mt-2.5 flex justify-end gap-2 border-t border-[var(--line)] pt-2.5">
+        <button
+          type="button"
+          className="m-btn ghost"
+          style={{ fontSize: 12, padding: '4px 10px' }}
+          onClick={onReplace}
+          aria-label={t('tariff_assignments.replace.button')}
+        >
+          <RefreshCwIcon className="size-3.5" />
+          {t('tariff_assignments.replace.button')}
+        </button>
         <button
           type="button"
           className="m-btn ghost"

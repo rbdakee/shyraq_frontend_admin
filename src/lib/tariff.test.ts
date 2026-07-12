@@ -4,6 +4,7 @@ import {
   resolveActiveAssignment,
   effectiveMonthlyAmount,
   firstDayOfNextMonthIso,
+  addDaysIso,
 } from './tariff';
 
 const mk = (
@@ -56,6 +57,28 @@ describe('effectiveMonthlyAmount', () => {
 
   it('treats a zero custom amount as a real override (not falsy)', () => {
     expect(effectiveMonthlyAmount(mk('2026-06-01', null, 0), { amount: 120000 })).toBe(0);
+  });
+});
+
+describe('addDaysIso', () => {
+  it('subtracts a day (replace flow: close the day before)', () => {
+    expect(addDaysIso('2026-06-10', -1)).toBe('2026-06-09');
+  });
+
+  it('rolls back across a month boundary', () => {
+    expect(addDaysIso('2026-07-01', -1)).toBe('2026-06-30');
+  });
+
+  it('rolls back across a year boundary', () => {
+    expect(addDaysIso('2026-01-01', -1)).toBe('2025-12-31');
+  });
+
+  it('adds days forward', () => {
+    expect(addDaysIso('2026-06-10', 5)).toBe('2026-06-15');
+  });
+
+  it('ignores a time component on the input', () => {
+    expect(addDaysIso('2026-06-10T09:30:00Z', -1)).toBe('2026-06-09');
   });
 });
 
