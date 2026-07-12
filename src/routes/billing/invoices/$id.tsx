@@ -44,7 +44,7 @@ import {
   useCancelInvoice,
   type InvoiceStatus,
 } from '@/hooks/use-invoices';
-import { useChildrenList } from '@/hooks/use-children';
+import { useAllChildren } from '@/hooks/use-children';
 import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import { formatMoney, formatDate, getInitials } from '@/lib/format';
 import { toI18nKey, isAppError } from '@/lib/error-map';
@@ -75,9 +75,8 @@ export default function InvoiceDetailPage() {
     invoice ? t('invoices.detail.invoice_number', { id: invoice.id.slice(0, 8) }) : undefined,
   );
 
-  const childrenQuery = useChildrenList({ status: 'active', limit: 200, offset: 0 });
-  const childName =
-    childrenQuery.data?.data.find((c) => c.id === invoice?.child_id)?.full_name ?? null;
+  const childrenQuery = useAllChildren();
+  const childName = childrenQuery.data?.find((c) => c.id === invoice?.child_id)?.full_name ?? null;
 
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -169,6 +168,82 @@ export default function InvoiceDetailPage() {
     cancelled: 'neutral',
   };
   const tone = statusTone[invoice.status] ?? 'neutral';
+
+  const dialogs = (
+    <>
+      <Dialog open={markPaidOpen} onOpenChange={setMarkPaidOpen}>
+        <DialogContent className="sm:max-w-[440px] rounded-[var(--r-xl)] border-[var(--line)] bg-[var(--bg-elev)] p-0 shadow-[var(--shadow-3)]">
+          <DialogHeader className="px-[22px] pt-[18px] pb-3">
+            <DialogTitle className="text-[17px] font-bold tracking-[-0.01em] text-[color:var(--text-1)]">
+              {t('invoices.mark_paid.title')}
+            </DialogTitle>
+            <DialogDescription className="text-[13px] text-[color:var(--text-3)]">
+              {formatMoney(invoice.amount_after_discount)}
+            </DialogDescription>
+          </DialogHeader>
+
+          <form
+            onSubmit={markPaidForm.handleSubmit(handleMarkPaid)}
+            className="flex flex-col gap-4 px-[22px] pb-[18px]"
+          >
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                {t('invoices.mark_paid.paid_at')}
+              </Label>
+              <Input
+                type="datetime-local"
+                {...markPaidForm.register('paid_at')}
+                placeholder={t('invoices.mark_paid.paid_at_placeholder')}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                {t('invoices.mark_paid.note')}
+              </Label>
+              <Textarea
+                {...markPaidForm.register('note')}
+                placeholder={t('invoices.mark_paid.note_placeholder')}
+                rows={2}
+                className="min-h-[60px] resize-y border-[var(--border)] bg-[var(--bg-elev)] text-[14px] text-[color:var(--text-1)] placeholder:text-[color:var(--text-4)]"
+              />
+            </div>
+
+            <div className="flex items-start gap-2 rounded-[var(--r-md)] bg-[var(--info-soft)] p-3">
+              <InfoIcon className="mt-0.5 size-4 shrink-0 text-[color:var(--info-fg)]" />
+              <div className="text-[12.5px] text-[color:var(--text-2)]">
+                {t('invoices.mark_paid.info_banner')}
+              </div>
+            </div>
+
+            <DialogFooter className="-mx-0 -mb-0 rounded-b-[var(--r-xl)] border-t border-[var(--line)] bg-transparent px-[22px] py-[14px]">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setMarkPaidOpen(false)}
+                className="border-[var(--border)] bg-[var(--bg-elev)] text-[color:var(--text-1)] hover:bg-[var(--bg-sunken)]"
+              >
+                {t('invoices.mark_paid.cancel')}
+              </Button>
+              <Button type="submit" disabled={markPaidMutation.isPending}>
+                {t('invoices.mark_paid.confirm')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <DestructiveConfirm
+        open={cancelOpen}
+        onOpenChange={setCancelOpen}
+        title={t('invoices.cancel_invoice.title')}
+        description={t('invoices.cancel_invoice.warning')}
+        confirmLabel={t('invoices.cancel_invoice.confirm')}
+        cancelLabel={t('invoices.cancel_invoice.cancel')}
+        onConfirm={handleCancel}
+        loading={cancelMutation.isPending}
+      />
+    </>
+  );
 
   if (isMobile) {
     return (
@@ -301,15 +376,45 @@ export default function InvoiceDetailPage() {
         </div>
 
         <StickyBottomBar>
-          <button type="button" className="m-btn" style={{ flex: 1 }}>
-            <DownloadIcon className="size-4" />
-            {t('mobile.invoice_detail_pdf')}
-          </button>
-          <button type="button" className="m-btn primary" style={{ flex: 1 }}>
-            <MailIcon className="size-4" />
-            {t('mobile.invoice_detail_send')}
-          </button>
+          {isCancellable || isMarkable ? (
+            <>
+              {isCancellable && (
+                <button
+                  type="button"
+                  className="m-btn"
+                  style={{ flex: 1 }}
+                  onClick={() => setCancelOpen(true)}
+                >
+                  {t('invoices.detail.actions.cancel')}
+                </button>
+              )}
+              {isMarkable && (
+                <button
+                  type="button"
+                  className="m-btn primary"
+                  style={{ flex: 1 }}
+                  onClick={() => setMarkPaidOpen(true)}
+                >
+                  <CheckCircleIcon className="size-4" />
+                  {t('invoices.detail.actions.mark_paid')}
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <button type="button" className="m-btn" style={{ flex: 1 }}>
+                <DownloadIcon className="size-4" />
+                {t('mobile.invoice_detail_pdf')}
+              </button>
+              <button type="button" className="m-btn primary" style={{ flex: 1 }}>
+                <MailIcon className="size-4" />
+                {t('mobile.invoice_detail_send')}
+              </button>
+            </>
+          )}
         </StickyBottomBar>
+
+        {dialogs}
       </>
     );
   }
@@ -595,79 +700,7 @@ export default function InvoiceDetailPage() {
         </div>
       </div>
 
-      {/* Mark paid modal */}
-      <Dialog open={markPaidOpen} onOpenChange={setMarkPaidOpen}>
-        <DialogContent className="sm:max-w-[440px] rounded-[var(--r-xl)] border-[var(--line)] bg-[var(--bg-elev)] p-0 shadow-[var(--shadow-3)]">
-          <DialogHeader className="px-[22px] pt-[18px] pb-3">
-            <DialogTitle className="text-[17px] font-bold tracking-[-0.01em] text-[color:var(--text-1)]">
-              {t('invoices.mark_paid.title')}
-            </DialogTitle>
-            <DialogDescription className="text-[13px] text-[color:var(--text-3)]">
-              {formatMoney(invoice.amount_after_discount)}
-            </DialogDescription>
-          </DialogHeader>
-
-          <form
-            onSubmit={markPaidForm.handleSubmit(handleMarkPaid)}
-            className="flex flex-col gap-4 px-[22px] pb-[18px]"
-          >
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
-                {t('invoices.mark_paid.paid_at')}
-              </Label>
-              <Input
-                type="datetime-local"
-                {...markPaidForm.register('paid_at')}
-                placeholder={t('invoices.mark_paid.paid_at_placeholder')}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
-                {t('invoices.mark_paid.note')}
-              </Label>
-              <Textarea
-                {...markPaidForm.register('note')}
-                placeholder={t('invoices.mark_paid.note_placeholder')}
-                rows={2}
-                className="min-h-[60px] resize-y border-[var(--border)] bg-[var(--bg-elev)] text-[14px] text-[color:var(--text-1)] placeholder:text-[color:var(--text-4)]"
-              />
-            </div>
-
-            <div className="flex items-start gap-2 rounded-[var(--r-md)] bg-[var(--info-soft)] p-3">
-              <InfoIcon className="mt-0.5 size-4 shrink-0 text-[color:var(--info-fg)]" />
-              <div className="text-[12.5px] text-[color:var(--text-2)]">
-                {t('invoices.mark_paid.info_banner')}
-              </div>
-            </div>
-
-            <DialogFooter className="-mx-0 -mb-0 rounded-b-[var(--r-xl)] border-t border-[var(--line)] bg-transparent px-[22px] py-[14px]">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setMarkPaidOpen(false)}
-                className="border-[var(--border)] bg-[var(--bg-elev)] text-[color:var(--text-1)] hover:bg-[var(--bg-sunken)]"
-              >
-                {t('invoices.mark_paid.cancel')}
-              </Button>
-              <Button type="submit" disabled={markPaidMutation.isPending}>
-                {t('invoices.mark_paid.confirm')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Cancel modal */}
-      <DestructiveConfirm
-        open={cancelOpen}
-        onOpenChange={setCancelOpen}
-        title={t('invoices.cancel_invoice.title')}
-        description={t('invoices.cancel_invoice.warning')}
-        confirmLabel={t('invoices.cancel_invoice.confirm')}
-        cancelLabel={t('invoices.cancel_invoice.cancel')}
-        onConfirm={handleCancel}
-        loading={cancelMutation.isPending}
-      />
+      {dialogs}
     </div>
   );
 }

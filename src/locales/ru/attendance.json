@@ -82,7 +82,9 @@
   },
 
   "pagination": {
-    "showing": "Показано {{from}}–{{to}}"
+    "showing": "Показано {{from}}–{{to}}",
+    "prev": "Назад",
+    "next": "Вперёд"
   },
 
   "mobile_today_sub": "Сегодня",

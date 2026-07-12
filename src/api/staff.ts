@@ -5,15 +5,9 @@ export const StaffRoleEnum = z.enum(['admin', 'mentor', 'specialist', 'reception
 
 export type StaffRole = z.infer<typeof StaffRoleEnum>;
 
-export const SpecialistTypeEnum = z.enum([
-  'psychologist',
-  'speech_therapist',
-  'music_teacher',
-  'physical_ed',
-  'nutritionist',
-]);
-
-export type SpecialistType = z.infer<typeof SpecialistTypeEnum>;
+// specialist_type is a CODE from the per-kindergarten specialist-types dictionary
+// (N12) — validated by the backend, not a fixed frontend enum. Labels come from
+// GET /admin/specialist-types (name_i18n). See lib/specialist-type.ts.
 
 export const StaffMemberDtoSchema = z.object({
   id: z.string(),
@@ -36,7 +30,7 @@ export type StaffMember = z.infer<typeof StaffMemberDtoSchema>;
 export interface StaffListFilters {
   role?: StaffRole;
   is_active?: boolean;
-  specialist_type?: SpecialistType;
+  specialist_type?: string;
   archived?: boolean;
   search?: string;
 }
@@ -45,14 +39,14 @@ export interface CreateStaffBody {
   full_name: string;
   phone: string;
   role: StaffRole;
-  specialist_type?: SpecialistType;
+  specialist_type?: string;
   hired_at?: string;
 }
 
 export interface UpdateStaffBody {
   full_name?: string;
   role?: StaffRole;
-  specialist_type?: SpecialistType | null;
+  specialist_type?: string | null;
   hired_at?: string | null;
   fired_at?: string | null;
 }

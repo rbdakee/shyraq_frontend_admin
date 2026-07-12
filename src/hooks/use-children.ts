@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import {
   listChildren,
+  listAllChildren,
   createChild,
   getChild,
   updateChild,
@@ -30,7 +31,10 @@ import type {
   InviteGuardianBody,
   UpdateGuardianBody,
   OffsetPaginationParams,
+  GuardianDto,
 } from '@/api/children';
+
+export type { GuardianDto };
 import { MEDIA_PRESIGNED_REFETCH_MS } from '@/lib/constants';
 import { qk } from './query-keys';
 
@@ -38,6 +42,15 @@ export function useChildrenList(filters: ChildListFilters = {}) {
   return useQuery({
     queryKey: qk.children.list(filters),
     queryFn: () => listChildren(filters),
+  });
+}
+
+// Full roster (all pages) for client-side child_id -> name resolution on billing
+// lists. Pages through the backend's 100-cap. See api/children.ts::listAllChildren.
+export function useAllChildren(filters: Omit<ChildListFilters, 'limit' | 'offset'> = {}) {
+  return useQuery({
+    queryKey: [...qk.children.all, 'lookup', filters] as const,
+    queryFn: () => listAllChildren(filters),
   });
 }
 

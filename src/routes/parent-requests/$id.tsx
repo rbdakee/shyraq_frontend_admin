@@ -30,6 +30,8 @@ import {
 } from '@/components/ui/dialog';
 import { ErrorState } from '@/components/feedback/error-state';
 import { SkeletonLine, SkeletonBox } from '@/components/feedback/skeleton';
+import MobileTopBar from '@/components/layout/mobile-top-bar';
+import { FullScreenSheet } from '@/components/forms/full-screen-sheet';
 import {
   useParentRequest,
   useAcceptParentRequest,
@@ -37,8 +39,9 @@ import {
   useParentRequestMessages,
   useAddParentRequestMessage,
 } from '@/hooks/use-parent-requests';
-import { useChildrenList } from '@/hooks/use-children';
+import { useAllChildren } from '@/hooks/use-children';
 import { useGroups } from '@/hooks/use-groups';
+import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import { formatDateTime, formatDate, getInitials } from '@/lib/format';
 import { isAppError, toI18nKey } from '@/lib/error-map';
@@ -98,11 +101,11 @@ export default function ParentRequestDetailPage() {
   const rejectMutation = useRejectParentRequest(id ?? '');
   const addMessageMutation = useAddParentRequestMessage(id ?? '');
 
-  const childrenQuery = useChildrenList({ limit: 500, offset: 0 });
+  const childrenQuery = useAllChildren();
   const groupsQuery = useGroups({ archived: false });
 
   const childrenMap = useMemo(
-    () => new Map((childrenQuery.data?.data ?? []).map((c) => [c.id, c])),
+    () => new Map((childrenQuery.data ?? []).map((c) => [c.id, c])),
     [childrenQuery.data],
   );
 
@@ -214,7 +217,18 @@ export default function ParentRequestDetailPage() {
     [addMessageMutation, messageForm, t, tErrors],
   );
 
+  const { isMobile } = useBreakpoint();
+
   if (requestQuery.isPending) {
+    if (isMobile) {
+      return (
+        <div className="flex flex-col gap-4">
+          <SkeletonLine width={200} height={14} />
+          <SkeletonBox height={100} />
+          <SkeletonBox height={200} />
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col gap-4">
         <SkeletonLine width={200} height={14} />
@@ -240,6 +254,263 @@ export default function ParentRequestDetailPage() {
   const isPending = request.status === 'pending';
   const child = childrenMap.get(request.child_id);
   const childGroup = child?.current_group_id ? groupsMap.get(child.current_group_id) : null;
+
+  if (isMobile) {
+    return (
+      <>
+        <MobileTopBar
+          back
+          title={t(`request_type.${request.request_type}`)}
+          sub={formatDateTime(request.created_at, tz)}
+        />
+
+        <div className="flex flex-col gap-4 px-4 pt-2 pb-6">
+          {/* Status + requester */}
+          <div className="flex items-center gap-2">
+            <Badge variant={STATUS_BADGE_VARIANT[request.status]} dot>
+              {t(`status.${request.status}`)}
+            </Badge>
+            <span className="text-[12px] text-[color:var(--text-3)]">
+              {t('detail.requester')}: {t('thread.author_parent')}
+            </span>
+          </div>
+
+          {/* Action buttons for pending */}
+          {isPending && (
+            <div className="flex gap-2">
+              <Button
+                className="flex-1"
+                variant="outline"
+                onClick={() => setRejectDialogOpen(true)}
+              >
+                <XCircleIcon className="size-4" />
+                {t('detail.actions.reject')}
+              </Button>
+              <Button className="flex-1" onClick={() => setAcceptDialogOpen(true)}>
+                <CheckCircleIcon className="size-4" />
+                {t('detail.actions.accept')}
+              </Button>
+            </div>
+          )}
+
+          {/* Request details */}
+          <div className="m-card flush">
+            <div className="px-4 pt-3 pb-2 text-[15px] font-semibold text-[color:var(--text-1)]">
+              {t('detail.request_info')}
+            </div>
+            <div className="mx-4 mb-3 rounded-[10px] bg-[var(--bg-sunken)] p-3">
+              <div className="text-[12px] text-[color:var(--text-3)]">
+                {t('detail.description_label')}
+              </div>
+              <div className="mt-1 text-[14px] leading-relaxed text-[color:var(--text-1)]">
+                {getDescriptionFromDetails(request)}
+              </div>
+            </div>
+
+            {request.request_type === 'late_pickup' && (
+              <div className="mx-4 mb-3 flex gap-2.5 rounded-[var(--r-md)] border border-[color-mix(in_oklab,var(--warning)_20%,transparent)] bg-[var(--warning-soft)] p-3 text-[13px] text-[color:var(--warning-fg)]">
+                <AlertTriangleIcon className="mt-0.5 size-4 shrink-0" />
+                <div>
+                  <div className="font-semibold">{t('detail.late_pickup_banner_title')}</div>
+                  <div className="mt-0.5">{t('detail.late_pickup_note')}</div>
+                </div>
+              </div>
+            )}
+
+            <MobileRequestDetailsGrid request={request} t={t} tz={tz} />
+
+            {(request.date_from ?? request.date_to) && (
+              <div className="mx-4 mb-3">
+                {request.date_from && (
+                  <div className="m-kv">
+                    <span className="k">{t('detail.date_from')}</span>
+                    <span className="v">{formatDate(request.date_from, tz)}</span>
+                  </div>
+                )}
+                {request.date_to && (
+                  <div className="m-kv">
+                    <span className="k">{t('detail.date_to')}</span>
+                    <span className="v">{formatDate(request.date_to, tz)}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {request.reviewed_at && (
+              <div className="mx-4 mb-3 border-t border-[var(--line)] pt-3">
+                <div className="m-kv">
+                  <span className="k">{t('detail.reviewed_at')}</span>
+                  <span className="v">{formatDateTime(request.reviewed_at, tz)}</span>
+                </div>
+                {request.review_note && (
+                  <div className="m-kv">
+                    <span className="k">{t('detail.review_note_label')}</span>
+                    <span className="v">{request.review_note}</span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Child card */}
+          <div className="m-card flush">
+            <div className="px-4 pt-3 pb-2 text-[15px] font-semibold text-[color:var(--text-1)]">
+              {t('detail.child_card')}
+            </div>
+            <Link to={`/children/${request.child_id}`} className="m-list-row">
+              <div className="m-avatar guardian">{child ? getInitials(child.full_name) : '?'}</div>
+              <div className="min-w-0 flex-1">
+                <div className="m-row-title truncate">
+                  {child?.full_name ?? request.child_id.slice(0, 8)}
+                </div>
+                <div className="m-row-sub">{childGroup ?? t('no_data')}</div>
+              </div>
+              <ChevronRightIcon className="size-4 shrink-0 text-[color:var(--text-4)]" />
+            </Link>
+          </div>
+
+          {/* Recipient */}
+          <div className="m-card flush">
+            <div className="px-4 pt-3 pb-2 text-[15px] font-semibold text-[color:var(--text-1)]">
+              {t('detail.recipient_card')}
+            </div>
+            <div className="px-4 pb-3 text-[13px] text-[color:var(--text-1)]">
+              {request.recipient_type
+                ? t(`recipient_type.${request.recipient_type}`)
+                : t('no_data')}
+            </div>
+          </div>
+
+          {/* Thread */}
+          <div className="m-card flush">
+            <div className="px-4 pt-3 pb-2 text-[15px] font-semibold text-[color:var(--text-1)]">
+              {t('thread.title')}
+            </div>
+
+            <div className="flex flex-col gap-3 px-4 pb-3">
+              {messagesQuery.hasNextPage && (
+                <div className="flex justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={messagesQuery.isFetchingNextPage}
+                    onClick={() => void messagesQuery.fetchNextPage()}
+                  >
+                    {t('thread.load_more')}
+                  </Button>
+                </div>
+              )}
+              {allMessages.length === 0 && !messagesQuery.isPending && (
+                <div className="py-6 text-center text-[13px] text-[color:var(--text-4)]">
+                  {t('thread.empty')}
+                </div>
+              )}
+              {allMessages.map((msg) => (
+                <MessageBubble key={msg.id} message={msg} t={t} tz={tz} />
+              ))}
+            </div>
+
+            <form
+              onSubmit={messageForm.handleSubmit(handleSendMessage)}
+              className="flex items-center gap-2 border-t border-[var(--line)] px-4 py-3"
+            >
+              <Input
+                {...messageForm.register('body')}
+                placeholder={t('thread.input_placeholder')}
+                className="flex-1"
+              />
+              <Button
+                type="submit"
+                size="sm"
+                disabled={!messageBodyValue.trim() || addMessageMutation.isPending}
+              >
+                <SendIcon className="size-4" />
+              </Button>
+            </form>
+          </div>
+        </div>
+
+        {/* Accept sheet */}
+        <FullScreenSheet
+          open={acceptDialogOpen}
+          onOpenChange={(open) => {
+            setAcceptDialogOpen(open);
+            if (!open) acceptForm.reset();
+          }}
+          title={t('detail.actions.accept')}
+          sub={t(`request_type.${request.request_type}`)}
+          description={t('detail.actions.accept')}
+          footer={
+            <Button
+              className="w-full"
+              disabled={acceptMutation.isPending}
+              onClick={acceptForm.handleSubmit(handleAccept)}
+            >
+              <CheckCircleIcon className="size-4" />
+              {t('detail.actions.accept')}
+            </Button>
+          }
+        >
+          <div className="flex flex-col gap-4">
+            {request.request_type === 'late_pickup' && (
+              <div className="flex gap-2.5 rounded-[var(--r-md)] border border-[color-mix(in_oklab,var(--warning)_20%,transparent)] bg-[var(--warning-soft)] p-3 text-[13px] text-[color:var(--warning-fg)]">
+                <AlertTriangleIcon className="mt-0.5 size-4 shrink-0" />
+                <div>{t('detail.late_pickup_note')}</div>
+              </div>
+            )}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                {t('detail.review_note_label')}
+              </label>
+              <Textarea
+                {...acceptForm.register('review_note')}
+                rows={3}
+                placeholder={t('detail.review_note_placeholder')}
+                className="min-h-[80px] resize-y border-[var(--border)] bg-[var(--bg-elev)] text-[14px] text-[color:var(--text-1)] placeholder:text-[color:var(--text-4)] focus:border-[var(--primary)] focus:shadow-[var(--focus-ring)]"
+              />
+            </div>
+          </div>
+        </FullScreenSheet>
+
+        {/* Reject sheet */}
+        <FullScreenSheet
+          open={rejectDialogOpen}
+          onOpenChange={(open) => {
+            setRejectDialogOpen(open);
+            if (!open) rejectForm.reset();
+          }}
+          title={t('detail.actions.reject')}
+          sub={t(`request_type.${request.request_type}`)}
+          description={t('detail.actions.reject')}
+          footer={
+            <Button
+              className="w-full"
+              variant="destructive"
+              disabled={rejectMutation.isPending}
+              onClick={rejectForm.handleSubmit(handleReject)}
+            >
+              <XCircleIcon className="size-4" />
+              {t('detail.actions.reject')}
+            </Button>
+          }
+        >
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                {t('detail.review_note_label')}
+              </label>
+              <Textarea
+                {...rejectForm.register('review_note')}
+                rows={3}
+                placeholder={t('detail.review_note_placeholder')}
+                className="min-h-[80px] resize-y border-[var(--border)] bg-[var(--bg-elev)] text-[14px] text-[color:var(--text-1)] placeholder:text-[color:var(--text-4)] focus:border-[var(--primary)] focus:shadow-[var(--focus-ring)]"
+              />
+            </div>
+          </div>
+        </FullScreenSheet>
+      </>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-[14px]">
@@ -653,6 +924,37 @@ function RequestDetailsGrid({
       {entries.map(([key, value]) => (
         <DetailRow key={key} detailKey={key} value={value} t={t} tz={tz} />
       ))}
+    </div>
+  );
+}
+
+function MobileRequestDetailsGrid({
+  request,
+  t,
+  tz,
+}: {
+  request: ParentRequestDto;
+  t: (key: string) => string;
+  tz: string;
+}) {
+  const entries = Object.entries(request.details).filter(
+    ([key]) => !['description', 'comment', 'body'].includes(key),
+  );
+
+  if (entries.length === 0) return null;
+
+  return (
+    <div className="mx-4 mb-3">
+      {entries.map(([key, value]) => {
+        const isKnownKey = (KNOWN_DETAIL_KEYS as readonly string[]).includes(key);
+        const label = isKnownKey ? t(`detail.detail_keys.${key}`) : key.replace(/_/g, ' ');
+        return (
+          <div key={key} className="m-kv">
+            <span className="k">{label}</span>
+            <span className="v">{formatDetailValue(value, tz)}</span>
+          </div>
+        );
+      })}
     </div>
   );
 }

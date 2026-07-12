@@ -42,11 +42,13 @@
     },
 
     "filters": {
+      "sheet_title": "Сүзгілер",
       "status": "Күйі",
       "type": "Түрі",
       "child": "Бала",
       "due_date_from": "Мерзімі бастап",
       "due_date_to": "Мерзімі дейін",
+      "due_date": "Төлем мерзімі",
       "all_statuses": "Барлық күйлер",
       "all_types": "Барлық түрлер"
     },
@@ -183,8 +185,11 @@
     },
 
     "filters": {
+      "sheet_title": "Сүзгілер",
       "all_providers": "Барлық провайдерлер",
-      "all_statuses": "Барлық күйлер"
+      "all_statuses": "Барлық күйлер",
+      "date_range": "Кезең",
+      "search": "Іздеу"
     },
 
     "detail": {
@@ -283,6 +288,14 @@
         "benefit_category": "Жеңілдікті санаты",
         "benefit_placeholder": "Мыс.: көп балалы отбасы"
       }
+    },
+
+    "edit": {
+      "button": "Өңдеу",
+      "title": "Тарифті өңдеу",
+      "locked_hint": "Түрі, қолданылуы және басталу күні жасау кезінде бекітіледі және мұнда өзгертілмейді.",
+      "submit": "Сақтау",
+      "success": "Тариф жаңартылды"
     },
 
     "deactivate": {
@@ -458,6 +471,35 @@
         "or": "НЕМЕСЕ",
         "add": "Шарт қосу",
         "value_placeholder": "Мән",
+        "num_placeholder": "Мән",
+        "days_placeholder": "Мерзімге дейінгі күндер",
+        "months_from": "Бастап, ай",
+        "months_to": "Дейін, ай",
+        "no_value": "Мәнсіз",
+        "op": {
+          "gte": "≥",
+          "eq": "="
+        },
+        "errors": {
+          "invalid_number": "0-ден үлкен немесе тең бүтін сан енгізіңіз",
+          "invalid_range": "«Бастап» «Дейін» мәнінен үлкен болмауы керек",
+          "required": "Міндетті өріс"
+        },
+        "enum": {
+          "benefit_category": {
+            "multi_child": "Көп балалы отбасы",
+            "disability": "Мүгедектік",
+            "single_mother": "Жалғызбасты ана",
+            "mother_heroine": "Батыр ана"
+          },
+          "payment_method": {
+            "kaspi_pay": "Kaspi Pay",
+            "halyk_epay": "Halyk ePay",
+            "bcc": "BCC",
+            "cash": "Қолма-қол",
+            "bank_transfer": "Банк аударымы"
+          }
+        },
         "type": {
           "siblings_count": "Отбасындағы балалар саны",
           "prepayment_months": "N ай алдын ала төлем",
@@ -477,7 +519,10 @@
         "select_children": "Балаларды таңдаңыз",
         "select_tariffs": "Тарифтерді таңдаңыз",
         "age_from": "Бастап (ай)",
-        "age_to": "Дейін (ай)"
+        "age_to": "Дейін (ай)",
+        "loading": "Жүктелуде…",
+        "empty": "Қолжетімді нұсқалар жоқ",
+        "empty_children": "Белсенді балалар жоқ"
       },
 
       "period": {
@@ -521,6 +566,14 @@
         "description_with_notify": "Жеңілдік белсенді болады. Push-хабарлама таргеттегі барлық ата-аналарға жіберіледі — push-ті кері қайтару мүмкін емес.",
         "confirm": "Белсендіру",
         "cancel": "Болдырмау"
+      },
+
+      "errors": {
+        "required": "Міндетті өріс",
+        "invalid": "Қате мән",
+        "invalid_range": "«Бастап» «Дейін» мәнінен үлкен болмауы керек",
+        "invalid_number": "0-ден үлкен немесе тең бүтін сан енгізіңіз",
+        "push_required": "Хабарлама мәтінін екі тілде толтырыңыз"
       },
 
       "success_create": "Жеңілдік қарастыруы жасалды",

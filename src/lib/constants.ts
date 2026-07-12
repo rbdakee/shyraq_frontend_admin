@@ -7,20 +7,8 @@ export const OTP_LOCK_SECONDS = 15 * 60;
 export const ENTITY_COMBOBOX_DEBOUNCE_MS = 300;
 export const SEARCH_DEBOUNCE_MS = 300;
 
-export type SpecialistType =
-  | 'psychologist'
-  | 'speech_therapist'
-  | 'music_teacher'
-  | 'physical_ed'
-  | 'nutritionist';
-
-export const SPECIALIST_TYPES: SpecialistType[] = [
-  'psychologist',
-  'speech_therapist',
-  'music_teacher',
-  'physical_ed',
-  'nutritionist',
-];
+// specialist_type is no longer a hardcoded enum — it's an admin-managed per-kindergarten
+// dictionary (N12). See api/specialist-types.ts / lib/specialist-type.ts.
 
 // Mobile tab-bar badge: display max before falling back to "99+".
 export const MOBILE_BADGE_MAX = 99;

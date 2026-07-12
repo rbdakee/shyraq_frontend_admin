@@ -64,3 +64,13 @@ export function useDeactivateTariffPlan(id: string) {
     },
   });
 }
+
+export function useDeactivateTariffPlanById() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deactivateTariffPlan(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: qk.tariffPlans.all });
+    },
+  });
+}

@@ -349,6 +349,26 @@ export default function ChildrenListPage() {
             />
           </div>
 
+          <Select
+            value={groupFilter}
+            onValueChange={(v) => {
+              setGroupFilter(v);
+              setPage(1);
+            }}
+          >
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">{t('filters.all_groups')}</SelectItem>
+              {(groupsQuery.data ?? []).map((g) => (
+                <SelectItem key={g.id} value={g.id}>
+                  {g.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
           <div className="m-chips">
             {statusChips.map((chip) => (
               <button

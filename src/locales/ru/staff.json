@@ -36,14 +36,6 @@
     "reception": "Ресепшн"
   },
 
-  "specialist_type": {
-    "psychologist": "Психолог",
-    "speech_therapist": "Логопед",
-    "music_teacher": "Музыкальный руководитель",
-    "physical_ed": "Физкультура",
-    "nutritionist": "Диетолог"
-  },
-
   "status": {
     "active": "Активен",
     "inactive": "Неактивен"
@@ -159,6 +151,10 @@
     "sms": "SMS",
     "qr": "QR",
     "shifts": "Смены",
-    "iin": "ИИН"
+    "iin": "ИИН",
+    "actions_title": "Действия",
+    "edit_profile": "Редактировать профиль",
+    "revoke_qr": "Отозвать все QR",
+    "assign_group": "Назначить группу"
   }
 }

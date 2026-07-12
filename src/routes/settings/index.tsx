@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
@@ -16,11 +16,15 @@ import {
   PhoneIcon,
   NewspaperIcon,
   ScanIcon,
+  StethoscopeIcon,
   ChevronRightIcon,
   CheckIcon,
   UploadIcon,
+  Trash2Icon,
   Loader2Icon,
   AlertTriangleIcon,
+  SlidersHorizontalIcon,
+  CrownIcon,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -37,12 +41,20 @@ import {
 import { OtpInput } from '@/components/forms/otp-input';
 import { PhoneInput } from '@/components/forms/phone-input';
 import { DestructiveConfirm } from '@/components/feedback/destructive-confirm';
+import { ErrorState } from '@/components/feedback/error-state';
+import { SkeletonBox } from '@/components/feedback/skeleton';
+import { FullScreenSheet } from '@/components/forms/full-screen-sheet';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useUiStore } from '@/stores/ui-store';
 import { THEMES, RADII, type ThemeName, type RadiusName } from '@/lib/themes';
 import { useSessionStore } from '@/stores/session-store';
-import { useKindergartenFull, useUpdateKindergartenSettings } from '@/hooks/use-kindergarten';
+import {
+  useKindergartenFull,
+  useUpdateKindergartenSettings,
+  useUploadKindergartenLogo,
+  useDeleteKindergartenLogo,
+} from '@/hooks/use-kindergarten';
 import {
   useKaspiStatus,
   useInitKaspiConnect,
@@ -52,6 +64,7 @@ import {
   type KaspiStatus,
 } from '@/hooks/use-kaspi';
 import { mapValidationErrors } from '@/components/forms/map-validation-errors';
+import { SpecialistTypesTab } from './specialist-types-tab';
 import { isAppError, getErrorCode, toI18nKey } from '@/lib/error-map';
 import { formatDateTime } from '@/lib/format';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
@@ -89,6 +102,10 @@ function parseOptNum(v: string): number | undefined {
   return Number.isNaN(n) ? undefined : n;
 }
 
+// Logo upload constraints (N11): backend enforces ≤5 MB image/* — mirror client-side
+// for instant feedback; backend re-validates regardless.
+const LOGO_MAX_BYTES = 5 * 1024 * 1024;
+
 export default function SettingsPage() {
   const { t } = useTranslation('common');
   const { isMobile } = useBreakpoint();
@@ -97,6 +114,9 @@ export default function SettingsPage() {
   const setTheme = useUiStore((s) => s.setTheme);
   const setRadius = useUiStore((s) => s.setRadius);
   const kg = useSessionStore((s) => s.currentKindergarten);
+  const [sheet, setSheet] = useState<
+    'general' | 'specialties' | 'operations' | 'payments' | 'fiscal' | 'subscription' | null
+  >(null);
 
   if (!isMobile) {
     return <DesktopSettings />;
@@ -112,7 +132,11 @@ export default function SettingsPage() {
           <div className="m-section-title">{t('mobile_settings_section_kg')}</div>
         </div>
         <div className="m-card flush">
-          <div className="m-drawer-item">
+          <button
+            type="button"
+            className="m-drawer-item w-full text-left"
+            onClick={() => setSheet('general')}
+          >
             <div className="m-drawer-ic">
               <BuildingIcon />
             </div>
@@ -123,7 +147,39 @@ export default function SettingsPage() {
               </div>
             </div>
             <ChevronRightIcon style={{ width: 16, height: 16, color: 'var(--text-4)' }} />
-          </div>
+          </button>
+          <button
+            type="button"
+            className="m-drawer-item w-full text-left"
+            onClick={() => setSheet('operations')}
+          >
+            <div className="m-drawer-ic">
+              <SlidersHorizontalIcon />
+            </div>
+            <div className="grow">
+              <div>{t('mobile_settings_operations')}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
+                {t('mobile_settings_operations_sub')}
+              </div>
+            </div>
+            <ChevronRightIcon style={{ width: 16, height: 16, color: 'var(--text-4)' }} />
+          </button>
+          <button
+            type="button"
+            className="m-drawer-item w-full text-left"
+            onClick={() => setSheet('specialties')}
+          >
+            <div className="m-drawer-ic info">
+              <StethoscopeIcon />
+            </div>
+            <div className="grow">
+              <div>{t('mobile_settings_specialties')}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
+                {t('mobile_settings_specialties_sub')}
+              </div>
+            </div>
+            <ChevronRightIcon style={{ width: 16, height: 16, color: 'var(--text-4)' }} />
+          </button>
           <div className="m-drawer-item">
             <div className="m-drawer-ic">
               <GlobeIcon />
@@ -153,30 +209,54 @@ export default function SettingsPage() {
           <div className="m-section-title">{t('mobile_settings_section_billing')}</div>
         </div>
         <div className="m-card flush">
-          <div className="m-drawer-item">
+          <button
+            type="button"
+            className="m-drawer-item w-full text-left"
+            onClick={() => setSheet('payments')}
+          >
             <div className="m-drawer-ic">
               <CreditCardIcon />
             </div>
             <div className="grow">
-              <div>{t('mobile_settings_providers')}</div>
-              <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Kaspi, Halyk</div>
+              <div>{t('mobile_settings_payments')}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
+                {t('mobile_settings_payments_sub')}
+              </div>
             </div>
-            <Badge variant="success" dot className="text-[10px]">
-              2/2
-            </Badge>
-          </div>
-          <div className="m-drawer-item">
+            <ChevronRightIcon style={{ width: 16, height: 16, color: 'var(--text-4)' }} />
+          </button>
+          <button
+            type="button"
+            className="m-drawer-item w-full text-left"
+            onClick={() => setSheet('fiscal')}
+          >
             <div className="m-drawer-ic">
               <ReceiptIcon />
             </div>
             <div className="grow">
-              <div>{t('mobile_settings_ofd')}</div>
-              <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>Onlinekassa.kz</div>
+              <div>{t('mobile_settings_fiscal')}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
+                {t('mobile_settings_fiscal_sub')}
+              </div>
             </div>
-            <Badge variant="success" dot className="text-[10px]">
-              OK
-            </Badge>
-          </div>
+            <ChevronRightIcon style={{ width: 16, height: 16, color: 'var(--text-4)' }} />
+          </button>
+          <button
+            type="button"
+            className="m-drawer-item w-full text-left"
+            onClick={() => setSheet('subscription')}
+          >
+            <div className="m-drawer-ic info">
+              <CrownIcon />
+            </div>
+            <div className="grow">
+              <div>{t('mobile_settings_subscription')}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--text-3)' }}>
+                {t('mobile_settings_subscription_sub')}
+              </div>
+            </div>
+            <ChevronRightIcon style={{ width: 16, height: 16, color: 'var(--text-4)' }} />
+          </button>
         </div>
 
         {/* Notifications section */}
@@ -332,7 +412,136 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      <FullScreenSheet
+        open={sheet === 'general'}
+        onOpenChange={(v) => {
+          if (!v) setSheet(null);
+        }}
+        title={t('mobile_settings_general')}
+        description={t('mobile_settings_general_sub')}
+      >
+        <MobileGeneralSheet />
+      </FullScreenSheet>
+
+      <FullScreenSheet
+        open={sheet === 'specialties'}
+        onOpenChange={(v) => {
+          if (!v) setSheet(null);
+        }}
+        title={t('mobile_settings_specialties')}
+        description={t('mobile_settings_specialties_sub')}
+      >
+        <SpecialistTypesTab />
+      </FullScreenSheet>
+
+      <FullScreenSheet
+        open={sheet === 'operations'}
+        onOpenChange={(v) => {
+          if (!v) setSheet(null);
+        }}
+        title={t('mobile_settings_operations')}
+        description={t('mobile_settings_operations_sub')}
+        footer={
+          <button
+            type="submit"
+            form="ops-form"
+            className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-[var(--r-md)] bg-primary text-[14px] font-semibold text-on-primary hover:bg-[var(--primary-hover)] active:bg-[var(--primary-active)]"
+          >
+            {t('actions.save')}
+          </button>
+        }
+      >
+        <WithKgData>{(kgData) => <OperationsTab kg={kgData} />}</WithKgData>
+      </FullScreenSheet>
+
+      <FullScreenSheet
+        open={sheet === 'payments'}
+        onOpenChange={(v) => {
+          if (!v) setSheet(null);
+        }}
+        title={t('mobile_settings_payments')}
+        description={t('mobile_settings_payments_sub')}
+      >
+        <PaymentsTab />
+      </FullScreenSheet>
+
+      <FullScreenSheet
+        open={sheet === 'fiscal'}
+        onOpenChange={(v) => {
+          if (!v) setSheet(null);
+        }}
+        title={t('mobile_settings_fiscal')}
+        description={t('mobile_settings_fiscal_sub')}
+      >
+        <WithKgData>{(kgData) => <FiscalTab kg={kgData} />}</WithKgData>
+      </FullScreenSheet>
+
+      <FullScreenSheet
+        open={sheet === 'subscription'}
+        onOpenChange={(v) => {
+          if (!v) setSheet(null);
+        }}
+        title={t('mobile_settings_subscription')}
+        description={t('mobile_settings_subscription_sub')}
+      >
+        <WithKgData>{(kgData) => <SubscriptionTab kg={kgData} />}</WithKgData>
+      </FullScreenSheet>
     </>
+  );
+}
+
+type KgFull = NonNullable<ReturnType<typeof useKindergartenFull>['data']>;
+
+function WithKgData({ children }: { children: (kg: KgFull) => React.ReactNode }) {
+  const kgQuery = useKindergartenFull();
+  if (kgQuery.isPending) return <SkeletonBox height={280} />;
+  if (kgQuery.isError || !kgQuery.data)
+    return <ErrorState onRetry={() => void kgQuery.refetch()} />;
+  return <>{children(kgQuery.data)}</>;
+}
+
+// Mobile "General" settings body: read-only contacts + N11 logo card.
+function MobileGeneralSheet() {
+  const { t } = useTranslation('settings');
+  const kgQuery = useKindergartenFull();
+  const kg = kgQuery.data;
+
+  if (kgQuery.isPending) {
+    return <SkeletonBox height={280} />;
+  }
+  if (kgQuery.isError || !kg) {
+    return <ErrorState onRetry={() => void kgQuery.refetch()} />;
+  }
+
+  const readonlyCls =
+    'h-9 w-full rounded-[var(--r-md)] border border-line bg-bg-sunken px-3 text-[14px] text-text-3 outline-none';
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="rounded-[var(--r-lg)] border border-line bg-bg-elev p-4">
+        <div className="mb-1 text-[15px] font-bold text-text-1">{t('general_contacts')}</div>
+        <div className="mb-3 text-[12.5px] text-text-3">{t('general_readonly_hint')}</div>
+        <div className="flex flex-col gap-4">
+          <FieldWrapper label={t('field_name')}>
+            <input value={kg.name} disabled className={readonlyCls} />
+          </FieldWrapper>
+          <FieldWrapper label={t('field_address')}>
+            <input value={kg.address ?? '—'} disabled className={readonlyCls} />
+          </FieldWrapper>
+          <FieldWrapper label={t('field_phone')}>
+            <div className="relative">
+              <PhoneIcon className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-text-3" />
+              <input value={kg.phone ?? '—'} disabled className={`${readonlyCls} pl-8`} />
+            </div>
+          </FieldWrapper>
+          <FieldWrapper label={t('field_slug')} hint={t('field_slug_hint')}>
+            <input value={kg.slug} disabled className={readonlyCls} />
+          </FieldWrapper>
+        </div>
+      </div>
+      <KindergartenLogoCard kg={kg} />
+    </div>
   );
 }
 
@@ -398,6 +607,7 @@ function DesktopSettings() {
           </TabsTrigger>
           <TabsTrigger value="payments">{t('tab_payments')}</TabsTrigger>
           <TabsTrigger value="fiscal">{t('tab_fiscal')}</TabsTrigger>
+          <TabsTrigger value="specialties">{t('tab_specialties')}</TabsTrigger>
           <TabsTrigger value="subscription">{t('tab_subscription')}</TabsTrigger>
         </TabsList>
 
@@ -416,6 +626,9 @@ function DesktopSettings() {
         <TabsContent value="fiscal">
           <FiscalTab kg={kg} />
         </TabsContent>
+        <TabsContent value="specialties">
+          <SpecialistTypesTab />
+        </TabsContent>
         <TabsContent value="subscription">
           <SubscriptionTab kg={kg} />
         </TabsContent>
@@ -433,6 +646,7 @@ function GeneralTab({ kg }: { kg: NonNullable<ReturnType<typeof useKindergartenF
   // fields (name/address/phone) — only PATCH /kindergartens/me/settings (the JSONB
   // settings bag, edited on the Operations tab). Editing identity fields here would
   // be a no-op, so we present them read-only. See OPEN_QUESTIONS §C17 / BACKEND_NEEDINGS.
+  // (The logo IS editable — dedicated N11 upload/delete endpoints.)
   const readonlyCls =
     'h-9 w-full rounded-[var(--r-md)] border border-line bg-bg-sunken px-3 text-[14px] text-text-3 outline-none';
 
@@ -461,19 +675,102 @@ function GeneralTab({ kg }: { kg: NonNullable<ReturnType<typeof useKindergartenF
           </div>
         </div>
       </div>
-      <div className="rounded-[var(--r-lg)] border border-line bg-bg-elev p-4">
-        <div className="mb-2 text-[15px] font-bold text-text-1">{t('general_logo')}</div>
-        <div className="mb-3 flex aspect-square w-full items-center justify-center rounded-[var(--r-md)] bg-bg-sunken text-[13px] text-text-3">
-          LOGO 1:1
-        </div>
+      <KindergartenLogoCard kg={kg} />
+    </div>
+  );
+}
+
+// N11 logo — preview + upload/delete. Shared by the desktop General tab and the
+// mobile General settings sheet (mutations are dedicated logo endpoints).
+function KindergartenLogoCard({
+  kg,
+}: {
+  kg: NonNullable<ReturnType<typeof useKindergartenFull>['data']>;
+}) {
+  const { t } = useTranslation('settings');
+  const fileRef = useRef<HTMLInputElement>(null);
+  const uploadLogo = useUploadKindergartenLogo();
+  const deleteLogo = useDeleteKindergartenLogo();
+
+  const busy = uploadLogo.isPending || deleteLogo.isPending;
+
+  function handleLogoError(err: unknown) {
+    if (isAppError(err)) {
+      toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
+    } else {
+      toast.error(t('errors:unknown_error'));
+    }
+    console.error(err);
+  }
+
+  function handleFilePicked(file: File | undefined) {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error(t('errors:logo_type_invalid'));
+      return;
+    }
+    if (file.size > LOGO_MAX_BYTES) {
+      toast.error(t('errors:logo_too_large'));
+      return;
+    }
+    uploadLogo.mutate(file, {
+      onSuccess: () => toast.success(t('logo_upload_success')),
+      onError: handleLogoError,
+    });
+  }
+
+  function handleDeleteLogo() {
+    deleteLogo.mutate(undefined, {
+      onSuccess: () => toast.success(t('logo_delete_success')),
+      onError: handleLogoError,
+    });
+  }
+
+  return (
+    <div className="rounded-[var(--r-lg)] border border-line bg-bg-elev p-4">
+      <div className="mb-2 text-[15px] font-bold text-text-1">{t('general_logo')}</div>
+      <div className="mb-3 flex aspect-square w-full items-center justify-center overflow-hidden rounded-[var(--r-md)] bg-bg-sunken text-[13px] text-text-3">
+        {kg.logo_url ? (
+          <img src={kg.logo_url} alt={kg.name} className="size-full object-contain" />
+        ) : (
+          'LOGO 1:1'
+        )}
+      </div>
+      <input
+        ref={fileRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => {
+          handleFilePicked(e.target.files?.[0]);
+          e.target.value = '';
+        }}
+      />
+      <button
+        type="button"
+        disabled={busy}
+        onClick={() => fileRef.current?.click()}
+        className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[var(--r-md)] border border-line bg-bg-elev text-[13px] font-semibold text-text-1 hover:bg-bg-sunken disabled:opacity-60"
+      >
+        {uploadLogo.isPending ? (
+          <Loader2Icon className="size-3.5 animate-spin" />
+        ) : (
+          <UploadIcon className="size-3.5" />
+        )}
+        {t('upload_logo')}
+      </button>
+      {kg.logo_url && (
         <button
           type="button"
-          className="inline-flex h-9 w-full items-center justify-center gap-2 rounded-[var(--r-md)] border border-line bg-bg-elev text-[13px] font-semibold text-text-1 hover:bg-bg-sunken"
+          disabled={busy}
+          onClick={handleDeleteLogo}
+          className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-[var(--r-md)] border border-[var(--danger)] bg-transparent text-[13px] font-semibold text-[var(--danger)] hover:bg-[var(--danger-soft)] disabled:opacity-60"
         >
-          <UploadIcon className="size-3.5" />
-          {t('upload_logo')}
+          <Trash2Icon className="size-3.5" />
+          {t('logo_delete')}
         </button>
-      </div>
+      )}
+      <div className="mt-2 text-[12px] text-text-3">{t('logo_hint')}</div>
     </div>
   );
 }
@@ -553,7 +850,7 @@ function OperationsTab({
         <div className="rounded-[var(--r-lg)] border border-line bg-bg-elev p-5">
           <div className="mb-3 text-[15px] font-bold text-text-1">{t('ops_time_currency')}</div>
           <form id="ops-form" onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
-            <div className="grid grid-cols-2 gap-[14px]">
+            <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
               <FieldWrapper label={t('field_timezone')} error={errors.timezone?.message}>
                 <select
                   {...register('timezone')}
@@ -577,7 +874,7 @@ function OperationsTab({
                 </select>
               </FieldWrapper>
             </div>
-            <div className="grid grid-cols-2 gap-[14px]">
+            <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
               <FieldWrapper
                 label={t('field_late_pickup_fee')}
                 error={errors.late_pickup_fee_amount?.message}
@@ -617,7 +914,7 @@ function OperationsTab({
         <div className="rounded-[var(--r-lg)] border border-line bg-bg-elev p-5">
           <div className="mb-3 text-[15px] font-bold text-text-1">{t('ops_prepay_discounts')}</div>
           <div className="mb-3 text-[12px] text-text-3">{t('ops_prepay_hint')}</div>
-          <div className="grid grid-cols-2 gap-[14px]">
+          <div className="grid grid-cols-1 gap-[14px] sm:grid-cols-2">
             <FieldWrapper label={t('field_prepay_3m')}>
               <input
                 type="number"
@@ -635,7 +932,7 @@ function OperationsTab({
               />
             </FieldWrapper>
           </div>
-          <div className="mt-[14px] grid grid-cols-2 gap-[14px]">
+          <div className="mt-[14px] grid grid-cols-1 gap-[14px] sm:grid-cols-2">
             <FieldWrapper label={t('field_prepay_12m')}>
               <input
                 type="number"

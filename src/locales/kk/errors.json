@@ -96,5 +96,15 @@
   "lifecycle_job_not_in_failed_state": "Тапсырма қате күйінде емес",
   "forbidden": "Қол жеткізу тыйым салынған",
   "user_not_found": "Пайдаланушы табылмады",
-  "user_no_relationship_to_kindergarten": "Пайдаланушы балабақшамен байланыспаған"
+  "user_no_relationship_to_kindergarten": "Пайдаланушы балабақшамен байланыспаған",
+  "kindergarten_not_found": "Балабақша табылмады",
+  "logo_required": "Логотип файлын таңдаңыз",
+  "logo_type_invalid": "Логотип сурет болуы керек",
+  "logo_too_large": "Логотип 5 МБ-тан асады",
+  "specialist_type_unknown": "Белгісіз мамандық",
+  "specialist_type_not_found": "Мамандық табылмады",
+  "specialist_type_code_taken": "Мұндай мамандық коды бар",
+  "specialist_type_name_required": "Мамандық атауын көрсетіңіз",
+  "specialist_type_system_immutable": "Жүйелік мамандықты жоюға болмайды — оны өшіріңіз",
+  "specialist_type_in_use": "Мамандық қолданылуда — жоюдың орнына өшіріңіз"
 }

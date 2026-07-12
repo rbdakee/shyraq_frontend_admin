@@ -42,11 +42,13 @@
     },
 
     "filters": {
+      "sheet_title": "Фильтры",
       "status": "Статус",
       "type": "Тип",
       "child": "Ребёнок",
       "due_date_from": "Срок от",
       "due_date_to": "Срок до",
+      "due_date": "Срок оплаты",
       "all_statuses": "Все статусы",
       "all_types": "Все типы"
     },
@@ -183,8 +185,11 @@
     },
 
     "filters": {
+      "sheet_title": "Фильтры",
       "all_providers": "Все провайдеры",
-      "all_statuses": "Все статусы"
+      "all_statuses": "Все статусы",
+      "date_range": "Период",
+      "search": "Поиск"
     },
 
     "detail": {
@@ -283,6 +288,14 @@
         "benefit_category": "Льготная категория",
         "benefit_placeholder": "Напр.: многодетная семья"
       }
+    },
+
+    "edit": {
+      "button": "Редактировать",
+      "title": "Редактировать тариф",
+      "locked_hint": "Тип, применение и дата начала фиксируются при создании и здесь не меняются.",
+      "submit": "Сохранить",
+      "success": "Тариф обновлён"
     },
 
     "deactivate": {
@@ -458,6 +471,35 @@
         "or": "ИЛИ",
         "add": "Добавить условие",
         "value_placeholder": "Значение",
+        "num_placeholder": "Значение",
+        "days_placeholder": "Дней до срока",
+        "months_from": "От, мес.",
+        "months_to": "До, мес.",
+        "no_value": "Без значения",
+        "op": {
+          "gte": "≥",
+          "eq": "="
+        },
+        "errors": {
+          "invalid_number": "Введите целое число ≥ 0",
+          "invalid_range": "«От» не может быть больше «До»",
+          "required": "Обязательное поле"
+        },
+        "enum": {
+          "benefit_category": {
+            "multi_child": "Многодетная семья",
+            "disability": "Инвалидность",
+            "single_mother": "Мать-одиночка",
+            "mother_heroine": "Мать-героиня"
+          },
+          "payment_method": {
+            "kaspi_pay": "Kaspi Pay",
+            "halyk_epay": "Halyk ePay",
+            "bcc": "BCC",
+            "cash": "Наличные",
+            "bank_transfer": "Банковский перевод"
+          }
+        },
         "type": {
           "siblings_count": "Кол-во детей в семье",
           "prepayment_months": "Предоплата N месяцев",
@@ -477,7 +519,10 @@
         "select_children": "Выберите детей",
         "select_tariffs": "Выберите тарифы",
         "age_from": "От (мес.)",
-        "age_to": "До (мес.)"
+        "age_to": "До (мес.)",
+        "loading": "Загрузка…",
+        "empty": "Нет доступных вариантов",
+        "empty_children": "Нет активных детей"
       },
 
       "period": {
@@ -521,6 +566,14 @@
         "description_with_notify": "Скидка станет активной. Push-уведомление отправится всем родителям таргета — отозвать push нельзя.",
         "confirm": "Активировать",
         "cancel": "Отмена"
+      },
+
+      "errors": {
+        "required": "Обязательное поле",
+        "invalid": "Некорректное значение",
+        "invalid_range": "«От» не может быть больше «До»",
+        "invalid_number": "Введите целое число ≥ 0",
+        "push_required": "Заполните текст уведомления на двух языках"
       },
 
       "success_create": "Черновик скидки создан",

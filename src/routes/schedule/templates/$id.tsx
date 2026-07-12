@@ -43,6 +43,7 @@ import {
   useDeleteSlot,
 } from '@/hooks/use-schedule';
 import type { ScheduleTemplateSlot, SlotCategory } from '@/hooks/use-schedule';
+import { useLocations } from '@/hooks/use-locations';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import { isAppError, toI18nKey } from '@/lib/error-map';
@@ -64,6 +65,10 @@ const HOURS = [
 ];
 
 const CATEGORY_KEYS = ['lesson', 'activity', 'meal', 'sleep'] as const;
+
+// Radix Select forbids an empty-string item value, so "no location" uses a sentinel
+// that maps to '' (→ undefined on submit).
+const NO_LOCATION = '__none__';
 
 // Slot color now comes from the backend `category` enum (B-category), not name keywords.
 const CATEGORY_TONE: Record<SlotCategory, 'primary' | 'info' | 'warning' | 'neutral'> = {
@@ -575,6 +580,8 @@ function SlotFormFields({
   errors: ReturnType<typeof useForm<SlotForm>>['formState']['errors'];
 }) {
   const { t } = useTranslation('schedule');
+  const locationsQuery = useLocations({ archived: false });
+  const locations = locationsQuery.data ?? [];
 
   return (
     <div className="flex flex-col gap-4">
@@ -696,7 +703,30 @@ function SlotFormFields({
         <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
           {t('slots.create_dialog.location')}
         </Label>
-        <Input {...register('locationId')} />
+        <Controller
+          name="locationId"
+          control={control}
+          render={({ field }) => (
+            <Select
+              value={field.value ? field.value : NO_LOCATION}
+              onValueChange={(v) => field.onChange(v === NO_LOCATION ? '' : v)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder={t('slots.create_dialog.location_placeholder')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_LOCATION}>
+                  {t('slots.create_dialog.location_none')}
+                </SelectItem>
+                {locations.map((loc) => (
+                  <SelectItem key={loc.id} value={loc.id}>
+                    {loc.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+        />
       </div>
 
       <div className="flex flex-col gap-1.5">

@@ -284,6 +284,52 @@ Live OpenAPI inspection during manual QA showed `ContentListResponseDto = {items
 
 ---
 
+### A27 — Сторис в разделе «Контент»: нет в готовом дизайне → отдельная вкладка, строим по дизайн-системе · resolved (2026-07-10, owner request)
+
+**Контекст.** Владелец попросил, чтобы админ мог **добавлять сторис** из раздела «Контент». Backend endpoint готов: `GET/POST /api/v1/staff/stories` (list active + publish), `DELETE /api/v1/staff/stories/{id}`, `POST …/{id}/view`. Create — multipart `group_id` (text) + `file` (image/video, required) + опц. `caption`; истекает через 24ч; admin видит/постит по любой группе садика (`StaffStoriesController`, роль admin разрешена). Дизайн-handoff (`screens-core/ops.jsx`, `content-section-tabs`) сторис в разделе «Контент» **не описывает** — там только вкладки «Лента» + «Qundylyq». CLAUDE §6 запрещает молчаливое отклонение от готового дизайна.
+
+**Решение (owner, 2026-07-10).** Добавить третью вкладку «Сторис» в `ContentSectionTabs` (`/content/stories`), построенную **по существующей дизайн-системе** (те же токены/компоненты, что лента/qundylyq): грид карточек (превью медиа, группа, просмотры, бейдж «истекает через N ч»/«истекла», удаление) + диалог создания (Select группы, выбор файла image/video, подпись ≤500). Медиа — presigned `<img src>` напрямую (§A26); `useStories` c `refetchInterval` под TTL 1ч. Trade-off: дизайн-дрейф в разделе «Контент» (вкладки, которой нет в VIS). Revert path: если владелец захочет иной лейаут — переверстать в отдельном батче.
+
+**Слои.** `api/stories.ts` (multipart create, zod-DTO; `caption` толерантно — string|JSONB), `hooks/use-stories.ts`, `routes/content/stories.tsx`, вкладка в `content-section-tabs.tsx`, роут `content/stories` (до `content/:id`), i18n `content.stories.*` (ru+kk).
+
+**Связано:** §A26 (presigned media), BACKEND_NEEDINGS (endpoint уже есть — не gap).
+
+---
+
+### A28 — Логотип садика (N11) + справочник специальностей (N12): реализация фронта · resolved (2026-07-10, backend deployed)
+
+**Контекст.** Backend выкатил N11 (логотип: `logo_url` + upload/delete) и N12 (`specialist_type` → admin-managed справочник per-садик), см. `LOGO_AND_SPECIALIST_TYPES_FRONTEND_GUIDE.md`. Часть фронт-решений выходит за готовый дизайн (CLAUDE §6).
+
+**Решения (owner-approved через выданный guide):**
+
+1. **Логотип** — оживлена кнопка на `/settings → Общие` (была мёртвая): превью `<img src={logo_url}>`, загрузка (client-валидация image/≤5 МБ + backend), удаление. Дизайн карточки «Логотип» уже был в handoff — поведение добавлено 1:1 по смыслу.
+2. **Справочник специальностей** — CRUD-экрана в дизайне **нет**. Решение: новая вкладка «Специальности» в `/settings` (per-садик admin-config логично живёт в Настройках; без нового nav-item). Построена по существующей дизайн-системе (таблица + модалки, как в тарифах). Desktop-only (мобильные настройки — отдельный упрощённый layout; admin-config desktop-first по CLAUDE §1). Revert path: перенести в отдельный роут/секцию, если владелец захочет.
+3. **Метки специальностей** — источник истины теперь backend `name_i18n` (per guide §2.7.1). Убран весь фронт-хардкод (`SPECIALIST_TYPES`/`SpecialistTypeEnum`/`staff.json.specialist_type.*`), метки резолвятся через `lib/specialist-type.ts` с fallback на код.
+4. **«Нейропсихолог (Психолог)»** — прежний клиентский i18n-override (сессия 2026-07-10) **снят**: значение `psychologist` теперь показывается меткой из словаря (дефолт бэка «Психолог»). Переименование — одним edit в новом справочнике (единый источник истины, guide §2.7.5), либо backend PATCH строки.
+
+**Связано:** BACKEND_NEEDINGS N11/N12 (resolved).
+
+---
+
+### A29 — Конструктор скидки: «Неизвестная ошибка» — два бага (error-envelope + форма `conditions`) · resolved (2026-07-11, live-verified)
+
+**Контекст.** Пользователь: конструктор скидки (`/billing/discounts/new`, `wizard.tsx`) после заполнения полей выдаёт «Неизвестная ошибка». Прогон под бэкдором `+77777777777` против live dev выявил **две** наложенные поломки:
+
+1. **Error-envelope (app-wide).** Глобальный `ValidationPipe` бэка отдаёт `{status, errors:{field: msg|nested}}` (см. handoff §2.3, live-подтверждён), а `error-map.ts::parseApiError` знал только nest-422 и доменный конверт → любая 422 схлопывалась в `unknown_error` → «Неизвестная ошибка». **Затрагивало весь Admin, не только скидки.**
+2. **Форма `conditions` расходилась с backend-контрактом.** `formToBody` слал `{op, rules:[{type, value:string}]}` и `{type:'age_range', age_from, age_to}`; каноничная схема (`backend/…/discount-conditions/conditions-evaluator.ts`) требует `{all_of|any_of:[…]}` с типизированными листьями (`op:'gte'|'eq'`+`value:int`, `from_months/to_months`, `in:[…]`, `days_before_due`, `from/to` ISO, голый `{type}`). Любое условие или таргет `age_range` → 422 `custom_discount_conditions_invalid`.
+
+**Дизайн↔контракт (CLAUDE §6).** Готовый дизайн (`screens-billing.jsx` `DiscountWizard`) для шага «Условия» — **статичный мок**: одно свободное текстовое поле `value` на условие (`onChange` — no-op). Он **физически не может** собрать типизированные листья, которые требует backend.
+
+**Решение (owner-approved: fix all three).** (1) `parseApiError` распознаёт `{status,errors}` и flatten'ит в `validation_error` details. (2+3) `formToBody`/`discountToDefaults` переписаны под каноничную схему; шаг 2 получил **типизированный value-cell по типу условия** (`ConditionValueEditor`: op+число / from-to мес. / диапазон дат / мультиселект `in[]` для benefit_category+payment_method / голый тип), сохранив row-лейаут дизайна; добавлена client-валидация перед submit (`validateAllThenJump`) + inline-ошибки, чтобы пустой push/битое условие не уходили в API. **Deviation от мока задокументирована здесь.** Revert path: если владелец захочет другой UX билдера — переверстать `ConditionValueEditor`, контракт-маппинг остаётся.
+
+**Догон (2026-07-11, тот же слайс).** Таргет «Конкретные дети» не давал выбрать никого: `useChildrenList({limit:200})` бьётся о backend `@Max(100)` (`ListChildrenQueryDto`) → 422 → пустой список, «Выберите детей» без чипов. Фикс: `useAllChildren({status:'active'})` (пейджит по 100). Заодно чипы таргетинга (группы/дети/тарифы) стали реактивными через общий `TargetChips` (было — нереактивный `getValues` в render). **Mobile-паритет:** шаг «Таргетинг» на мобилке рендерил только `<select>` типа без под-селекторов — добавлены те же `TargetChips` + age_range inputs (mobile теперь = desktop по таргетингу).
+
+**Mobile 5-й шаг (owner: путь «а», 2026-07-11).** Mobile-визард получил шаг 5 «Приоритет и уведомление» (priority + stackable + notify-toggle + push ru/kk), `MOBILE_TOTAL_STEPS 4→5`; финальный save валидирует всю форму (`validateAllThenJump`). Теперь mobile create скидки работает end-to-end, паритет с desktop по всем 5 шагам. **Supersedes M6** (был «полный 4-step wizard» — стало 5, т.к. desktop step 5 обязателен для валидного create). Trade-off: дизайн-девиация от mobile-хендофф (5-го экрана там нет) — построен по существующей дизайн-системе. Revert path: если владелец захочет иначе — переверстать mobile step 5.
+
+**Связано:** handoff §2.3 (error-envelope), §18 (custom-discounts conditions schema).
+
+---
+
 ## B. Открытые (open — НЕ кодить до resolve)
 
 Формат записи:

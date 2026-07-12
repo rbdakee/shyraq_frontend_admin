@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { toast } from 'sonner';
 import { PlusIcon, MoreHorizontalIcon, CheckIcon, XIcon, InfoIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -52,83 +51,18 @@ import {
   useApproveChildGuardian,
   useRejectChildGuardian,
   useRevokeAllUserQr,
+  type GuardianDto,
 } from '@/hooks/use-children';
 import { getErrorCode, toI18nKey } from '@/lib/error-map';
 import { getInitials, formatPhone } from '@/lib/format';
-
-type GuardianRole = 'primary' | 'secondary' | 'nanny';
-type GuardianStatus = 'pending_approval' | 'approved' | 'rejected' | 'revoked';
-
-interface GuardianDto {
-  id: string;
-  kindergarten_id: string;
-  child_id: string;
-  user_id: string;
-  user_full_name: string | null;
-  user_phone: string | null;
-  role: GuardianRole;
-  status: GuardianStatus;
-  has_approval_rights: boolean;
-  can_pickup: boolean;
-  permissions: Record<string, boolean>;
-  approved_by: string | null;
-  approved_at: string | null;
-  revoked_by: string | null;
-  revoked_at: string | null;
-  permissions_updated_by: string | null;
-  permissions_updated_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-const InviteGuardianSchema = z
-  .object({
-    user_phone: z.string().optional(),
-    user_id: z.string().optional(),
-    role: z.enum(['primary', 'secondary', 'nanny']),
-    can_pickup: z.boolean(),
-  })
-  .refine(
-    (data) => {
-      const hasPhone = !!data.user_phone;
-      const hasId = !!data.user_id;
-      return (hasPhone || hasId) && !(hasPhone && hasId);
-    },
-    {
-      path: ['user_phone'],
-      message: 'invite_guardian_xor',
-    },
-  );
-
-type InviteGuardianForm = z.infer<typeof InviteGuardianSchema>;
-
-function guardianStatusVariant(
-  status: GuardianStatus,
-): 'warning' | 'success' | 'error' | 'neutral' {
-  const map: Record<GuardianStatus, 'warning' | 'success' | 'error' | 'neutral'> = {
-    pending_approval: 'warning',
-    approved: 'success',
-    rejected: 'error',
-    revoked: 'neutral',
-  };
-  return map[status];
-}
-
-// Backend sets full_name = phone for phone-invited users without a profile yet →
-// treat "name equals phone" (and null) as "no real name set".
-function resolveGuardianName(g: GuardianDto): string | null {
-  if (!g.user_full_name || g.user_full_name === g.user_phone) return null;
-  return g.user_full_name;
-}
-
-function guardianRoleVariant(role: GuardianRole): 'default' | 'info' | 'neutral' {
-  const map: Record<GuardianRole, 'default' | 'info' | 'neutral'> = {
-    primary: 'default',
-    secondary: 'neutral',
-    nanny: 'info',
-  };
-  return map[role];
-}
+import {
+  resolveGuardianName,
+  guardianStatusVariant,
+  guardianRoleVariant,
+  InviteGuardianSchema,
+  type InviteGuardianForm,
+  type GuardianRole,
+} from '@/lib/guardian';
 
 export default function GuardiansTab({ childId }: { childId: string }) {
   const { t } = useTranslation('children');

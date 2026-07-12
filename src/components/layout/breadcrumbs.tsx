@@ -19,6 +19,7 @@ const SEGMENT_LABELS: Record<string, string> = {
   'meal-plans': 'nav.meals',
   content: 'nav.content',
   qundylyq: 'nav.content',
+  stories: 'nav.content',
   billing: 'nav.group_billing',
   invoices: 'nav.invoices',
   payments: 'nav.payments',

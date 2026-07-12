@@ -82,7 +82,9 @@
   },
 
   "pagination": {
-    "showing": "Көрсетілуде {{from}}–{{to}}"
+    "showing": "Көрсетілуде {{from}}–{{to}}",
+    "prev": "Артқа",
+    "next": "Алға"
   },
 
   "mobile_today_sub": "Бүгін",

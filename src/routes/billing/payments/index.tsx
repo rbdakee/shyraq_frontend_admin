@@ -5,6 +5,7 @@ import { type ColumnDef } from '@tanstack/react-table';
 import { EyeIcon, SearchIcon, FilterIcon } from 'lucide-react';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
+import { FilterBottomSheet } from '@/components/forms/filter-bottom-sheet';
 
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +24,7 @@ import {
   type PaymentProvider,
   type PaymentStatus,
 } from '@/hooks/use-payments';
-import { useChildrenList } from '@/hooks/use-children';
+import { useAllChildren } from '@/hooks/use-children';
 import { formatMoney, formatDateTime } from '@/lib/format';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
 import { PAYMENT_STATUS_BADGE, PROVIDER_I18N_KEYS } from './payment-constants';
@@ -58,6 +59,7 @@ export default function PaymentsListPage() {
   const [childFilter, setChildFilter] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
 
   const filters = useMemo(
     () => ({
@@ -83,9 +85,9 @@ export default function PaymentsListPage() {
     );
   }, [allData, searchQuery]);
 
-  const childrenQuery = useChildrenList({ status: 'active', limit: 200, offset: 0 });
+  const childrenQuery = useAllChildren();
   const childrenMap = useMemo(
-    () => new Map((childrenQuery.data?.data ?? []).map((c) => [c.id, c.full_name])),
+    () => new Map((childrenQuery.data ?? []).map((c) => [c.id, c.full_name])),
     [childrenQuery.data],
   );
 
@@ -186,7 +188,12 @@ export default function PaymentsListPage() {
           title={t('payments.title')}
           sub={t('payments.subtitle', { count: data.length })}
           action={
-            <button type="button" className="m-iconbtn" aria-label="Filter">
+            <button
+              type="button"
+              className="m-iconbtn"
+              onClick={() => setFilterSheetOpen(true)}
+              aria-label={t('common:actions.filter')}
+            >
               <FilterIcon className="size-5" />
             </button>
           }
@@ -306,6 +313,58 @@ export default function PaymentsListPage() {
             })}
           </div>
         </>
+
+        <FilterBottomSheet
+          open={filterSheetOpen}
+          onOpenChange={setFilterSheetOpen}
+          title={t('payments.filters.sheet_title')}
+          onReset={() => {
+            resetFilters();
+            setFilterSheetOpen(false);
+          }}
+          onApply={() => setFilterSheetOpen(false)}
+        >
+          <div className="flex flex-col gap-4">
+            <div>
+              <label className="mb-1 block text-[12px] font-semibold text-[color:var(--text-3)]">
+                {t('payments.columns.status')}
+              </label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t('payments.filters.all_statuses')}</SelectItem>
+                  {PAYMENT_STATUSES.map((s) => (
+                    <SelectItem key={s} value={s}>
+                      {t(`payments.status.${s}`)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="mb-1 block text-[12px] font-semibold text-[color:var(--text-3)]">
+                {t('payments.filters.date_range')}
+              </label>
+              <PeriodPicker value={dateRange} onChange={setDateRange} className="w-full" />
+            </div>
+            <div>
+              <label className="mb-1 block text-[12px] font-semibold text-[color:var(--text-3)]">
+                {t('payments.filters.search')}
+              </label>
+              <div className="relative">
+                <SearchIcon className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-[color:var(--text-3)]" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder={t('payments.search_placeholder')}
+                  className="pl-8 text-[13px]"
+                />
+              </div>
+            </div>
+          </div>
+        </FilterBottomSheet>
       </>
     );
   }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { StaffMemberDtoSchema, StaffRoleEnum, SpecialistTypeEnum } from './staff';
+import { StaffMemberDtoSchema, StaffRoleEnum } from './staff';
 
 describe('StaffMemberDtoSchema', () => {
   const validStaff = {
@@ -102,16 +102,5 @@ describe('StaffRoleEnum', () => {
   });
 });
 
-describe('SpecialistTypeEnum', () => {
-  it('accepts valid specialist types', () => {
-    expect(SpecialistTypeEnum.parse('psychologist')).toBe('psychologist');
-    expect(SpecialistTypeEnum.parse('speech_therapist')).toBe('speech_therapist');
-    expect(SpecialistTypeEnum.parse('music_teacher')).toBe('music_teacher');
-    expect(SpecialistTypeEnum.parse('physical_ed')).toBe('physical_ed');
-    expect(SpecialistTypeEnum.parse('nutritionist')).toBe('nutritionist');
-  });
-
-  it('rejects invalid specialist type', () => {
-    expect(() => SpecialistTypeEnum.parse('dentist')).toThrow();
-  });
-});
+// specialist_type is now a free-form dictionary CODE (N12), validated by the backend —
+// no frontend enum. The DTO accepts any string (asserted in StaffMemberDtoSchema tests above).

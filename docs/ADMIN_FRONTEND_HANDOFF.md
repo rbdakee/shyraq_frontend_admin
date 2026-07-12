@@ -64,6 +64,7 @@
 
 - Тело ошибки: `{ "error": "<code>", "message": "<human text>", "details?": ... }`. Веди реестр кодов и маппинг на i18n-сообщения (бэкенд коды — стабильны, в этом документе они перечислены по разделам).
 - Часть ошибок валидации DTO (class-validator) возвращается стандартным nest-конвертом: `{ statusCode: 422, message: [ ...строки... ], error: "Unprocessable Entity" }` — у них **нет** стабильного `error`-кода, парси `message[]`. (Подробно — `endpoints.md §3.10` «422-vs-400 contract».)
+- **Live-конверт валидации (глобальный `ValidationPipe`, `backend/src/utils/validation-options.ts`):** `{ "status": 422, "errors": { "<field>": "<msg>" | { "<sub>": "<msg>" } } }` — по-полевая карта, вложенная для i18n-объектов (`{ru,kk}`). Это **фактический** конверт для большинства DTO-валидаций (подтверждён live 2026-07-11 на `POST /admin/custom-discounts`). `error-map.ts::parseApiError` распознаёт все три конверта и сводит `{status,errors}`/nest-422 к `AppError('validation_error', details:string[])` (flatten в `"path: message"`). **Не забыть этот конверт** — иначе любая 422 схлопывается в `unknown_error` → «Неизвестная ошибка» на UI.
 - HTTP-коды: 200/201/204 успех; 400 доменная ошибка; 401 не авторизован; 403 нет прав; 404 не найдено; 409 конфликт состояния; 422 ошибка валидации; 429 rate-limit.
 - Timestamps — ISO 8601 (UTC, `...Z`). IDs — UUID v4. Деньги — `decimal(12,2)`, валюта `KZT`.
 

@@ -54,6 +54,8 @@
       "activity": "Белсенділік",
       "category": "Санат",
       "location": "Орын (міндетті емес)",
+      "location_placeholder": "Орынды таңдаңыз",
+      "location_none": "Орынсыз",
       "description": "Сипаттама (міндетті емес)",
       "submit": "Қосу",
       "cancel": "Бас тарту"

@@ -1,7 +1,15 @@
 import { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useForm, useWatch, Controller, useFieldArray, type Resolver } from 'react-hook-form';
+import {
+  useForm,
+  useWatch,
+  useFormState,
+  Controller,
+  useFieldArray,
+  type Resolver,
+  type UseFormReturn,
+} from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
@@ -54,7 +62,7 @@ import {
   type CustomDiscountResponseDto,
 } from '@/hooks/use-custom-discounts';
 import { useGroups } from '@/hooks/use-groups';
-import { useChildrenList } from '@/hooks/use-children';
+import { useAllChildren } from '@/hooks/use-children';
 import { useTariffPlansList } from '@/hooks/use-tariff-plans';
 import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import { resolveJsonbI18n, type JsonbI18n } from '@/lib/jsonb-i18n';
@@ -81,6 +89,62 @@ const CONDITION_TYPES = [
   'first_invoice',
 ] as const;
 
+// Canonical leaf schema — mirrors the backend domain evaluator
+// (billing/domain/discount-conditions/conditions-evaluator.ts). Each condition type maps
+// to a typed leaf, NOT a free-text value: count/months types carry an op + integer,
+// age_range carries from/to months, date_range carries ISO dates, enum types carry `in[]`,
+// and birthday_month/first_invoice are bare `{type}`.
+const COMPARISON_OPS = ['gte', 'eq'] as const;
+const BENEFIT_CATEGORIES = [
+  'multi_child',
+  'disability',
+  'single_mother',
+  'mother_heroine',
+] as const;
+const PAYMENT_METHODS = ['kaspi_pay', 'halyk_epay', 'bcc', 'cash', 'bank_transfer'] as const;
+
+const NUM_OP_TYPES = new Set<string>(['siblings_count', 'prepayment_months']);
+const DAYS_TYPES = new Set<string>(['early_payment']);
+const ENUM_TYPE_OPTIONS: Record<string, readonly string[]> = {
+  benefit_category: BENEFIT_CATEGORIES,
+  payment_method: PAYMENT_METHODS,
+};
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function isNonNegInt(s: string): boolean {
+  const t = s.trim();
+  if (t === '') return false;
+  const n = Number(t);
+  return Number.isInteger(n) && n >= 0;
+}
+
+const ConditionSchema = z.object({
+  type: z.string().min(1),
+  op: z.enum(['gte', 'eq']).default('gte'),
+  num: z.string().default(''),
+  from_months: z.string().default(''),
+  to_months: z.string().default(''),
+  date_from: z.string().default(''),
+  date_to: z.string().default(''),
+  in: z.array(z.string()).default([]),
+});
+
+type ConditionForm = z.infer<typeof ConditionSchema>;
+
+function emptyCondition(type: string): ConditionForm {
+  return {
+    type,
+    op: 'gte',
+    num: '',
+    from_months: '',
+    to_months: '',
+    date_from: '',
+    date_to: '',
+    in: [],
+  };
+}
+
 const STEPS = [
   { n: 1, key: 'step1' },
   { n: 2, key: 'step2' },
@@ -101,26 +165,19 @@ const TARGET_OPTIONS: Array<{
 ];
 
 const WizardFormBaseSchema = z.object({
-  name_ru: z.string().min(1),
-  name_kk: z.string().min(1),
+  name_ru: z.string().min(1, 'required'),
+  name_kk: z.string().min(1, 'required'),
   description_ru: z.string().default(''),
   description_kk: z.string().default(''),
   discount_type: z.enum(['percentage', 'fixed_amount']),
-  amount: z.coerce.number().min(0.01),
+  amount: z.coerce.number().min(0.01, 'invalid'),
   conditions_op: z.enum(['all_of', 'any_of']),
-  conditions: z
-    .array(
-      z.object({
-        type: z.string().min(1),
-        value: z.string().default(''),
-      }),
-    )
-    .default([]),
+  conditions: z.array(ConditionSchema).default([]),
   target_type: z.enum(['all', 'groups', 'children', 'tariff_types', 'age_range']),
   target_ids: z.array(z.string()).default([]),
   age_from: z.coerce.number().min(0).default(0),
   age_to: z.coerce.number().min(0).default(0),
-  valid_from: z.string().min(1),
+  valid_from: z.string().min(1, 'required'),
   valid_until: z.string().default(''),
   max_uses_per_child: z.string().default(''),
   total_max_uses: z.string().default(''),
@@ -148,23 +205,147 @@ const WizardFormSchema = WizardFormBaseSchema.superRefine((data, ctx) => {
       });
     }
   }
+
+  // age_range targeting stores the range in `conditions` on the backend — the range
+  // fields are required and from must not exceed to.
+  if (data.target_type === 'age_range') {
+    if (data.age_from > data.age_to) {
+      ctx.addIssue({ path: ['age_to'], code: z.ZodIssueCode.custom, message: 'invalid_range' });
+    }
+  }
+
+  // Per-condition validity — mirrors the backend leaf schema so a malformed condition
+  // is caught client-side (inline error) instead of returning a 422.
+  data.conditions.forEach((c, idx) => {
+    const at = (field: keyof ConditionForm, message: string) =>
+      ctx.addIssue({ path: ['conditions', idx, field], code: z.ZodIssueCode.custom, message });
+
+    if (NUM_OP_TYPES.has(c.type) || DAYS_TYPES.has(c.type)) {
+      if (!isNonNegInt(c.num)) at('num', 'invalid_number');
+    } else if (c.type === 'age_range') {
+      if (!isNonNegInt(c.from_months)) at('from_months', 'invalid_number');
+      else if (!isNonNegInt(c.to_months)) at('to_months', 'invalid_number');
+      else if (Number(c.from_months) > Number(c.to_months)) at('to_months', 'invalid_range');
+    } else if (c.type === 'date_range') {
+      if (!ISO_DATE_RE.test(c.date_from)) at('date_from', 'required');
+      if (!ISO_DATE_RE.test(c.date_to)) at('date_to', 'required');
+    } else if (c.type in ENUM_TYPE_OPTIONS) {
+      if (c.in.length === 0) at('in', 'required');
+    }
+  });
 });
 
 type WizardForm = z.infer<typeof WizardFormBaseSchema>;
+
+type Leaf = Record<string, unknown>;
+
+// Form condition → canonical backend leaf. Returns null for an unknown type.
+function conditionToLeaf(c: ConditionForm): Leaf | null {
+  switch (c.type) {
+    case 'siblings_count':
+    case 'prepayment_months':
+      return { type: c.type, op: c.op, value: Number(c.num) };
+    case 'early_payment':
+      return { type: 'early_payment', days_before_due: Number(c.num) };
+    case 'age_range':
+      return {
+        type: 'age_range',
+        from_months: Number(c.from_months),
+        to_months: Number(c.to_months),
+      };
+    case 'date_range':
+      return { type: 'date_range', from: c.date_from, to: c.date_to };
+    case 'benefit_category':
+    case 'payment_method':
+      return { type: c.type, in: c.in };
+    case 'birthday_month':
+    case 'first_invoice':
+      return { type: c.type };
+    default:
+      return null;
+  }
+}
+
+// Canonical backend leaf → form condition (edit/view round-trip).
+function leafToCondition(leaf: Leaf): ConditionForm {
+  const type = String(leaf.type ?? '');
+  const base = emptyCondition(type);
+  switch (type) {
+    case 'siblings_count':
+    case 'prepayment_months':
+      return {
+        ...base,
+        op: leaf.op === 'eq' ? 'eq' : 'gte',
+        num: leaf.value != null ? String(leaf.value) : '',
+      };
+    case 'early_payment':
+      return { ...base, num: leaf.days_before_due != null ? String(leaf.days_before_due) : '' };
+    case 'age_range':
+      return {
+        ...base,
+        from_months: leaf.from_months != null ? String(leaf.from_months) : '',
+        to_months: leaf.to_months != null ? String(leaf.to_months) : '',
+      };
+    case 'date_range':
+      return { ...base, date_from: String(leaf.from ?? ''), date_to: String(leaf.to ?? '') };
+    case 'benefit_category':
+    case 'payment_method':
+      return { ...base, in: Array.isArray(leaf.in) ? (leaf.in as unknown[]).map(String) : [] };
+    default:
+      return base;
+  }
+}
+
+interface ParsedConditions {
+  op: 'all_of' | 'any_of';
+  conditions: ConditionForm[];
+  ageFrom: number;
+  ageTo: number;
+}
+
+// Parse the stored conditions JSONB back into form state. Handles the three root shapes:
+// bare leaf `{type,...}`, composite `{all_of|any_of:[...]}`, and empty `{}`. For an
+// age_range target the age leaf is lifted into the dedicated from/to fields.
+function parseStoredConditions(
+  root: Record<string, unknown>,
+  targetType: TargetType,
+): ParsedConditions {
+  const isLeaf = (x: unknown): x is Leaf =>
+    typeof x === 'object' && x !== null && !Array.isArray(x);
+
+  let op: 'all_of' | 'any_of' = 'all_of';
+  let leaves: Leaf[] = [];
+  if (Array.isArray(root.all_of)) {
+    op = 'all_of';
+    leaves = (root.all_of as unknown[]).filter(isLeaf);
+  } else if (Array.isArray(root.any_of)) {
+    op = 'any_of';
+    leaves = (root.any_of as unknown[]).filter(isLeaf);
+  } else if (typeof root.type === 'string') {
+    leaves = [root];
+  }
+
+  let ageFrom = 0;
+  let ageTo = 0;
+  const conditions: ConditionForm[] = [];
+  for (const leaf of leaves) {
+    if (targetType === 'age_range' && leaf.type === 'age_range') {
+      ageFrom = Number(leaf.from_months ?? 0);
+      ageTo = Number(leaf.to_months ?? 0);
+      continue;
+    }
+    conditions.push(leafToCondition(leaf));
+  }
+
+  return { op, conditions, ageFrom, ageTo };
+}
 
 function discountToDefaults(d: CustomDiscountResponseDto): WizardForm {
   const name = d.name as JsonbI18n;
   const desc = d.description as JsonbI18n;
   const notifTitle = d.notification_title as JsonbI18n;
 
-  const conds = d.conditions as Record<string, unknown>;
-  const conditionsOp = (conds.op === 'any_of' ? 'any_of' : 'all_of') as 'all_of' | 'any_of';
-  const rules = Array.isArray(conds.rules)
-    ? (conds.rules as Array<{ type?: string; value?: unknown }>).map((r) => ({
-        type: String(r.type ?? ''),
-        value: String(r.value ?? ''),
-      }))
-    : [];
+  const parsed = parseStoredConditions(d.conditions as Record<string, unknown>, d.target_type);
 
   return {
     name_ru: name?.ru ?? '',
@@ -173,12 +354,12 @@ function discountToDefaults(d: CustomDiscountResponseDto): WizardForm {
     description_kk: desc?.kz ?? '',
     discount_type: d.discount_type,
     amount: d.amount,
-    conditions_op: conditionsOp,
-    conditions: rules,
+    conditions_op: parsed.op,
+    conditions: parsed.conditions,
     target_type: d.target_type,
     target_ids: d.target_ids ?? [],
-    age_from: 0,
-    age_to: 0,
+    age_from: parsed.ageFrom,
+    age_to: parsed.ageTo,
     valid_from: d.valid_from,
     valid_until: d.valid_until ?? '',
     max_uses_per_child: d.max_uses_per_child != null ? String(d.max_uses_per_child) : '',
@@ -192,25 +373,20 @@ function discountToDefaults(d: CustomDiscountResponseDto): WizardForm {
 }
 
 function formToBody(data: WizardForm): CreateCustomDiscountBody {
-  let conditions: Record<string, unknown> =
-    data.conditions.length > 0
-      ? {
-          op: data.conditions_op,
-          rules: data.conditions.map((c) => ({
-            type: c.type,
-            value: c.value,
-          })),
-        }
-      : {};
-
+  // Build the canonical conditions JSONB. age_range targeting contributes an age leaf;
+  // step-2 conditions contribute typed leaves. A single leaf is stored bare; 2+ are
+  // wrapped in the chosen composite ({all_of|any_of:[...]}). Empty → {} ("always apply").
+  const leaves: Leaf[] = [];
   if (data.target_type === 'age_range') {
-    conditions = {
-      ...conditions,
-      type: 'age_range',
-      age_from: data.age_from,
-      age_to: data.age_to,
-    };
+    leaves.push({ type: 'age_range', from_months: data.age_from, to_months: data.age_to });
   }
+  for (const c of data.conditions) {
+    const leaf = conditionToLeaf(c);
+    if (leaf) leaves.push(leaf);
+  }
+  let conditions: Record<string, unknown> = {};
+  if (leaves.length === 1) conditions = leaves[0];
+  else if (leaves.length > 1) conditions = { [data.conditions_op]: leaves };
 
   return {
     name: { ru: data.name_ru, kk: data.name_kk },
@@ -238,6 +414,246 @@ function formToBody(data: WizardForm): CreateCustomDiscountBody {
     notification_title: data.notify_on_activation ? { ru: data.push_ru, kk: data.push_kk } : null,
     notification_body: data.notify_on_activation ? { ru: data.push_ru, kk: data.push_kk } : null,
   };
+}
+
+// Renders the value control(s) for a single condition, switching on its type to match the
+// canonical backend leaf schema (op+int / months range / date range / enum multiselect /
+// bare). Used by both the desktop and mobile step-2 builders.
+function ConditionValueEditor({
+  form,
+  idx,
+  t,
+  disabled,
+}: {
+  form: UseFormReturn<WizardForm>;
+  idx: number;
+  t: (key: string, options?: Record<string, unknown>) => string;
+  disabled?: boolean;
+}) {
+  const type = useWatch({ control: form.control, name: `conditions.${idx}.type` });
+  const { errors } = useFormState({ control: form.control, name: `conditions.${idx}` });
+  const condErrors = errors.conditions?.[idx] as
+    | Record<string, { message?: string } | undefined>
+    | undefined;
+
+  const renderErr = (field: string) => {
+    const code = condErrors?.[field]?.message;
+    if (!code) return null;
+    return (
+      <span className="text-[11px] text-[color:var(--danger-fg)]">
+        {t(`discounts.wizard.conditions.errors.${code}`)}
+      </span>
+    );
+  };
+
+  const inputCls =
+    'h-8 rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--bg-elev)] px-2 text-[13px] text-[color:var(--text-1)]';
+
+  if (NUM_OP_TYPES.has(type)) {
+    return (
+      <div className="flex flex-1 flex-col gap-1">
+        <div className="flex items-center gap-2">
+          <select
+            className={inputCls}
+            disabled={disabled}
+            {...form.register(`conditions.${idx}.op`)}
+          >
+            {COMPARISON_OPS.map((op) => (
+              <option key={op} value={op}>
+                {t(`discounts.wizard.conditions.op.${op}`)}
+              </option>
+            ))}
+          </select>
+          <input
+            type="number"
+            min={0}
+            className={cn(inputCls, 'w-24')}
+            disabled={disabled}
+            placeholder={t('discounts.wizard.conditions.num_placeholder')}
+            {...form.register(`conditions.${idx}.num`)}
+          />
+        </div>
+        {renderErr('num')}
+      </div>
+    );
+  }
+
+  if (DAYS_TYPES.has(type)) {
+    return (
+      <div className="flex flex-1 flex-col gap-1">
+        <input
+          type="number"
+          min={0}
+          className={cn(inputCls, 'w-28')}
+          disabled={disabled}
+          placeholder={t('discounts.wizard.conditions.days_placeholder')}
+          {...form.register(`conditions.${idx}.num`)}
+        />
+        {renderErr('num')}
+      </div>
+    );
+  }
+
+  if (type === 'age_range') {
+    return (
+      <div className="flex flex-1 flex-col gap-1">
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min={0}
+            className={cn(inputCls, 'w-20')}
+            disabled={disabled}
+            placeholder={t('discounts.wizard.conditions.months_from')}
+            {...form.register(`conditions.${idx}.from_months`)}
+          />
+          <span className="text-[color:var(--text-4)]">—</span>
+          <input
+            type="number"
+            min={0}
+            className={cn(inputCls, 'w-20')}
+            disabled={disabled}
+            placeholder={t('discounts.wizard.conditions.months_to')}
+            {...form.register(`conditions.${idx}.to_months`)}
+          />
+        </div>
+        {renderErr('from_months')}
+        {renderErr('to_months')}
+      </div>
+    );
+  }
+
+  if (type === 'date_range') {
+    return (
+      <div className="flex flex-1 flex-col gap-1">
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            className={inputCls}
+            disabled={disabled}
+            {...form.register(`conditions.${idx}.date_from`)}
+          />
+          <span className="text-[color:var(--text-4)]">—</span>
+          <input
+            type="date"
+            className={inputCls}
+            disabled={disabled}
+            {...form.register(`conditions.${idx}.date_to`)}
+          />
+        </div>
+        {renderErr('date_from')}
+        {renderErr('date_to')}
+      </div>
+    );
+  }
+
+  if (type in ENUM_TYPE_OPTIONS) {
+    const options = ENUM_TYPE_OPTIONS[type];
+    return (
+      <Controller
+        control={form.control}
+        name={`conditions.${idx}.in`}
+        render={({ field }) => (
+          <div className="flex flex-1 flex-col gap-1">
+            <div className="flex flex-wrap gap-1.5">
+              {options.map((code) => {
+                const selected = field.value.includes(code);
+                return (
+                  <button
+                    key={code}
+                    type="button"
+                    disabled={disabled}
+                    onClick={() =>
+                      field.onChange(
+                        selected ? field.value.filter((x) => x !== code) : [...field.value, code],
+                      )
+                    }
+                    className={cn(
+                      'rounded-full border px-2.5 py-1 text-[12px] font-semibold cursor-pointer',
+                      selected
+                        ? 'border-[var(--primary)] bg-[var(--primary-soft)] text-[color:var(--primary-fg)]'
+                        : 'border-[var(--border)] bg-[var(--bg-elev)] text-[color:var(--text-2)]',
+                    )}
+                  >
+                    {t(`discounts.wizard.conditions.enum.${type}.${code}`)}
+                  </button>
+                );
+              })}
+            </div>
+            {renderErr('in')}
+          </div>
+        )}
+      />
+    );
+  }
+
+  // Bare types (birthday_month, first_invoice) carry no value.
+  return (
+    <span className="flex-1 text-[13px] text-[color:var(--text-4)]">
+      {t('discounts.wizard.conditions.no_value')}
+    </span>
+  );
+}
+
+// Reactive multiselect chips for targeting (groups / children / tariffs). Reads and writes
+// `target_ids` via the form so the selected highlight updates immediately (a plain
+// getValues() read in render is not reactive). Shared by desktop and mobile.
+function TargetChips({
+  form,
+  items,
+  disabled,
+  loading,
+  loadingText,
+  emptyText,
+}: {
+  form: UseFormReturn<WizardForm>;
+  items: Array<{ id: string; label: string }>;
+  disabled?: boolean;
+  loading?: boolean;
+  loadingText: string;
+  emptyText: string;
+}) {
+  const selectedIds = useWatch({ control: form.control, name: 'target_ids' }) ?? [];
+
+  if (loading) {
+    return <p className="text-[12px] text-[color:var(--text-3)]">{loadingText}</p>;
+  }
+  if (items.length === 0) {
+    return <p className="text-[12px] text-[color:var(--text-3)]">{emptyText}</p>;
+  }
+
+  const toggle = (id: string) => {
+    const current = form.getValues('target_ids');
+    form.setValue(
+      'target_ids',
+      current.includes(id) ? current.filter((x) => x !== id) : [...current, id],
+      { shouldValidate: false },
+    );
+  };
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {items.map((it) => {
+        const selected = selectedIds.includes(it.id);
+        return (
+          <button
+            key={it.id}
+            type="button"
+            disabled={disabled}
+            onClick={() => toggle(it.id)}
+            className={cn(
+              'rounded-full border px-3 py-1 text-[12px] font-semibold cursor-pointer',
+              selected
+                ? 'border-[var(--primary)] bg-[var(--primary-soft)] text-[color:var(--primary-fg)]'
+                : 'border-[var(--border)] bg-[var(--bg-elev)] text-[color:var(--text-2)]',
+            )}
+          >
+            {it.label}
+            {selected && <XIcon className="ml-1 inline size-2.5" />}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 interface DiscountWizardPageProps {
@@ -328,8 +744,56 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
   const cancelMutation = useCancelCustomDiscount();
 
   const groupsQuery = useGroups();
-  const childrenQuery = useChildrenList({ status: 'active', limit: 200, offset: 0 });
+  // Full active roster (paged past the backend's 100-cap) so the targeting multiselect
+  // shows every child — a single limit>100 request 422s (ListChildrenQueryDto @Max(100)).
+  const childrenQuery = useAllChildren({ status: 'active' });
   const tariffPlansQuery = useTariffPlansList({ is_active: true });
+
+  const stepFieldMap: Record<number, Array<keyof WizardForm>> = {
+    1: ['name_ru', 'name_kk', 'discount_type', 'amount'],
+    2: ['conditions_op', 'conditions'],
+    3: ['target_type', 'target_ids', 'age_from', 'age_to'],
+    4: ['valid_from'],
+    5: ['priority', 'push_ru', 'push_kk'],
+  };
+
+  // Shared mutation error handler: map 422 field errors, else toast the mapped code.
+  function handleMutationError(err: unknown) {
+    const mapped = mapValidationErrors(err, form.setError);
+    if (!mapped) {
+      toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
+    }
+    console.error(err);
+  }
+
+  // Localised inline error for a top-level field. Our schema attaches i18n codes
+  // ('required' | 'invalid' | 'invalid_range') as messages; anything else → 'invalid'.
+  function fieldError(name: keyof WizardForm): string | undefined {
+    const code = form.formState.errors[name]?.message;
+    if (!code) return undefined;
+    const known = new Set(['required', 'invalid', 'invalid_range', 'invalid_number']);
+    return t(`discounts.wizard.errors.${known.has(code) ? code : 'invalid'}`);
+  }
+
+  // Desktop gate: validate the whole form and, on failure, jump to the first step that
+  // holds an error so the user sees it (the wizard now renders inline errors). Prevents
+  // sending an invalid body (empty push / malformed condition) that would 422.
+  async function validateAllThenJump(): Promise<boolean> {
+    const ok = await form.trigger();
+    if (ok) return true;
+    const errs = form.formState.errors;
+    const firstStep = STEPS.find((s) => stepFieldMap[s.n]?.some((f) => errs[f]))?.n;
+    if (firstStep) setStep(firstStep);
+    return false;
+  }
+
+  async function saveDraftGated() {
+    if (await validateAllThenJump()) handleSaveDraft();
+  }
+
+  async function openActivateConfirm() {
+    if (await validateAllThenJump()) setActivateConfirm(true);
+  }
 
   function handleSaveDraft() {
     const data = form.getValues();
@@ -343,13 +807,7 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
             toast.success(t('discounts.wizard.success_update'));
             navigate('/billing/discounts');
           },
-          onError: (err) => {
-            const mapped = mapValidationErrors(err, form.setError);
-            if (!mapped) {
-              toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
-            }
-            console.error(err);
-          },
+          onError: handleMutationError,
         },
       );
     } else {
@@ -358,13 +816,7 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
           toast.success(t('discounts.wizard.success_create'));
           navigate('/billing/discounts');
         },
-        onError: (err) => {
-          const mapped = mapValidationErrors(err, form.setError);
-          if (!mapped) {
-            toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
-          }
-          console.error(err);
-        },
+        onError: handleMutationError,
       });
     }
   }
@@ -380,19 +832,10 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
               toast.success(t('discounts.wizard.success_activate'));
               navigate('/billing/discounts');
             },
-            onError: (err) => {
-              toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
-              console.error(err);
-            },
+            onError: handleMutationError,
           });
         },
-        onError: (err) => {
-          const mapped = mapValidationErrors(err, form.setError);
-          if (!mapped) {
-            toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
-          }
-          console.error(err);
-        },
+        onError: handleMutationError,
       });
     } else if (discountId) {
       const data = form.getValues();
@@ -406,19 +849,10 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                 toast.success(t('discounts.wizard.success_activate'));
                 navigate('/billing/discounts');
               },
-              onError: (err) => {
-                toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
-                console.error(err);
-              },
+              onError: handleMutationError,
             });
           },
-          onError: (err) => {
-            const mapped = mapValidationErrors(err, form.setError);
-            if (!mapped) {
-              toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
-            }
-            console.error(err);
-          },
+          onError: handleMutationError,
         },
       );
     }
@@ -470,14 +904,6 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
     });
   }
 
-  const stepFieldMap: Record<number, Array<keyof WizardForm>> = {
-    1: ['name_ru', 'name_kk', 'discount_type', 'amount'],
-    2: ['conditions_op', 'conditions'],
-    3: ['target_type', 'target_ids', 'age_from', 'age_to'],
-    4: ['valid_from'],
-    5: ['priority', 'push_ru', 'push_kk'],
-  };
-
   async function handleNext() {
     if (step >= 5) return;
     const fields = stepFieldMap[step];
@@ -492,11 +918,59 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
     createMutation.isPending || updateMutation.isPending || activateMutation.isPending;
 
   const childrenMap = useMemo(
-    () => new Map((childrenQuery.data?.data ?? []).map((c) => [c.id, c.full_name])),
+    () => new Map((childrenQuery.data ?? []).map((c) => [c.id, c.full_name])),
     [childrenQuery.data],
   );
 
-  const MOBILE_TOTAL_STEPS = 4;
+  const lifecycleDialogs = (
+    <>
+      <DestructiveConfirm
+        open={activateConfirm}
+        onOpenChange={setActivateConfirm}
+        title={t('discounts.wizard.activate_confirm.title')}
+        description={
+          watchNotify
+            ? t('discounts.wizard.activate_confirm.description_with_notify')
+            : t('discounts.wizard.activate_confirm.description')
+        }
+        confirmLabel={t('discounts.wizard.activate_confirm.confirm')}
+        onConfirm={handleActivate}
+        loading={isSaving}
+      />
+
+      <DestructiveConfirm
+        open={pauseConfirm}
+        onOpenChange={setPauseConfirm}
+        title={t('discounts.pause_confirm.title')}
+        description={t('discounts.pause_confirm.description')}
+        confirmLabel={t('discounts.actions.pause')}
+        onConfirm={handlePause}
+        loading={pauseMutation.isPending}
+      />
+
+      <DestructiveConfirm
+        open={resumeConfirm}
+        onOpenChange={setResumeConfirm}
+        title={t('discounts.resume_confirm.title')}
+        description={t('discounts.resume_confirm.description')}
+        confirmLabel={t('discounts.actions.resume')}
+        onConfirm={handleResume}
+        loading={resumeMutation.isPending}
+      />
+
+      <DestructiveConfirm
+        open={cancelConfirm}
+        onOpenChange={setCancelConfirm}
+        title={t('discounts.cancel_confirm.title')}
+        description={t('discounts.cancel_confirm.description')}
+        confirmLabel={t('discounts.actions.cancel')}
+        onConfirm={handleCancel}
+        loading={cancelMutation.isPending}
+      />
+    </>
+  );
+
+  const MOBILE_TOTAL_STEPS = 5;
 
   if (isMobile) {
     const mobileStepTitle: Record<number, string> = {
@@ -504,20 +978,13 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
       2: t('mobile.discount_wizard_step2_title'),
       3: t('discounts.wizard.step3'),
       4: t('discounts.wizard.step4'),
+      5: t('discounts.wizard.step5'),
     };
 
     async function handleMobileNext() {
       if (step >= MOBILE_TOTAL_STEPS) {
-        const ok = await form.trigger([
-          'valid_from',
-          'valid_until',
-          'priority',
-          'push_ru',
-          'push_kk',
-          'notify_on_activation',
-        ]);
-        if (!ok) return;
-        handleSaveDraft();
+        // Final step: validate the whole form (jumping to the first bad step) before save.
+        if (await validateAllThenJump()) handleSaveDraft();
         return;
       }
       void handleNext();
@@ -590,12 +1057,22 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                   {t('discounts.wizard.basic.name_ru')}
                 </label>
                 <input className="input" {...form.register('name_ru')} />
+                {fieldError('name_ru') && (
+                  <p className="text-[11px] text-[color:var(--danger-fg)]">
+                    {fieldError('name_ru')}
+                  </p>
+                )}
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
                   {t('discounts.wizard.basic.name_kk')}
                 </label>
                 <input className="input" {...form.register('name_kk')} />
+                {fieldError('name_kk') && (
+                  <p className="text-[11px] text-[color:var(--danger-fg)]">
+                    {fieldError('name_kk')}
+                  </p>
+                )}
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
@@ -615,6 +1092,11 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                   type="number"
                   {...form.register('amount', { valueAsNumber: true })}
                 />
+                {fieldError('amount') && (
+                  <p className="text-[11px] text-[color:var(--danger-fg)]">
+                    {fieldError('amount')}
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -637,7 +1119,15 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                       <label className="text-[11px] font-semibold text-[color:var(--text-3)]">
                         {t('mobile.discount_wizard_field')}
                       </label>
-                      <select className="select" {...form.register(`conditions.${idx}.type`)}>
+                      <select
+                        className="select"
+                        {...form.register(`conditions.${idx}.type`)}
+                        onChange={(e) =>
+                          form.setValue(`conditions.${idx}`, emptyCondition(e.target.value), {
+                            shouldValidate: false,
+                          })
+                        }
+                      >
                         {CONDITION_TYPES.map((ct) => (
                           <option key={ct} value={ct}>
                             {t(`discounts.wizard.conditions.type.${ct}`)}
@@ -649,7 +1139,7 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                       <label className="text-[11px] font-semibold text-[color:var(--text-3)]">
                         {t('mobile.discount_wizard_value')}
                       </label>
-                      <input className="input" {...form.register(`conditions.${idx}.value`)} />
+                      <ConditionValueEditor form={form} idx={idx} t={t} />
                     </div>
                   </div>
                   <button
@@ -670,7 +1160,7 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                   background: 'var(--primary-soft)',
                   color: 'var(--primary-fg)',
                 }}
-                onClick={() => append({ type: CONDITION_TYPES[0], value: '' })}
+                onClick={() => append(emptyCondition(CONDITION_TYPES[0]))}
               >
                 <PlusIcon className="size-4" />
                 {t('mobile.discount_wizard_add_condition')}
@@ -684,7 +1174,14 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                 <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
                   {t('discounts.wizard.targeting.title')}
                 </label>
-                <select className="select" {...form.register('target_type')}>
+                <select
+                  className="select"
+                  {...form.register('target_type')}
+                  onChange={(e) => {
+                    form.setValue('target_type', e.target.value as TargetType);
+                    form.setValue('target_ids', []);
+                  }}
+                >
                   {TARGET_OPTIONS.map((opt) => (
                     <option key={opt.id} value={opt.id}>
                       {t(`discounts.target_type.${opt.id}`)}
@@ -692,6 +1189,89 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                   ))}
                 </select>
               </div>
+
+              {watchTargetType === 'groups' && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                    {t('discounts.wizard.targeting.select_groups')}
+                  </label>
+                  <TargetChips
+                    form={form}
+                    loading={groupsQuery.isLoading}
+                    loadingText={t('discounts.wizard.targeting.loading')}
+                    emptyText={t('discounts.wizard.targeting.empty')}
+                    items={(groupsQuery.data ?? []).map((g) => ({ id: g.id, label: g.name }))}
+                  />
+                </div>
+              )}
+
+              {watchTargetType === 'children' && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                    {t('discounts.wizard.targeting.select_children')}
+                  </label>
+                  <TargetChips
+                    form={form}
+                    loading={childrenQuery.isLoading}
+                    loadingText={t('discounts.wizard.targeting.loading')}
+                    emptyText={t('discounts.wizard.targeting.empty_children')}
+                    items={(childrenQuery.data ?? []).map((c) => ({
+                      id: c.id,
+                      label: c.full_name,
+                    }))}
+                  />
+                </div>
+              )}
+
+              {watchTargetType === 'tariff_types' && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                    {t('discounts.wizard.targeting.select_tariffs')}
+                  </label>
+                  <TargetChips
+                    form={form}
+                    loading={tariffPlansQuery.isLoading}
+                    loadingText={t('discounts.wizard.targeting.loading')}
+                    emptyText={t('discounts.wizard.targeting.empty')}
+                    items={(tariffPlansQuery.data ?? []).map((tp) => ({
+                      id: tp.id,
+                      label: tp.name,
+                    }))}
+                  />
+                </div>
+              )}
+
+              {watchTargetType === 'age_range' && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                      {t('discounts.wizard.targeting.age_from')}
+                    </label>
+                    <input
+                      className="input"
+                      type="number"
+                      min={0}
+                      {...form.register('age_from', { valueAsNumber: true })}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                      {t('discounts.wizard.targeting.age_to')}
+                    </label>
+                    <input
+                      className="input"
+                      type="number"
+                      min={0}
+                      {...form.register('age_to', { valueAsNumber: true })}
+                    />
+                    {fieldError('age_to') && (
+                      <p className="text-[11px] text-[color:var(--danger-fg)]">
+                        {fieldError('age_to')}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -702,6 +1282,11 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                   {t('discounts.wizard.period.valid_from')}
                 </label>
                 <input className="input" type="date" {...form.register('valid_from')} />
+                {fieldError('valid_from') && (
+                  <p className="text-[11px] text-[color:var(--danger-fg)]">
+                    {fieldError('valid_from')}
+                  </p>
+                )}
               </div>
               <div className="flex flex-col gap-1.5">
                 <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
@@ -711,24 +1296,172 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
               </div>
             </div>
           )}
+
+          {step === 5 && (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                  {t('discounts.wizard.priority.priority_label')}
+                </label>
+                <input
+                  className="input"
+                  type="number"
+                  min={0}
+                  {...form.register('priority', { valueAsNumber: true })}
+                />
+                <p className="text-[11px] text-[color:var(--text-3)]">
+                  {t('discounts.wizard.priority.priority_hint')}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex flex-col">
+                  <span className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                    {t('discounts.wizard.priority.stackable_label')}
+                  </span>
+                  <span className="text-[11px] text-[color:var(--text-3)]">
+                    {t('discounts.wizard.priority.stackable_hint')}
+                  </span>
+                </div>
+                <Controller
+                  control={form.control}
+                  name="stackable"
+                  render={({ field }) => (
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  )}
+                />
+              </div>
+
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                  {t('discounts.wizard.priority.notification_title')}
+                </span>
+                <Controller
+                  control={form.control}
+                  name="notify_on_activation"
+                  render={({ field }) => (
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  )}
+                />
+              </div>
+
+              {watchNotify && (
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                    {t('discounts.wizard.priority.notification_text')}
+                  </label>
+                  <Controller
+                    control={form.control}
+                    name="push_ru"
+                    render={({ field: ruField }) => (
+                      <Controller
+                        control={form.control}
+                        name="push_kk"
+                        render={({ field: kkField }) => (
+                          <PairedI18nField
+                            value={{ ru: ruField.value, kk: kkField.value }}
+                            onChange={(v) => {
+                              ruField.onChange(v.ru);
+                              kkField.onChange(v.kk);
+                            }}
+                            as="textarea"
+                            placeholder={t('discounts.wizard.priority.notification_placeholder')}
+                            rows={3}
+                          />
+                        )}
+                      />
+                    )}
+                  />
+                  {(fieldError('push_ru') || fieldError('push_kk')) && (
+                    <p className="text-[11px] text-[color:var(--danger-fg)]">
+                      {t('discounts.wizard.errors.push_required')}
+                    </p>
+                  )}
+                  <div className="flex gap-3 rounded-[var(--r-md)] border border-[var(--warning-soft-border)] bg-[var(--warning-soft)] p-3">
+                    <p className="text-[12px] text-[color:var(--warning-text)]">
+                      {t('discounts.wizard.priority.notification_warning')}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        <StickyBottomBar>
-          <button type="button" className="m-btn" style={{ flex: 1 }} onClick={handleMobileBack}>
-            {t('mobile.discount_wizard_prev')}
-          </button>
-          <button
-            type="button"
-            className="m-btn primary"
-            style={{ flex: 2 }}
-            onClick={handleMobileNext}
-            disabled={isSaving}
-          >
-            {step < MOBILE_TOTAL_STEPS
-              ? t('mobile.discount_wizard_next')
-              : t('discounts.wizard.save_draft')}
-          </button>
-        </StickyBottomBar>
+        {!isReadOnly && (
+          <StickyBottomBar>
+            <button type="button" className="m-btn" style={{ flex: 1 }} onClick={handleMobileBack}>
+              {t('mobile.discount_wizard_prev')}
+            </button>
+            <button
+              type="button"
+              className="m-btn primary"
+              style={{ flex: 2 }}
+              onClick={handleMobileNext}
+              disabled={isSaving}
+            >
+              {step < MOBILE_TOTAL_STEPS
+                ? t('mobile.discount_wizard_next')
+                : t('discounts.wizard.save_draft')}
+            </button>
+          </StickyBottomBar>
+        )}
+
+        {isReadOnly && (
+          <StickyBottomBar>
+            {discount?.status === 'draft' && (
+              <button
+                type="button"
+                className="m-btn primary"
+                style={{ flex: 1 }}
+                onClick={() => setActivateConfirm(true)}
+                disabled={isSaving}
+                aria-label={t('discounts.actions.activate')}
+              >
+                <PlayIcon className="size-4" />
+                {t('discounts.actions.activate')}
+              </button>
+            )}
+            {discount?.status === 'active' && (
+              <button
+                type="button"
+                className="m-btn"
+                style={{ flex: 1 }}
+                onClick={() => setPauseConfirm(true)}
+                aria-label={t('discounts.actions.pause')}
+              >
+                <PauseIcon className="size-4" />
+                {t('discounts.actions.pause')}
+              </button>
+            )}
+            {discount?.status === 'paused' && (
+              <button
+                type="button"
+                className="m-btn primary"
+                style={{ flex: 1 }}
+                onClick={() => setResumeConfirm(true)}
+                aria-label={t('discounts.actions.resume')}
+              >
+                <RotateCcwIcon className="size-4" />
+                {t('discounts.actions.resume')}
+              </button>
+            )}
+            {(discount?.status === 'active' || discount?.status === 'paused') && (
+              <button
+                type="button"
+                className="m-btn"
+                style={{ flex: 1, color: 'var(--danger-fg)' }}
+                onClick={() => setCancelConfirm(true)}
+                aria-label={t('discounts.actions.cancel')}
+              >
+                <Trash2Icon className="size-4" />
+                {t('discounts.actions.cancel')}
+              </button>
+            )}
+          </StickyBottomBar>
+        )}
+
+        {lifecycleDialogs}
       </>
     );
   }
@@ -772,10 +1505,10 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
         <div className="flex gap-2">
           {!isReadOnly && (
             <>
-              <Button variant="outline" onClick={handleSaveDraft} disabled={isSaving}>
+              <Button variant="outline" onClick={saveDraftGated} disabled={isSaving}>
                 {t('discounts.wizard.save_draft')}
               </Button>
-              <Button onClick={() => setActivateConfirm(true)} disabled={isSaving}>
+              <Button onClick={openActivateConfirm} disabled={isSaving}>
                 <PlayIcon className="size-4" />
                 {t('discounts.wizard.activate')}
               </Button>
@@ -857,6 +1590,11 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                     placeholder={t('discounts.wizard.basic.name_placeholder_ru')}
                     disabled={isReadOnly}
                   />
+                  {fieldError('name_ru') && (
+                    <p className="text-[11px] text-[color:var(--danger-fg)]">
+                      {fieldError('name_ru')}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
@@ -868,6 +1606,11 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                     placeholder={t('discounts.wizard.basic.name_placeholder_kk')}
                     disabled={isReadOnly}
                   />
+                  {fieldError('name_kk') && (
+                    <p className="text-[11px] text-[color:var(--danger-fg)]">
+                      {fieldError('name_kk')}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-col gap-1.5">
                   <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
@@ -937,11 +1680,17 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                       {...form.register('amount', { valueAsNumber: true })}
                       disabled={isReadOnly}
                     />
-                    <p className="text-[11px] text-[color:var(--text-3)]">
-                      {watchDiscountType === 'percentage'
-                        ? t('discounts.wizard.basic.amount_hint_percentage')
-                        : t('discounts.wizard.basic.amount_hint_fixed')}
-                    </p>
+                    {fieldError('amount') ? (
+                      <p className="text-[11px] text-[color:var(--danger-fg)]">
+                        {fieldError('amount')}
+                      </p>
+                    ) : (
+                      <p className="text-[11px] text-[color:var(--text-3)]">
+                        {watchDiscountType === 'percentage'
+                          ? t('discounts.wizard.basic.amount_hint_percentage')
+                          : t('discounts.wizard.basic.amount_hint_fixed')}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -998,17 +1747,21 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                           : t('discounts.wizard.conditions.or')}
                       </div>
                     )}
-                    <div className="flex items-center gap-2 rounded-[var(--r-md)] border border-[var(--line)] bg-[var(--bg-sunken)] p-2">
+                    <div className="flex items-start gap-2 rounded-[var(--r-md)] border border-[var(--line)] bg-[var(--bg-sunken)] p-2">
                       <Controller
                         control={form.control}
                         name={`conditions.${idx}.type`}
                         render={({ field: typeField }) => (
                           <Select
                             value={typeField.value}
-                            onValueChange={typeField.onChange}
+                            onValueChange={(v) =>
+                              form.setValue(`conditions.${idx}`, emptyCondition(v), {
+                                shouldValidate: false,
+                              })
+                            }
                             disabled={isReadOnly}
                           >
-                            <SelectTrigger size="sm" className="w-[200px]">
+                            <SelectTrigger size="sm" className="mt-px w-[200px] shrink-0">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -1021,13 +1774,8 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                           </Select>
                         )}
                       />
-                      <ArrowRightIcon className="size-3.5 shrink-0 text-[color:var(--text-4)]" />
-                      <Input
-                        {...form.register(`conditions.${idx}.value`)}
-                        placeholder={t('discounts.wizard.conditions.value_placeholder')}
-                        className="h-8 text-[13px]"
-                        disabled={isReadOnly}
-                      />
+                      <ArrowRightIcon className="mt-2 size-3.5 shrink-0 text-[color:var(--text-4)]" />
+                      <ConditionValueEditor form={form} idx={idx} t={t} disabled={isReadOnly} />
                       {!isReadOnly && (
                         <Button type="button" variant="ghost" size="sm" onClick={() => remove(idx)}>
                           <XIcon className="size-3.5 text-[color:var(--danger-fg)]" />
@@ -1041,7 +1789,7 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => append({ type: 'siblings_count', value: '' })}
+                    onClick={() => append(emptyCondition('siblings_count'))}
                   >
                     <PlusIcon className="size-3.5" />
                     {t('discounts.wizard.conditions.add')}
@@ -1096,34 +1844,14 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                   <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
                     {t('discounts.wizard.targeting.select_groups')}
                   </Label>
-                  <div className="flex flex-wrap gap-2">
-                    {(groupsQuery.data ?? []).map((g) => {
-                      const selected = form.getValues('target_ids').includes(g.id);
-                      return (
-                        <button
-                          key={g.id}
-                          type="button"
-                          disabled={isReadOnly}
-                          onClick={() => {
-                            const current = form.getValues('target_ids');
-                            form.setValue(
-                              'target_ids',
-                              selected ? current.filter((x) => x !== g.id) : [...current, g.id],
-                            );
-                          }}
-                          className={cn(
-                            'rounded-full border px-3 py-1 text-[12px] font-semibold cursor-pointer',
-                            selected
-                              ? 'border-[var(--primary)] bg-[var(--primary-soft)] text-[color:var(--primary-fg)]'
-                              : 'border-[var(--border)] bg-[var(--bg-elev)] text-[color:var(--text-2)]',
-                          )}
-                        >
-                          {g.name}
-                          {selected && <XIcon className="ml-1 inline size-2.5" />}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <TargetChips
+                    form={form}
+                    disabled={isReadOnly}
+                    loading={groupsQuery.isLoading}
+                    loadingText={t('discounts.wizard.targeting.loading')}
+                    emptyText={t('discounts.wizard.targeting.empty')}
+                    items={(groupsQuery.data ?? []).map((g) => ({ id: g.id, label: g.name }))}
+                  />
                 </div>
               )}
 
@@ -1132,34 +1860,17 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                   <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
                     {t('discounts.wizard.targeting.select_children')}
                   </Label>
-                  <div className="flex flex-wrap gap-2">
-                    {(childrenQuery.data?.data ?? []).map((c) => {
-                      const selected = form.getValues('target_ids').includes(c.id);
-                      return (
-                        <button
-                          key={c.id}
-                          type="button"
-                          disabled={isReadOnly}
-                          onClick={() => {
-                            const current = form.getValues('target_ids');
-                            form.setValue(
-                              'target_ids',
-                              selected ? current.filter((x) => x !== c.id) : [...current, c.id],
-                            );
-                          }}
-                          className={cn(
-                            'rounded-full border px-3 py-1 text-[12px] font-semibold cursor-pointer',
-                            selected
-                              ? 'border-[var(--primary)] bg-[var(--primary-soft)] text-[color:var(--primary-fg)]'
-                              : 'border-[var(--border)] bg-[var(--bg-elev)] text-[color:var(--text-2)]',
-                          )}
-                        >
-                          {c.full_name}
-                          {selected && <XIcon className="ml-1 inline size-2.5" />}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <TargetChips
+                    form={form}
+                    disabled={isReadOnly}
+                    loading={childrenQuery.isLoading}
+                    loadingText={t('discounts.wizard.targeting.loading')}
+                    emptyText={t('discounts.wizard.targeting.empty_children')}
+                    items={(childrenQuery.data ?? []).map((c) => ({
+                      id: c.id,
+                      label: c.full_name,
+                    }))}
+                  />
                 </div>
               )}
 
@@ -1168,34 +1879,17 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                   <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
                     {t('discounts.wizard.targeting.select_tariffs')}
                   </Label>
-                  <div className="flex flex-wrap gap-2">
-                    {(tariffPlansQuery.data ?? []).map((tp) => {
-                      const selected = form.getValues('target_ids').includes(tp.id);
-                      return (
-                        <button
-                          key={tp.id}
-                          type="button"
-                          disabled={isReadOnly}
-                          onClick={() => {
-                            const current = form.getValues('target_ids');
-                            form.setValue(
-                              'target_ids',
-                              selected ? current.filter((x) => x !== tp.id) : [...current, tp.id],
-                            );
-                          }}
-                          className={cn(
-                            'rounded-full border px-3 py-1 text-[12px] font-semibold cursor-pointer',
-                            selected
-                              ? 'border-[var(--primary)] bg-[var(--primary-soft)] text-[color:var(--primary-fg)]'
-                              : 'border-[var(--border)] bg-[var(--bg-elev)] text-[color:var(--text-2)]',
-                          )}
-                        >
-                          {tp.name}
-                          {selected && <XIcon className="ml-1 inline size-2.5" />}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <TargetChips
+                    form={form}
+                    disabled={isReadOnly}
+                    loading={tariffPlansQuery.isLoading}
+                    loadingText={t('discounts.wizard.targeting.loading')}
+                    emptyText={t('discounts.wizard.targeting.empty')}
+                    items={(tariffPlansQuery.data ?? []).map((tp) => ({
+                      id: tp.id,
+                      label: tp.name,
+                    }))}
+                  />
                 </div>
               )}
 
@@ -1222,6 +1916,11 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                       {...form.register('age_to', { valueAsNumber: true })}
                       disabled={isReadOnly}
                     />
+                    {fieldError('age_to') && (
+                      <p className="text-[11px] text-[color:var(--danger-fg)]">
+                        {fieldError('age_to')}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -1242,6 +1941,11 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                       <span className="text-[color:var(--danger)]"> *</span>
                     </Label>
                     <Input type="date" {...form.register('valid_from')} disabled={isReadOnly} />
+                    {fieldError('valid_from') && (
+                      <p className="text-[11px] text-[color:var(--danger-fg)]">
+                        {fieldError('valid_from')}
+                      </p>
+                    )}
                   </div>
                   <div className="flex flex-col gap-1.5">
                     <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
@@ -1386,6 +2090,11 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                           />
                         )}
                       />
+                      {(fieldError('push_ru') || fieldError('push_kk')) && (
+                        <p className="text-[11px] text-[color:var(--danger-fg)]">
+                          {t('discounts.wizard.errors.push_required')}
+                        </p>
+                      )}
                     </div>
                     <div className="flex gap-3 rounded-[var(--r-md)] border border-[var(--warning-soft-border)] bg-[var(--warning-soft)] p-3">
                       <p className="text-[12px] text-[color:var(--warning-text)]">
@@ -1406,7 +2115,7 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
             </Button>
             <div className="flex gap-2">
               {!isReadOnly && (
-                <Button variant="outline" onClick={handleSaveDraft} disabled={isSaving}>
+                <Button variant="outline" onClick={saveDraftGated} disabled={isSaving}>
                   {t('discounts.wizard.save_draft')}
                 </Button>
               )}
@@ -1417,7 +2126,7 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
                 </Button>
               ) : (
                 !isReadOnly && (
-                  <Button onClick={() => setActivateConfirm(true)} disabled={isSaving}>
+                  <Button onClick={openActivateConfirm} disabled={isSaving}>
                     {t('discounts.wizard.finish')}
                   </Button>
                 )
@@ -1541,50 +2250,7 @@ export default function DiscountWizardPage({ mode, discountId }: DiscountWizardP
         </div>
       </div>
 
-      {/* Confirm dialogs */}
-      <DestructiveConfirm
-        open={activateConfirm}
-        onOpenChange={setActivateConfirm}
-        title={t('discounts.wizard.activate_confirm.title')}
-        description={
-          watchNotify
-            ? t('discounts.wizard.activate_confirm.description_with_notify')
-            : t('discounts.wizard.activate_confirm.description')
-        }
-        confirmLabel={t('discounts.wizard.activate_confirm.confirm')}
-        onConfirm={handleActivate}
-        loading={isSaving}
-      />
-
-      <DestructiveConfirm
-        open={pauseConfirm}
-        onOpenChange={setPauseConfirm}
-        title={t('discounts.pause_confirm.title')}
-        description={t('discounts.pause_confirm.description')}
-        confirmLabel={t('discounts.actions.pause')}
-        onConfirm={handlePause}
-        loading={pauseMutation.isPending}
-      />
-
-      <DestructiveConfirm
-        open={resumeConfirm}
-        onOpenChange={setResumeConfirm}
-        title={t('discounts.resume_confirm.title')}
-        description={t('discounts.resume_confirm.description')}
-        confirmLabel={t('discounts.actions.resume')}
-        onConfirm={handleResume}
-        loading={resumeMutation.isPending}
-      />
-
-      <DestructiveConfirm
-        open={cancelConfirm}
-        onOpenChange={setCancelConfirm}
-        title={t('discounts.cancel_confirm.title')}
-        description={t('discounts.cancel_confirm.description')}
-        confirmLabel={t('discounts.actions.cancel')}
-        onConfirm={handleCancel}
-        loading={cancelMutation.isPending}
-      />
+      {lifecycleDialogs}
     </div>
   );
 }

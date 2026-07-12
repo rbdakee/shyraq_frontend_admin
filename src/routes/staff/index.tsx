@@ -34,12 +34,13 @@ import { mapValidationErrors } from '@/components/forms/map-validation-errors';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
 import { useStaffList, useCreateStaff } from '@/hooks/use-staff';
 import { useGroups, useAssignGroupMentor } from '@/hooks/use-groups';
+import { useSpecialistTypes } from '@/hooks/use-specialist-types';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { cn } from '@/lib/cn';
 import { formatPhone, getInitials } from '@/lib/format';
+import { specialistTypeLabel } from '@/lib/specialist-type';
 import { toI18nKey } from '@/lib/error-map';
-import { SEARCH_DEBOUNCE_MS, SPECIALIST_TYPES } from '@/lib/constants';
-import type { SpecialistType } from '@/lib/constants';
+import { SEARCH_DEBOUNCE_MS } from '@/lib/constants';
 
 type StaffListData = NonNullable<ReturnType<typeof useStaffList>['data']>;
 type StaffMember = StaffListData[number];
@@ -67,9 +68,12 @@ const CreateStaffSchema = z.object({
 type CreateStaffForm = z.infer<typeof CreateStaffSchema>;
 
 export default function StaffListPage() {
-  const { t } = useTranslation('staff');
+  const { t, i18n } = useTranslation('staff');
+  const locale = i18n.language;
   const navigate = useNavigate();
   const { isMobile } = useBreakpoint();
+  const specTypesQuery = useSpecialistTypes();
+  const activeSpecTypes = useMemo(() => specTypesQuery.data ?? [], [specTypesQuery.data]);
 
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [activeFilter, setActiveFilter] = useState<string>('all');
@@ -92,7 +96,7 @@ export default function StaffListPage() {
     () => ({
       role: roleFilter !== 'all' ? (roleFilter as StaffRole) : undefined,
       is_active: activeFilter !== 'all' ? activeFilter === 'active' : undefined,
-      specialist_type: specFilter !== 'all' ? (specFilter as SpecialistType) : undefined,
+      specialist_type: specFilter !== 'all' ? specFilter : undefined,
       search: debouncedSearch || undefined,
     }),
     [roleFilter, activeFilter, specFilter, debouncedSearch],
@@ -163,7 +167,7 @@ export default function StaffListPage() {
         header: () => t('columns.specialist_type'),
         cell: ({ row }) =>
           row.original.specialist_type ? (
-            t(`specialist_type.${row.original.specialist_type}`)
+            specialistTypeLabel(row.original.specialist_type, activeSpecTypes, locale)
           ) : (
             <span className="text-[color:var(--text-4)]">{'—'}</span>
           ),
@@ -183,7 +187,7 @@ export default function StaffListPage() {
         ),
       },
     ],
-    [t],
+    [t, activeSpecTypes, locale],
   );
 
   const rowActions = useMemo(
@@ -236,9 +240,9 @@ export default function StaffListPage() {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">{t('filters.all_specialties')}</SelectItem>
-          {SPECIALIST_TYPES.map((st) => (
-            <SelectItem key={st} value={st}>
-              {t(`specialist_type.${st}`)}
+          {activeSpecTypes.map((st) => (
+            <SelectItem key={st.code} value={st.code}>
+              {specialistTypeLabel(st.code, activeSpecTypes, locale)}
             </SelectItem>
           ))}
         </SelectContent>
@@ -413,10 +417,13 @@ function CreateStaffModal({
   onOpenChange: (open: boolean) => void;
   groups: GroupItem[];
 }) {
-  const { t } = useTranslation('staff');
+  const { t, i18n } = useTranslation('staff');
+  const locale = i18n.language;
   const tErrors = useTranslation('errors').t;
   const navigate = useNavigate();
   const createStaff = useCreateStaff();
+  const specTypesQuery = useSpecialistTypes();
+  const activeSpecTypes = specTypesQuery.data ?? [];
 
   const [selectedGroupId, setSelectedGroupId] = useState('');
   const [currentRole, setCurrentRole] = useState<string>('mentor');
@@ -447,9 +454,7 @@ function CreateStaffModal({
       phone: data.phone,
       role: data.role,
       specialist_type:
-        data.role === 'specialist' && data.specialist_type
-          ? (data.specialist_type as SpecialistType)
-          : undefined,
+        data.role === 'specialist' && data.specialist_type ? data.specialist_type : undefined,
       hired_at: data.hired_at || undefined,
     };
 
@@ -615,9 +620,9 @@ function CreateStaffModal({
                       <SelectValue placeholder={t('create.specialist_type_placeholder')} />
                     </SelectTrigger>
                     <SelectContent>
-                      {SPECIALIST_TYPES.map((st) => (
-                        <SelectItem key={st} value={st}>
-                          {t(`specialist_type.${st}`)}
+                      {activeSpecTypes.map((st) => (
+                        <SelectItem key={st.code} value={st.code}>
+                          {specialistTypeLabel(st.code, activeSpecTypes, locale)}
                         </SelectItem>
                       ))}
                     </SelectContent>

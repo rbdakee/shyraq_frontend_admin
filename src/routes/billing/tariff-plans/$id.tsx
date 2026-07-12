@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { ChevronRightIcon, BanIcon } from 'lucide-react';
+import { ChevronRightIcon, BanIcon, PencilIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +16,7 @@ import { formatMoney, formatDate } from '@/lib/format';
 import { toI18nKey } from '@/lib/error-map';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
 import { TARIFF_TYPE_BADGE } from './tariff-plan-constants';
+import { EditTariffPlanModal } from './tariff-plan-form';
 
 export default function TariffPlanDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -29,6 +30,7 @@ export default function TariffPlanDetailPage() {
   useBreadcrumbLabel(id, plan?.name);
 
   const [deactivateOpen, setDeactivateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const deactivateMutation = useDeactivateTariffPlan(id ?? '');
 
   function handleDeactivate() {
@@ -115,14 +117,18 @@ export default function TariffPlanDetailPage() {
             </div>
           </div>
         </div>
-        {plan.is_active && (
-          <div className="flex justify-end gap-2 border-t border-[var(--line)] px-5 py-3">
+        <div className="flex justify-end gap-2 border-t border-[var(--line)] px-5 py-3">
+          <Button variant="outline" onClick={() => setEditOpen(true)}>
+            <PencilIcon className="size-4" />
+            {t('tariff_plans.edit.button')}
+          </Button>
+          {plan.is_active && (
             <Button variant="destructive" onClick={() => setDeactivateOpen(true)}>
               <BanIcon className="size-4" />
               {t('tariff_plans.deactivate.button')}
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Two-column layout */}
@@ -278,6 +284,9 @@ export default function TariffPlanDetailPage() {
         onConfirm={handleDeactivate}
         loading={deactivateMutation.isPending}
       />
+
+      {/* Edit modal — remounts on each open so defaultValues track the latest plan */}
+      {editOpen && <EditTariffPlanModal plan={plan} onClose={() => setEditOpen(false)} />}
     </div>
   );
 }

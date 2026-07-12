@@ -10,7 +10,12 @@ import { EmptyState } from '@/components/feedback/empty-state';
 import { ErrorState } from '@/components/feedback/error-state';
 import { SkeletonBox } from '@/components/feedback/skeleton';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
-import { useGroups, useGroupChildren, useGroupActiveMentor } from '@/hooks/use-groups';
+import {
+  useGroups,
+  useGroupChildren,
+  useGroupActiveMentor,
+  useGroupsChildrenCounts,
+} from '@/hooks/use-groups';
 import { useStaff } from '@/hooks/use-staff';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { cn } from '@/lib/cn';
@@ -142,7 +147,7 @@ function MobileGroupCard({
   const mentorQuery = useGroupActiveMentor(group.id);
   const mentorStaffId = mentorQuery.data?.staff_member_id;
 
-  const kids = childrenQuery.data?.data.length ?? 0;
+  const kids = childrenQuery.data?.meta.total ?? 0;
   const pct = group.capacity > 0 ? Math.min(100, (kids / group.capacity) * 100) : 0;
   const isOver = kids > group.capacity;
 
@@ -213,6 +218,7 @@ export default function GroupsListPage() {
 
   const groupsQuery = useGroups({ archived: false });
   const groups = groupsQuery.data ?? [];
+  const { totalChildren, overflowCount } = useGroupsChildrenCounts(groups);
 
   if (groupsQuery.isPending) {
     return (
@@ -268,9 +274,6 @@ export default function GroupsListPage() {
       </div>
     );
   }
-
-  const totalChildren = 0;
-  const overflowCount = 0;
 
   if (isMobile) {
     return (
