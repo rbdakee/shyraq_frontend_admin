@@ -49,6 +49,19 @@ export function effectiveMonthlyAmount(a: AssignmentLike, plan: PlanLike): numbe
 }
 
 /**
+ * Shifts a YYYY-MM-DD date by `days` (may be negative) and returns YYYY-MM-DD.
+ * Anchored at UTC midnight so month/year rollovers are correct and the result
+ * is timezone-independent. Used by the "replace tariff" flow to close the
+ * outgoing assignment the day before the replacement takes effect.
+ */
+export function addDaysIso(isoDate: string, days: number): string {
+  const [year, month, day] = dateKey(isoDate).split('-').map(Number);
+  const dt = new Date(Date.UTC(year, month - 1, day));
+  dt.setUTCDate(dt.getUTCDate() + days);
+  return dt.toISOString().slice(0, 10);
+}
+
+/**
  * First calendar day of the month after `isoDate` (YYYY-MM-DD), as YYYY-MM-01.
  * Computed by string arithmetic to stay timezone-independent.
  */

@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { type ColumnDef } from '@tanstack/react-table';
-import { PlusIcon, XCircleIcon, InfoIcon, ArrowRightIcon } from 'lucide-react';
+import { PlusIcon, XCircleIcon, InfoIcon, ArrowRightIcon, RefreshCwIcon } from 'lucide-react';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import TariffMobile from '@/routes/billing/tariff-mobile';
 
@@ -44,6 +44,7 @@ import { useAllChildren } from '@/hooks/use-children';
 import { formatMoney, formatDate } from '@/lib/format';
 import { toI18nKey } from '@/lib/error-map';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
+import { ReplaceAssignmentModal } from './replace-assignment-modal';
 
 const CreateAssignmentSchema = z.object({
   child_id: z.string().min(1),
@@ -66,6 +67,7 @@ export default function TariffAssignmentsListPage() {
 
   const [activeFilter, setActiveFilter] = useState<string>('active');
   const [closeId, setCloseId] = useState<string | null>(null);
+  const [replaceTarget, setReplaceTarget] = useState<TariffAssignmentResponseDto | null>(null);
 
   const [deepLinkChild] = useState<string | null>(() => searchParams.get('child'));
   const [createOpen, setCreateOpen] = useState(!!deepLinkChild);
@@ -183,6 +185,11 @@ export default function TariffAssignmentsListPage() {
   const rowActions = useMemo(
     () => [
       {
+        label: t('tariff_assignments.replace.button'),
+        icon: <RefreshCwIcon className="size-4" />,
+        onClick: (row: TariffAssignmentResponseDto) => setReplaceTarget(row),
+      },
+      {
         label: t('tariff_assignments.close.button'),
         icon: <XCircleIcon className="size-4" />,
         onClick: (row: TariffAssignmentResponseDto) => setCloseId(row.id),
@@ -283,6 +290,15 @@ export default function TariffAssignmentsListPage() {
           cancelLabel={t('tariff_assignments.close.cancel')}
           onConfirm={() => handleClose(closeId)}
           loading={closeMutation.isPending}
+        />
+      )}
+
+      {replaceTarget && (
+        <ReplaceAssignmentModal
+          assignment={replaceTarget}
+          childName={childrenMap.get(replaceTarget.child_id)}
+          currentPlanName={plansMap.get(replaceTarget.tariff_plan_id)?.name}
+          onClose={() => setReplaceTarget(null)}
         />
       )}
     </div>
