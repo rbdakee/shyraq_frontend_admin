@@ -42,6 +42,7 @@ import {
 import { DestructiveConfirm } from '@/components/feedback/destructive-confirm';
 import { ErrorState } from '@/components/feedback/error-state';
 import { FieldErrorDisplay } from '@/components/forms/form-error';
+import { PhoneInput } from '@/components/forms/phone-input';
 import { mapValidationErrors } from '@/components/forms/map-validation-errors';
 import {
   useChildGuardians,
@@ -379,12 +380,27 @@ export default function GuardiansTab({ childId }: { childId: string }) {
               <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
                 {t('modals.invite_guardian.phone_label')}
               </Label>
-              <Input
-                {...inviteForm.register('user_phone')}
-                placeholder={t('modals.invite_guardian.phone_placeholder')}
+              <Controller
+                control={inviteForm.control}
+                name="user_phone"
+                render={({ field }) => (
+                  <PhoneInput
+                    value={field.value ?? ''}
+                    // PhoneInput emits a bare `+7` when the field is cleared —
+                    // normalise it to empty so the phone-or-user_id XOR treats
+                    // an untouched/cleared field as "no phone".
+                    onChange={(e164) => field.onChange(e164 === '+7' ? '' : e164)}
+                    hasError={!!inviteForm.formState.errors.user_phone}
+                    placeholder={t('modals.invite_guardian.phone_placeholder')}
+                  />
+                )}
               />
               {inviteForm.formState.errors.user_phone && (
-                <FieldErrorDisplay message={t('modals.invite_guardian.xor_error')} />
+                <FieldErrorDisplay
+                  message={t(
+                    `modals.invite_guardian.${inviteForm.formState.errors.user_phone.message ?? 'xor_error'}`,
+                  )}
+                />
               )}
             </div>
 

@@ -3,6 +3,9 @@ import { z } from 'zod';
 export type GuardianRole = 'primary' | 'secondary' | 'nanny';
 export type GuardianStatus = 'pending_approval' | 'approved' | 'rejected' | 'revoked';
 
+// KZ E.164: `+7` followed by 10 digits (matches the PhoneInput mask output).
+const KZ_E164_RE = /^\+7\d{10}$/;
+
 export const InviteGuardianSchema = z
   .object({
     user_phone: z.string().optional(),
@@ -10,17 +13,27 @@ export const InviteGuardianSchema = z
     role: z.enum(['primary', 'secondary', 'nanny']),
     can_pickup: z.boolean(),
   })
-  .refine(
-    (data) => {
-      const hasPhone = !!data.user_phone;
-      const hasId = !!data.user_id;
-      return (hasPhone || hasId) && !(hasPhone && hasId);
-    },
-    {
-      path: ['user_phone'],
-      message: 'invite_guardian_xor',
-    },
-  );
+  // `message` values are i18n subkeys under `modals.invite_guardian.*` so the
+  // field can surface the specific reason (XOR vs bad phone format).
+  .superRefine((data, ctx) => {
+    const hasPhone = !!data.user_phone;
+    const hasId = !!data.user_id;
+    if (!(hasPhone || hasId) || (hasPhone && hasId)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['user_phone'],
+        message: 'xor_error',
+      });
+      return;
+    }
+    if (hasPhone && !KZ_E164_RE.test(data.user_phone!)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['user_phone'],
+        message: 'invalid_phone',
+      });
+    }
+  });
 
 export type InviteGuardianForm = z.infer<typeof InviteGuardianSchema>;
 
