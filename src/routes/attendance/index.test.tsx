@@ -55,6 +55,10 @@ vi.mock('@/hooks/use-attendance', () => ({
     refetch: vi.fn(),
   }),
   usePatchAttendanceEvent: () => ({ mutate: vi.fn(), isPending: false }),
+  useDeleteAttendanceEvent: () => ({ mutate: vi.fn(), isPending: false }),
+  useAttendanceEventHistory: () => ({ data: [], isPending: false, isError: false }),
+  useCheckIn: () => ({ mutate: vi.fn(), isPending: false }),
+  useCheckOut: () => ({ mutate: vi.fn(), isPending: false }),
   useDailyStatuses: () => ({ data: [], isPending: false, isError: false }),
   EventTypeEnum: {
     enum: { check_in: 'check_in', check_out: 'check_out' },
@@ -88,8 +92,12 @@ vi.mock('@/hooks/use-dashboard', () => ({
 }));
 
 vi.mock('@/hooks/use-children', () => ({
-  useChildrenList: () => ({
-    data: { data: [], meta: { total: 0, limit: 500, offset: 0 } },
+  useAllChildren: () => ({
+    data: [],
+    isPending: false,
+  }),
+  useChildGuardians: () => ({
+    data: [],
     isPending: false,
   }),
 }));
@@ -126,10 +134,11 @@ describe('AttendancePage', () => {
     expect(screen.getByText('mobile_by_groups')).toBeDefined();
   });
 
-  it('renders desktop journal with page header', () => {
+  it('renders desktop journal with page header and add-mark button', () => {
     breakpointState.isMobile = false;
     render(<AttendancePage />, { wrapper: Wrapper });
 
     expect(screen.getAllByText('events_title').length).toBeGreaterThan(0);
+    expect(screen.getByText('journal.add_mark')).toBeDefined();
   });
 });

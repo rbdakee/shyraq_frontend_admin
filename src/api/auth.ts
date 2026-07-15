@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { apiClient } from './client';
+import { getDeviceId } from '@/lib/device-id';
 
 // App-aware auth (backend CHANGELOG 2026-06-03): each client tells the backend which
 // app it logs into, and gets a token scoped strictly to it. Admin Web is always 'admin'.
@@ -89,8 +90,8 @@ export async function verifyOtp(
 export async function selectRole(params: { kindergarten_id: string }): Promise<AuthResponse> {
   const raw: unknown = await apiClient
     .post('auth/role/select', {
-      // role is no longer sent — backend derives it from the audience-scoped token (CHANGELOG §6).
       json: { kindergartenId: params.kindergarten_id },
+      headers: { 'X-Device-Id': getDeviceId() },
     })
     .json();
   return AuthResponseSchema.parse(raw);

@@ -3,6 +3,52 @@
   "events_title": "Журнал событий",
   "daily_status_title": "Дневные статусы",
 
+  "tab_journal": "Журнал",
+  "tab_daily_status": "Дневной статус",
+  "tab_checkin": "Вход/выход",
+
+  "checkin": {
+    "startCamera": "Включить камеру",
+    "pause": "Пауза",
+    "resume": "Продолжить",
+    "manualMark": "Отметить вручную",
+    "camera": "Камера {{n}}",
+    "placeholder": {
+      "title": "Ожидание скана",
+      "text": "Наведите камеру на QR-код родителя, чтобы начать отметку"
+    },
+    "status": {
+      "pointQr": "Наведите QR родителя",
+      "cameraOff": "Камера выключена",
+      "starting": "Запуск камеры…",
+      "recognizing": "Распознаю…",
+      "paused": "Камера на паузе",
+      "denied": "Доступ к камере запрещён",
+      "noDevice": "Камера не найдена",
+      "rateLimit": "Слишком много сканов, подождите {{seconds}} сек"
+    },
+    "error": {
+      "deniedTitle": "Доступ к камере запрещён",
+      "deniedText": "Разрешите доступ к камере в настройках браузера и обновите страницу",
+      "noDeviceTitle": "Камера не найдена",
+      "noDeviceText": "Подключите камеру к устройству и попробуйте снова"
+    },
+    "hint": {
+      "inKindergartenSince": "В саду с {{time}}",
+      "leftAt": "Ушёл в {{time}}",
+      "notArrivedYet": "Ещё не приходил"
+    },
+    "noPickupRights": "У этого родителя нет права забирать ребёнка — кнопки отметки отключены",
+    "noChildren": "У этого родителя нет детей в вашем садике",
+    "todayFeed": "Отмечено сегодня",
+    "toast_success": "{{name}} — {{action}} {{time}}",
+    "duplicateConfirm": {
+      "title": "Повторный приход",
+      "description": "Приход уже отмечен в {{time}}. Отметить ещё раз?",
+      "confirm": "Да, отметить"
+    }
+  },
+
   "filters": {
     "child": "Ребёнок",
     "child_placeholder": "Все дети",
@@ -51,16 +97,80 @@
     "on_vacation": "В отпуске"
   },
 
-  "correction_modal": {
+  "journal": {
+    "add_mark": "Отметить",
+    "action_correct": "Корректировать",
+    "action_transfer": "Перенести на другого ребёнка",
+    "action_flip_type": "Поменять тип",
+    "action_history": "История правок",
+    "action_delete": "Удалить",
+    "transfer_title": "Перенести запись",
+    "transfer_description": "Перенести запись с {{name}} на другого ребёнка",
+    "transfer_child_placeholder": "Выберите ребёнка",
+    "transfer_confirm": "Перенести",
+    "transfer_success": "Запись перенесена",
+    "flip_type_title": "Поменять тип события",
+    "flip_type_description": "Изменить тип с «{{from}}» на «{{to}}» для {{child}}",
+    "flip_type_confirm": "Поменять",
+    "flip_type_success": "Тип события изменён",
+    "delete_title": "Удалить запись",
+    "delete_description": "Запись о посещаемости {{child}} будет удалена. Это действие нельзя отменить.",
+    "delete_confirm": "Удалить",
+    "delete_success": "Запись удалена"
+  },
+
+  "correction": {
     "title": "Корректировка записи",
+    "tab_edit": "Правка",
+    "tab_history": "История",
     "recorded_at": "Время записи",
     "notes": "Заметка",
     "notes_placeholder": "Причина корректировки",
     "pickup_user": "Кто забрал",
-    "pickup_user_placeholder": "Выберите пользователя",
+    "pickup_user_placeholder": "Выберите забирающего",
+    "no_pickup_guardians": "Нет опекунов с правом забирать",
+    "current_pickup": "Текущий",
     "save": "Сохранить",
     "cancel": "Отмена",
     "success": "Запись обновлена"
+  },
+
+  "history": {
+    "empty": "Нет записей об изменениях",
+    "action_create": "Создание",
+    "action_update": "Изменение",
+    "action_delete": "Удаление",
+    "record_created": "Запись создана",
+    "record_deleted": "Запись удалена",
+    "field_childId": "Ребёнок",
+    "field_eventType": "Тип события",
+    "field_recordedAt": "Время",
+    "field_notes": "Заметка",
+    "field_pickupUserId": "Кто забрал",
+    "field_recordedBy": "Записал",
+    "field_method": "Метод"
+  },
+
+  "manual": {
+    "title": "Ручная отметка",
+    "child": "Ребёнок",
+    "child_placeholder": "Выберите ребёнка",
+    "child_required": "Выберите ребёнка",
+    "event_type": "Тип отметки",
+    "recorded_at": "Время",
+    "recorded_at_required": "Укажите время",
+    "notes": "Заметка",
+    "notes_placeholder": "Комментарий (необязательно)",
+    "pickup_user": "Кто забирает",
+    "pickup_user_placeholder": "Выберите забирающего",
+    "pickup_user_required": "Укажите, кто забирает",
+    "select_child_first": "Сначала выберите ребёнка",
+    "no_pickup_guardians": "Нет опекунов с правом забирать",
+    "backfill_warning": "Уведомление родителю не отправится — дата отличается от сегодняшней",
+    "submit": "Отметить",
+    "cancel": "Отмена",
+    "success_check_in": "Приход отмечен",
+    "success_check_out": "Уход отмечен"
   },
 
   "daily_board": {
@@ -72,6 +182,15 @@
     "on_vacation": "В отпуске",
     "sick": "Болеют",
     "no_data": "Нет данных за выбранную дату"
+  },
+
+  "dailyStatus": {
+    "editTitle": "Изменить статус",
+    "note": "Заметка",
+    "notePlaceholder": "Причина (необязательно)",
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "success": "Статус обновлён"
   },
 
   "empty": {
