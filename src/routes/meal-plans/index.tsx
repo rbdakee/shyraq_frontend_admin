@@ -364,10 +364,14 @@ function DayEditor({
   const [confirmDeletePlan, setConfirmDeletePlan] = useState(false);
 
   function handleCreatePlan() {
+    // Publish on create so the day is immediately visible in the Parent app —
+    // the parent menu endpoint filters is_published=true, so a draft-by-default
+    // plan silently never reaches parents. Admin can still hide a day via the
+    // "Опубликовано" switch below.
     const body = {
       date: toISODate(date),
       group_id: groupId ?? undefined,
-      is_published: false,
+      is_published: true,
     };
     void createPlan
       .mutateAsync(body)
