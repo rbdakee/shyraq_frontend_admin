@@ -140,6 +140,13 @@ export const KNOWN_ERROR_CODES = [
   'parent_request_forbidden',
   // attendance §20
   'attendance_event_not_found',
+  'no_active_session_for_device',
+  'qr_token_not_found',
+  'qr_token_expired',
+  'qr_token_revoked',
+  'qr_rate_limit_exceeded',
+  'pickup_user_not_allowed',
+  'staff_member_not_found',
   // diagnostic templates §21
   'diagnostic_template_not_found',
   'template_has_entries',

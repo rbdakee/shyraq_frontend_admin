@@ -726,21 +726,99 @@ Cursor: `{items, cursor: string|null}` — поле называется **`curs
 
 ---
 
-## 20. Посещаемость — `/admin/attendance-events/*`, `/admin/daily-status/*`
+## 20. Посещаемость — `/admin/qr/scan`, `/admin/attendance/*`, `/admin/attendance-events/*`, `/admin/daily-status`
 
-**Назначение:** журнал посещаемости, корректировки, сводка дневных статусов. BP §5.
+**Назначение:** админка **ведёт** журнал прихода/ухода, а не только показывает его: скан QR родителя, ручная отметка, правки, удаление, история изменений. BP §5.
 
-| Метод | Путь                           | Назначение                                                                              |
-| ----- | ------------------------------ | --------------------------------------------------------------------------------------- |
-| GET   | `/admin/attendance-events`     | Лог check-in/out. Фильтр `child_id, method, диапазон дат`.                              |
-| PATCH | `/admin/attendance-events/:id` | Корректировка `recorded_at, notes, pickup_user_id`.                                     |
-| GET   | `/admin/daily-status`          | Список `child_daily_status` (paged, фильтр `child_id`, диапазон дат) на дату по садику. |
+**Первоисточник:** `docs/ATTENDANCE_REGISTER_FRONTEND_GUIDE.md` (гайд бэкенда) + live `/docs-json`. Контракты ниже **сверены со схемой локального бэка 2026-07-15** (backend attendance-register update; на dev ещё не выкачено — см. §B27 плана).
 
-`attendance_method`: `face_id|manual|otp_pickup`. `child_intraday_status`: `present|absent|sick|late|early_pickup|on_vacation`.
+| Метод  | Путь                                   | Назначение                                                                                 |
+| ------ | -------------------------------------- | ------------------------------------------------------------------------------------------ |
+| POST   | `/admin/qr/scan`                       | **Опознать** родителя по QR-токену. Ничего не пишет. Требует `X-Device-Id`.                |
+| POST   | `/admin/attendance/check-in`           | Отметить приход. `201` → событие.                                                          |
+| POST   | `/admin/attendance/check-out`          | Отметить уход. `201` → событие. `pickupUserId` **обязателен**.                             |
+| GET    | `/admin/attendance-events`             | Лог check-in/out. Фильтр `childId, groupId, from, to, limit, offset`. **Голый массив.**    |
+| GET    | `/admin/attendance-events/:id`         | Одно событие.                                                                              |
+| PATCH  | `/admin/attendance-events/:id`         | Правка `recordedAt, notes, pickupUserId` + **структурная** `childId, eventType`.           |
+| DELETE | `/admin/attendance-events/:id`         | Мягкое удаление → `204`. Повторное → `404`.                                                |
+| GET    | `/admin/attendance-events/:id/history` | История правок (`limit, offset`). Новые сверху. Работает и для удалённых.                  |
+| GET    | `/admin/daily-status`                  | Список `child_daily_status` (фильтр `childId, from, to, limit, offset`). **Голый массив.** |
+| POST   | `/admin/daily-status`                  | **Upsert** по паре `(childId, date)` → **200**, не 201.                                    |
 
-> **Расхождение docs↔live (resolved 2026-06-03, B13):** отдельного `GET /admin/daily-status/summary` на backend **нет** (live `/docs-json` подтверждён). Агрегированная сводка отсутствий в Admin берётся из существующего `GET /admin/dashboard/attendance-today` → `{in_kindergarten, checked_out, absent, on_vacation, sick}` (+опц. `?group_id=`). См. OPEN_QUESTIONS §A23. Backend-need не заводим.
+`attendance_method`: `face_id|manual|otp_pickup` (`method` изменить нельзя — он фиксирует, как запись появилась). `child_intraday_status`: `present|absent|sick|late|early_pickup|on_vacation`.
 
-**Страница:** журнал событий (фильтр по ребёнку/методу/дате), редактирование записи (модал: время, заметка, кто забрал). Доска дневного статуса на дату (по группам); сводка отсутствий — из `attendance-today`.
+### 20.1 `X-Device-Id` — предусловие скана
+
+`POST /admin/qr/scan` сверяет заголовок `X-Device-Id` с колонкой `device_id` активной сессии (`refresh_tokens`) обычным SQL `=`. Клиент, залогинившийся **без** заголовка, имеет там `NULL`, а `NULL = что_угодно` никогда не истинно ⇒ любой скан вернёт `401 no_active_session_for_device`. Привязка создаётся **при логине** — починить на стороне скана нельзя, перепривязать существующую сессию нечем, только перелогин.
+
+UUID генерируется один раз на установку и живёт в `localStorage`. Роуты, принимающие заголовок (live-подтверждено): `POST /auth/otp/verify` (**обязателен** — вставляет строку сессии), `POST /auth/role/select` (**обязателен** — делает новый INSERT, а не ротацию; мульти-садиковый админ проходит через него всегда и иначе теряет привязку), `POST /auth/refresh` (желательно; без заголовка ротация переносит старое значение), `POST /admin/qr/scan` (**обязателен**, иначе `400`). Проще всего вешать заголовок глобально на все запросы.
+
+### 20.2 Скан — два шага
+
+`POST /admin/qr/scan` `{token}` (32 hex с экрана родителя) → `200 {user, linkedChildren?, allowedActions}`:
+
+- `user`: `{id, role, fullName, phone|null}` — `ScannedUserDto`.
+- `linkedChildren`: `{id, fullName, currentGroupId|null, photoUrl|null}[]` — **только** при `role === 'parent'`, только дети **в этом садике**. Может быть `[]` → «нет детей в этом садике», не пустой экран. Может содержать **несколько** детей → экран выбора, автовыбор первого запрещён.
+- `allowedActions`: `['check_in','check_out'] | ['gate_entry'] | []`. Это **подсказка UI**, а не право и не «уже сделано»: скан ничего не пишет, настоящую проверку делает бэк на check-out. `[]` = нет `can_pickup` → кнопки отметки дизейблить.
+- Rate-limit: **60 сканов / 60 сек** на device → `429` + заголовок `Retry-After` (секунды).
+
+Шаг 2 — оператор выбрал ребёнка → отдельный вызов check-in / check-out (§20.3). **Скан ≠ отметка.**
+
+### 20.3 Отметка
+
+`POST /admin/attendance/check-in` `{childId*, recordedAt?, notes?}`.
+`POST /admin/attendance/check-out` `{childId*, pickupUserId*, recordedAt?, notes?}` — `pickupUserId` это тот, кто забирает; должен быть одобренным опекуном с правом забирать, иначе `403 pickup_user_not_allowed`. В QR-флоу это `user.id` из ответа скана.
+
+**Задним числом = тихо.** Если `recordedAt` попадает не в сегодняшний день (Asia/Almaty), пуш родителю **не уходит**; запись, таймлайн и аудит пишутся как обычно. Это поведение бэка — слать ничего не нужно, но в UI back-fill **подписать** «уведомление родителю не отправится», иначе оператор гадает. Живой скан без `recordedAt` → пуш уходит нормально.
+
+**Статус дня.** `POST /admin/daily-status` `{childId*, date* (YYYY-MM-DD), status*, note?}` → **200** (upsert). Явно проставленный статус **сильнее** вычисленного: `sick` не перебьётся приходом и не сбросится при правках событий.
+
+### 20.4 Правки, удаление, история
+
+**Обычная правка** — `PATCH` `{recordedAt?, notes?, pickupUserId?}`, без ограничения по дате (лимит окна правки есть у стафф-приложения, у админки нет — `attendance_edit_window_expired` не про нас).
+
+**Структурная правка** — тот же `PATCH` `{childId?, eventType?}`: запись оформили не на того ребёнка / нажали не ту кнопку. Побочные эффекты делает бэк: таймлайн переезжает за записью, статусы дня пересчитываются **у обоих** детей, при перевороте в `check_in` очищается `pickupUserId`.
+
+> ⚠️ При перевороте `eventType` таймлайн-запись **пересоздаётся с новым `id`**. Держать ссылку на старый нельзя → после `PATCH` инвалидировать список, а не патчить кэш точечно.
+
+**Удаление** — `DELETE` → `204`, мягкое: запись исчезает из всех выдач включая счётчики дашборда, история остаётся.
+
+**История** — `GET …/history` → массив `{id, action: create|update|delete, actorUserId|null, actor_full_name|null, before|null, after|null, createdAt}`. `before`/`after` — сырые снимки строки (jsonb, даты внутри — ISO-строки); диффать самим. `create` → только `after`; `delete` → только `before`; `update` → оба.
+
+### 20.5 Формы ответов и кейсинг
+
+`AttendanceEventResponseDto`: `{id, kindergartenId, childId, child_name|null, eventType, method, recordedBy|null, recorded_by_full_name|null, pickupUserId|null, pickup_user_full_name|null, pickupRequestId|null, notes|null, recordedAt, createdAt}`.
+
+> ⚠️ **Каша в кейсинге — настоящая, не опечатка:** сами поля `camelCase`, а display-оверлеи (`child_name`, `*_full_name`) — `snake_case`. Оверлеи **закрывают** прежний костыль резолва имён через `useChildrenList({limit:500})` в журнале.
+
+`DailyStatusResponseDto`: `{id, kindergartenId, childId, date, status, note|null, setBy|null, set_by_full_name|null, updatedAt}`.
+
+Списки посещаемости и статусов дня возвращают **голый массив**, а не `{data, meta}` — в этом модуле так исторически.
+
+### 20.6 Роли и ошибки
+
+Эндпоинты помечены `@Roles('admin','reception')`, и гайд §5 велит гейтить `childId`/`eventType`/`DELETE` по роли. **Для Admin Web гейт не нужен:** аудитория `admin` = `Set(['admin'])`, `reception` живёт в аудитории `staff` и в админку войти не может — роль в сессии всегда `admin`. Гейт §5 адресован Staff App. См. OPEN_QUESTIONS §A32.
+
+| Код                                     | HTTP | Когда                                                            |
+| --------------------------------------- | ---- | ---------------------------------------------------------------- |
+| `no_active_session_for_device`          | 401  | `X-Device-Id` не совпал с сессией → §20.1, нужен перелогин       |
+| — (`X-Device-Id header required`)       | 400  | заголовок не прислан на скан                                     |
+| `qr_token_not_found`                    | 404  | токен неизвестен                                                 |
+| `qr_token_expired` / `qr_token_revoked` | 410  | QR протух (TTL 24ч) / отозван → «попросите родителя переоткрыть» |
+| `qr_rate_limit_exceeded`                | 429  | >60 сканов/мин на device; есть `Retry-After`                     |
+| `pickup_user_not_allowed`               | 403  | забирающий не одобрен для этого ребёнка                          |
+| `attendance_correction_admin_only`      | 403  | `reception` полез в `childId`/`eventType` (в Admin недостижимо)  |
+| `insufficient_role`                     | 403  | `reception` полез в DELETE (в Admin недостижимо)                 |
+| `attendance_event_not_found`            | 404  | нет события / уже удалено                                        |
+| `child_not_found`                       | 404  | нет ребёнка в этом садике                                        |
+| `staff_member_not_found`                | 404  | **live-only, в гайде отсутствует:** 404 на check-out             |
+| `tenant_required`                       | 400  | токен без `kindergarten_id` → нужен `/auth/role/select`          |
+
+> **Не считать статусы на фронте.** Демоушн/промоушн — на бэке: `present → absent` только когда за день не осталось ни одного прихода; явные `sick`/`on_vacation` не трогаются никогда. Дублировать это на фронте = гарантированное расхождение. Показ факта «последнее событие — приход в 08:42» из ленты событий этим не является — см. OPEN_QUESTIONS §A33.
+
+> **Расхождение docs↔live (resolved 2026-06-03, B13):** отдельного `GET /admin/daily-status/summary` на backend **нет** (live `/docs-json` подтверждён). Агрегированная сводка отсутствий в Admin берётся из существующего `GET /admin/dashboard/attendance-today` → `{in_kindergarten, checked_out, absent, on_vacation, sick}` (+опц. `?group_id=`). См. OPEN_QUESTIONS §A23. Backend-need не заводим. `GET /admin/daily-status` фильтра `groupId` **не имеет** (live-подтверждено) — группировка по группам считается на фронте из `currentGroupId` детей.
+
+**Страницы:** DESIGN §6.12 — «Вход/выход» (`/attendance/checkin`, скан + ручная отметка), журнал (`/attendance`, фильтры + правки/удаление/история), доска дневного статуса (`/attendance/daily-status`, upsert).
 
 ---
 

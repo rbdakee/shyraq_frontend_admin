@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { type ColumnDef } from '@tanstack/react-table';
 import {
@@ -7,17 +8,16 @@ import {
   PencilIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  ArrowRightLeftIcon,
+  RefreshCwIcon,
+  Trash2Icon,
+  ClockIcon,
+  ScanLineIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useForm } from 'react-hook-form';
-import { z } from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -32,35 +32,39 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DataTable } from '@/components/data-table/data-table';
 import { PeriodPicker } from '@/components/forms/period-picker';
 import { EntityCombobox } from '@/components/forms/entity-combobox';
 import type { ComboboxOption } from '@/components/forms/entity-combobox';
-import { mapValidationErrors } from '@/components/forms/map-validation-errors';
-import { FullScreenSheet } from '@/components/forms/full-screen-sheet';
+import { DestructiveConfirm } from '@/components/feedback/destructive-confirm';
 import { ErrorState } from '@/components/feedback/error-state';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
 import {
   useAttendanceEvents,
   usePatchAttendanceEvent,
+  useDeleteAttendanceEvent,
   useDailyStatuses,
   type AttendanceEvent,
   type AttendanceMethod,
   type AttendanceEventType,
 } from '@/hooks/use-attendance';
 import { useAttendanceToday } from '@/hooks/use-dashboard';
-import { useChildrenList } from '@/hooks/use-children';
+import { useAllChildren } from '@/hooks/use-children';
 import { useGroups } from '@/hooks/use-groups';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
-import { getInitials, toISODate } from '@/lib/format';
+import { getInitials, toISODate, toISODateTz } from '@/lib/format';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
 import { toI18nKey } from '@/lib/error-map';
+import { cn } from '@/lib/cn';
+import { CorrectionModal } from './_components/correction-modal';
+import { ManualMarkModal } from './_components/manual-mark-modal';
+import { ScanSectionTabs } from './_components/scan-section-tabs';
 
 const PAGE_SIZE = 20;
 const ALL_METHODS = 'all';
 const ACTIVE_GROUP_FILTERS = { archived: false } as const;
-const CHILDREN_FETCH_LIMIT = 500;
 
 const EVENT_TYPE_BADGE: Record<AttendanceEventType, 'success' | 'info'> = {
   check_in: 'success',
@@ -83,155 +87,51 @@ function formatTimeOnly(isoString: string, tz: string): string {
   }).format(date);
 }
 
-const CorrectionSchema = z.object({
-  recordedAt: z.string().min(1),
-  notes: z.string().optional(),
-  pickupUserId: z.string().optional(),
-});
-
-type CorrectionForm = z.infer<typeof CorrectionSchema>;
-
-function CorrectionModal({
+function TransferChildModal({
   event,
   open,
   onOpenChange,
-  childName,
 }: {
   event: AttendanceEvent | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  childName: string;
 }) {
   const { t } = useTranslation('attendance');
   const tErrors = useTranslation('errors').t;
-  const { isMobile } = useBreakpoint();
+  const [selectedChildId, setSelectedChildId] = useState<string | null>(null);
   const patchMutation = usePatchAttendanceEvent();
+  const childrenQuery = useAllChildren({ status: 'active' });
 
-  const form = useForm<CorrectionForm>({
-    resolver: zodResolver(CorrectionSchema),
-    defaultValues: {
-      recordedAt: event?.recordedAt ?? '',
-      notes: event?.notes ?? '',
-      pickupUserId: event?.pickupUserId ?? '',
+  const fetchChildOptions = useCallback(
+    async (query: string): Promise<ComboboxOption[]> => {
+      const children = childrenQuery.data ?? [];
+      const q = query.toLowerCase();
+      return children
+        .filter((c) => c.full_name.toLowerCase().includes(q) && c.id !== event?.childId)
+        .slice(0, 30)
+        .map((c) => ({ value: c.id, label: c.full_name }));
     },
-  });
-
-  const isCheckOut = event?.eventType === 'check_out';
+    [childrenQuery.data, event?.childId],
+  );
 
   function handleClose() {
+    setSelectedChildId(null);
     onOpenChange(false);
-    form.reset();
   }
 
-  function handleSubmit(data: CorrectionForm) {
-    if (!event) return;
+  function handleConfirm() {
+    if (!event || !selectedChildId) return;
     patchMutation.mutate(
-      {
-        eventId: event.id,
-        body: {
-          recordedAt: data.recordedAt || undefined,
-          notes: data.notes || undefined,
-          pickupUserId: isCheckOut && data.pickupUserId ? data.pickupUserId : undefined,
-        },
-      },
+      { eventId: event.id, body: { childId: selectedChildId } },
       {
         onSuccess: () => {
-          toast.success(t('correction_modal.success'));
+          toast.success(t('journal.transfer_success'));
           handleClose();
         },
         onError: (error) => {
-          const mapped = mapValidationErrors(error, form.setError);
-          if (!mapped) {
-            toast.error(tErrors(toI18nKey(error)));
-          }
+          toast.error(tErrors(toI18nKey(error)));
         },
       },
-    );
-  }
-
-  // WHY: reset form defaults when event changes (modal reopened for different row)
-  const currentEventId = event?.id;
-  useEffect(() => {
-    if (event) {
-      form.reset({
-        recordedAt: event.recordedAt,
-        notes: event.notes ?? '',
-        pickupUserId: event.pickupUserId ?? '',
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentEventId]);
-
-  const formFields = (
-    <>
-      <div className="flex flex-col gap-1.5">
-        <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
-          {t('correction_modal.recorded_at')}
-        </Label>
-        <Input
-          type="datetime-local"
-          {...form.register('recordedAt')}
-          className="border-[var(--border)] bg-[var(--bg-elev)]"
-        />
-        {form.formState.errors.recordedAt && (
-          <span className="text-[12px] text-[color:var(--danger)]">
-            {form.formState.errors.recordedAt.message}
-          </span>
-        )}
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
-          {t('correction_modal.notes')}
-        </Label>
-        <Textarea
-          {...form.register('notes')}
-          placeholder={t('correction_modal.notes_placeholder')}
-          rows={3}
-          className="border-[var(--border)] bg-[var(--bg-elev)]"
-        />
-      </div>
-
-      {isCheckOut && (
-        <div className="flex flex-col gap-1.5">
-          <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
-            {t('correction_modal.pickup_user')}
-          </Label>
-          <Input
-            {...form.register('pickupUserId')}
-            placeholder={t('correction_modal.pickup_user_placeholder')}
-            className="border-[var(--border)] bg-[var(--bg-elev)]"
-          />
-        </div>
-      )}
-    </>
-  );
-
-  if (isMobile) {
-    return (
-      <FullScreenSheet
-        open={open}
-        onOpenChange={(v) => {
-          if (!v) handleClose();
-          else onOpenChange(v);
-        }}
-        title={t('correction_modal.title')}
-        sub={childName}
-        description={t('correction_modal.title')}
-        footer={
-          <Button
-            className="w-full"
-            disabled={patchMutation.isPending}
-            onClick={form.handleSubmit(handleSubmit)}
-          >
-            {t('correction_modal.save')}
-          </Button>
-        }
-      >
-        <form onSubmit={form.handleSubmit(handleSubmit)} className="flex flex-col gap-4">
-          {formFields}
-        </form>
-      </FullScreenSheet>
     );
   }
 
@@ -243,29 +143,101 @@ function CorrectionModal({
         else onOpenChange(v);
       }}
     >
-      <DialogContent className="rounded-[var(--r-xl)] border-[var(--line)] bg-[var(--bg-elev)] p-0 shadow-[var(--shadow-3)] sm:max-w-[480px]">
+      <DialogContent className="rounded-[var(--r-xl)] border-[var(--line)] bg-[var(--bg-elev)] p-0 shadow-[var(--shadow-3)] sm:max-w-[420px]">
         <DialogHeader className="px-[22px] pt-[18px] pb-3">
           <DialogTitle className="text-[17px] font-bold tracking-[-0.01em] text-[color:var(--text-1)]">
-            {t('correction_modal.title')}
+            {t('journal.transfer_title')}
           </DialogTitle>
-          <div className="text-[13px] text-[color:var(--text-3)]">{childName}</div>
+          <div className="text-[13px] text-[color:var(--text-3)]">
+            {t('journal.transfer_description', { name: event?.child_name ?? '—' })}
+          </div>
         </DialogHeader>
+        <div className="px-[22px] pb-[18px]">
+          <EntityCombobox
+            value={selectedChildId}
+            onChange={setSelectedChildId}
+            fetchOptions={fetchChildOptions}
+            placeholder={t('journal.transfer_child_placeholder')}
+          />
+        </div>
+        <DialogFooter className="-mx-0 -mb-0 rounded-b-[var(--r-xl)] border-t border-[var(--line)] bg-transparent px-[22px] py-[14px]">
+          <Button variant="outline" onClick={handleClose}>
+            {t('correction.cancel')}
+          </Button>
+          <Button onClick={handleConfirm} disabled={!selectedChildId || patchMutation.isPending}>
+            {t('journal.transfer_confirm')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
-        <form
-          onSubmit={form.handleSubmit(handleSubmit)}
-          className="flex flex-col gap-4 px-[22px] pb-[18px]"
-        >
-          {formFields}
+function FlipTypeModal({
+  event,
+  open,
+  onOpenChange,
+}: {
+  event: AttendanceEvent | null;
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+}) {
+  const { t } = useTranslation('attendance');
+  const tErrors = useTranslation('errors').t;
+  const patchMutation = usePatchAttendanceEvent();
 
-          <DialogFooter className="-mx-0 -mb-0 rounded-b-[var(--r-xl)] border-t border-[var(--line)] bg-transparent px-[22px] py-[14px]">
-            <Button type="button" variant="outline" onClick={handleClose}>
-              {t('correction_modal.cancel')}
-            </Button>
-            <Button type="submit" disabled={patchMutation.isPending}>
-              {t('correction_modal.save')}
-            </Button>
-          </DialogFooter>
-        </form>
+  const currentType = event?.eventType;
+  const newType: AttendanceEventType = currentType === 'check_in' ? 'check_out' : 'check_in';
+
+  function handleClose() {
+    onOpenChange(false);
+  }
+
+  function handleConfirm() {
+    if (!event) return;
+    patchMutation.mutate(
+      { eventId: event.id, body: { eventType: newType } },
+      {
+        onSuccess: () => {
+          toast.success(t('journal.flip_type_success'));
+          handleClose();
+        },
+        onError: (error) => {
+          toast.error(tErrors(toI18nKey(error)));
+        },
+      },
+    );
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        if (!v) handleClose();
+        else onOpenChange(v);
+      }}
+    >
+      <DialogContent className="rounded-[var(--r-xl)] border-[var(--line)] bg-[var(--bg-elev)] p-0 shadow-[var(--shadow-3)] sm:max-w-[420px]">
+        <DialogHeader className="px-[22px] pt-[18px] pb-3">
+          <DialogTitle className="text-[17px] font-bold tracking-[-0.01em] text-[color:var(--text-1)]">
+            {t('journal.flip_type_title')}
+          </DialogTitle>
+          <div className="text-[13px] text-[color:var(--text-3)]">
+            {t('journal.flip_type_description', {
+              from: t(`event_type.${currentType ?? 'check_in'}`),
+              to: t(`event_type.${newType}`),
+              child: event?.child_name ?? '—',
+            })}
+          </div>
+        </DialogHeader>
+        <DialogFooter className="-mx-0 -mb-0 rounded-b-[var(--r-xl)] border-t border-[var(--line)] bg-transparent px-[22px] py-[14px]">
+          <Button variant="outline" onClick={handleClose}>
+            {t('correction.cancel')}
+          </Button>
+          <Button onClick={handleConfirm} disabled={patchMutation.isPending}>
+            {t('journal.flip_type_confirm')}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
@@ -273,10 +245,12 @@ function CorrectionModal({
 
 function MobileAttendance() {
   const { t } = useTranslation('attendance');
+  const tErrors = useTranslation('errors').t;
+  const navigate = useNavigate();
 
   const todayQuery = useAttendanceToday();
-  const childrenQuery = useChildrenList({ limit: CHILDREN_FETCH_LIMIT, status: 'active' });
   const groupsQuery = useGroups(ACTIVE_GROUP_FILTERS);
+  const childrenQuery = useAllChildren({ status: 'active' });
 
   const today = todayQuery.data;
   const totalPresent = (today?.in_kindergarten ?? 0) + (today?.checked_out ?? 0);
@@ -285,7 +259,11 @@ function MobileAttendance() {
   const fillPct = totalAll > 0 ? Math.round((totalPresent / totalAll) * 100) : 0;
 
   const statusFilters = useMemo(
-    () => ({ from: toISODate(new Date()), to: toISODate(new Date()), limit: 200 }),
+    () => ({
+      from: toISODateTz(new Date(), DEFAULT_TIMEZONE),
+      to: toISODateTz(new Date(), DEFAULT_TIMEZONE),
+      limit: 200,
+    }),
     [],
   );
   const dailyQuery = useDailyStatuses(statusFilters);
@@ -293,7 +271,7 @@ function MobileAttendance() {
   const childrenMap = useMemo(
     () =>
       new Map(
-        (childrenQuery.data?.data ?? []).map((c) => [
+        (childrenQuery.data ?? []).map((c) => [
           c.id,
           { name: c.full_name, groupId: c.current_group_id },
         ]),
@@ -308,7 +286,7 @@ function MobileAttendance() {
 
   const groupStats = useMemo(() => {
     const stats = new Map<string, { name: string; present: number; total: number }>();
-    for (const child of childrenQuery.data?.data ?? []) {
+    for (const child of childrenQuery.data ?? []) {
       if (!child.current_group_id) continue;
       const gName = groupsMap.get(child.current_group_id) ?? child.current_group_id.slice(0, 8);
       const entry = stats.get(child.current_group_id) ?? { name: gName, present: 0, total: 0 };
@@ -339,14 +317,44 @@ function MobileAttendance() {
   const [mOffset, setMOffset] = useState(0);
   const [correctionEvent, setCorrectionEvent] = useState<AttendanceEvent | null>(null);
   const [correctionOpen, setCorrectionOpen] = useState(false);
+  const [correctionInitialTab, setCorrectionInitialTab] = useState<'edit' | 'history'>('edit');
+  const [manualMarkOpen, setManualMarkOpen] = useState(false);
+
+  const [actionSheetEvent, setActionSheetEvent] = useState<AttendanceEvent | null>(null);
+  const [actionSheetOpen, setActionSheetOpen] = useState(false);
+
+  const [transferEvent, setTransferEvent] = useState<AttendanceEvent | null>(null);
+  const [transferOpen, setTransferOpen] = useState(false);
+
+  const [flipEvent, setFlipEvent] = useState<AttendanceEvent | null>(null);
+  const [flipOpen, setFlipOpen] = useState(false);
+
+  const [deleteEvent, setDeleteEvent] = useState<AttendanceEvent | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const deleteMutation = useDeleteAttendanceEvent();
 
   const eventsQuery = useAttendanceEvents({ limit: PAGE_SIZE, offset: mOffset });
   const events = eventsQuery.data ?? [];
   const hasMore = events.length === PAGE_SIZE;
 
-  const correctionChildName = correctionEvent
-    ? (childrenMap.get(correctionEvent.childId)?.name ?? '—')
-    : '—';
+  function handleRowAction(ev: AttendanceEvent) {
+    setActionSheetEvent(ev);
+    setActionSheetOpen(true);
+  }
+
+  function confirmDelete() {
+    if (!deleteEvent) return;
+    deleteMutation.mutate(deleteEvent.id, {
+      onSuccess: () => {
+        toast.success(t('journal.delete_success'));
+        setDeleteOpen(false);
+        setDeleteEvent(null);
+      },
+      onError: (error) => {
+        toast.error(tErrors(toI18nKey(error)));
+      },
+    });
+  }
 
   return (
     <>
@@ -358,7 +366,20 @@ function MobileAttendance() {
             <button type="button" className="m-iconbtn">
               <CalendarIcon />
             </button>
-            <button type="button" className="m-iconbtn primary">
+            <button
+              type="button"
+              className="m-iconbtn"
+              onClick={() => navigate('/attendance/checkin')}
+              aria-label={t('tab_checkin')}
+            >
+              <ScanLineIcon />
+            </button>
+            <button
+              type="button"
+              className="m-iconbtn primary"
+              onClick={() => setManualMarkOpen(true)}
+              aria-label={t('journal.add_mark')}
+            >
               <PlusIcon />
             </button>
           </>
@@ -385,27 +406,23 @@ function MobileAttendance() {
 
         <div className="m-att-bar">
           <div className="m-att-pill">
-            <div className="m-att-num" style={{ color: 'var(--success-fg)' }}>
+            <div className="m-att-num text-[color:var(--success-fg)]">
               {today?.in_kindergarten ?? 0}
             </div>
             <div className="m-att-cap">{t('mobile_stat_present')}</div>
           </div>
           <div className="m-att-pill">
-            <div className="m-att-num" style={{ color: 'var(--warning-fg)' }}>
+            <div className="m-att-num text-[color:var(--warning-fg)]">
               {dailyQuery.data?.filter((d) => d.status === 'late').length ?? 0}
             </div>
             <div className="m-att-cap">{t('mobile_stat_late')}</div>
           </div>
           <div className="m-att-pill">
-            <div className="m-att-num" style={{ color: 'var(--info-fg)' }}>
-              {today?.sick ?? 0}
-            </div>
+            <div className="m-att-num text-[color:var(--info-fg)]">{today?.sick ?? 0}</div>
             <div className="m-att-cap">{t('mobile_stat_sick')}</div>
           </div>
           <div className="m-att-pill">
-            <div className="m-att-num" style={{ color: 'var(--text-3)' }}>
-              {today?.absent ?? 0}
-            </div>
+            <div className="m-att-num text-[color:var(--text-3)]">{today?.absent ?? 0}</div>
             <div className="m-att-cap">{t('mobile_stat_absent')}</div>
           </div>
         </div>
@@ -418,7 +435,7 @@ function MobileAttendance() {
         {groupStats.map((g) => {
           const pct = g.total > 0 ? (g.present / g.total) * 100 : 0;
           return (
-            <div key={g.name} className="m-card" style={{ padding: '12px 14px' }}>
+            <div key={g.name} className="m-card px-[14px] py-[12px]">
               <div className="mb-2 flex items-center justify-between">
                 <div className="text-[14px] font-semibold">{g.name}</div>
                 <div className="text-[13px] tabular-nums text-[color:var(--text-3)]">
@@ -481,18 +498,14 @@ function MobileAttendance() {
         <>
           <div className="m-card p-0">
             {events.map((ev) => {
-              const child = childrenMap.get(ev.childId);
-              const name = child?.name ?? '—';
+              const name = ev.child_name ?? '—';
               return (
                 <button
                   key={ev.id}
                   type="button"
                   className="m-list-row w-full text-left"
-                  aria-label={t('correction_modal.title')}
-                  onClick={() => {
-                    setCorrectionEvent(ev);
-                    setCorrectionOpen(true);
-                  }}
+                  aria-label={t('correction.title')}
+                  onClick={() => handleRowAction(ev)}
                 >
                   <span className="shrink-0 font-mono text-[13px] tabular-nums text-[color:var(--text-2)]">
                     {formatTimeOnly(ev.recordedAt, tz)}
@@ -546,26 +559,142 @@ function MobileAttendance() {
         </>
       )}
 
+      <Sheet open={actionSheetOpen} onOpenChange={setActionSheetOpen}>
+        <SheetContent
+          side="bottom"
+          showCloseButton={false}
+          className="rounded-t-[var(--r-xl)] px-0 pt-3 pb-[max(8px,env(safe-area-inset-bottom))]"
+        >
+          <div className="mx-auto mb-2 h-1 w-10 rounded-full bg-[var(--border)]" />
+          <SheetTitle className="sr-only">{t('events_title')}</SheetTitle>
+          <SheetDescription className="sr-only">{t('events_title')}</SheetDescription>
+          <div className="flex flex-col">
+            {[
+              {
+                label: t('journal.action_correct'),
+                icon: <PencilIcon className="size-4" />,
+                handler: () => {
+                  setCorrectionEvent(actionSheetEvent);
+                  setCorrectionInitialTab('edit');
+                  setCorrectionOpen(true);
+                  setActionSheetOpen(false);
+                },
+              },
+              {
+                label: t('journal.action_transfer'),
+                icon: <ArrowRightLeftIcon className="size-4" />,
+                handler: () => {
+                  setTransferEvent(actionSheetEvent);
+                  setTransferOpen(true);
+                  setActionSheetOpen(false);
+                },
+              },
+              {
+                label: t('journal.action_flip_type'),
+                icon: <RefreshCwIcon className="size-4" />,
+                handler: () => {
+                  setFlipEvent(actionSheetEvent);
+                  setFlipOpen(true);
+                  setActionSheetOpen(false);
+                },
+              },
+              {
+                label: t('journal.action_history'),
+                icon: <ClockIcon className="size-4" />,
+                handler: () => {
+                  setCorrectionEvent(actionSheetEvent);
+                  setCorrectionInitialTab('history');
+                  setCorrectionOpen(true);
+                  setActionSheetOpen(false);
+                },
+              },
+              {
+                label: t('journal.action_delete'),
+                icon: <Trash2Icon className="size-4" />,
+                handler: () => {
+                  setDeleteEvent(actionSheetEvent);
+                  setDeleteOpen(true);
+                  setActionSheetOpen(false);
+                },
+                destructive: true,
+              },
+            ].map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                className={cn(
+                  'm-list-row gap-3',
+                  'destructive' in item && item.destructive && 'text-[color:var(--danger)]',
+                )}
+                onClick={item.handler}
+              >
+                {item.icon}
+                <span className="flex-1 text-left text-[14px] font-medium">{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </SheetContent>
+      </Sheet>
+
       <CorrectionModal
+        key={`${correctionEvent?.id ?? 'none'}-${correctionInitialTab}`}
         event={correctionEvent}
         open={correctionOpen}
         onOpenChange={setCorrectionOpen}
-        childName={correctionChildName}
+        initialTab={correctionInitialTab}
       />
+
+      <TransferChildModal
+        event={transferEvent}
+        open={transferOpen}
+        onOpenChange={setTransferOpen}
+      />
+
+      <FlipTypeModal event={flipEvent} open={flipOpen} onOpenChange={setFlipOpen} />
+
+      <DestructiveConfirm
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={t('journal.delete_title')}
+        description={t('journal.delete_description', {
+          child: deleteEvent?.child_name ?? '—',
+        })}
+        confirmLabel={t('journal.delete_confirm')}
+        onConfirm={confirmDelete}
+        loading={deleteMutation.isPending}
+      />
+
+      <ManualMarkModal open={manualMarkOpen} onOpenChange={setManualMarkOpen} />
     </>
   );
 }
 
 function DesktopJournal() {
   const { t } = useTranslation('attendance');
+  const tErrors = useTranslation('errors').t;
   const tz = DEFAULT_TIMEZONE;
 
   const [childFilter, setChildFilter] = useState<string | null>(null);
   const [methodFilter, setMethodFilter] = useState(ALL_METHODS);
   const [dateRange, setDateRange] = useState<{ from?: Date; to?: Date }>({});
   const [offset, setOffset] = useState(0);
+
   const [correctionEvent, setCorrectionEvent] = useState<AttendanceEvent | null>(null);
   const [correctionOpen, setCorrectionOpen] = useState(false);
+  const [correctionInitialTab, setCorrectionInitialTab] = useState<'edit' | 'history'>('edit');
+
+  const [transferEvent, setTransferEvent] = useState<AttendanceEvent | null>(null);
+  const [transferOpen, setTransferOpen] = useState(false);
+
+  const [flipEvent, setFlipEvent] = useState<AttendanceEvent | null>(null);
+  const [flipOpen, setFlipOpen] = useState(false);
+
+  const [deleteEvent, setDeleteEvent] = useState<AttendanceEvent | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
+  const [manualMarkOpen, setManualMarkOpen] = useState(false);
+
+  const deleteMutation = useDeleteAttendanceEvent();
 
   const filters = useMemo(
     () => ({
@@ -579,18 +708,7 @@ function DesktopJournal() {
   );
 
   const eventsQuery = useAttendanceEvents(filters);
-  const childrenQuery = useChildrenList({ limit: CHILDREN_FETCH_LIMIT, status: 'active' });
-
-  const childrenMap = useMemo(
-    () =>
-      new Map(
-        (childrenQuery.data?.data ?? []).map((c) => [
-          c.id,
-          { name: c.full_name, groupId: c.current_group_id },
-        ]),
-      ),
-    [childrenQuery.data],
-  );
+  const childrenQuery = useAllChildren({ status: 'active' });
 
   const filteredData = useMemo(() => {
     const events = eventsQuery.data ?? [];
@@ -610,12 +728,48 @@ function DesktopJournal() {
 
   function handleCorrect(event: AttendanceEvent) {
     setCorrectionEvent(event);
+    setCorrectionInitialTab('edit');
     setCorrectionOpen(true);
+  }
+
+  function handleHistory(event: AttendanceEvent) {
+    setCorrectionEvent(event);
+    setCorrectionInitialTab('history');
+    setCorrectionOpen(true);
+  }
+
+  function handleTransfer(event: AttendanceEvent) {
+    setTransferEvent(event);
+    setTransferOpen(true);
+  }
+
+  function handleFlipType(event: AttendanceEvent) {
+    setFlipEvent(event);
+    setFlipOpen(true);
+  }
+
+  function handleDelete(event: AttendanceEvent) {
+    setDeleteEvent(event);
+    setDeleteOpen(true);
+  }
+
+  function confirmDelete() {
+    if (!deleteEvent) return;
+    deleteMutation.mutate(deleteEvent.id, {
+      onSuccess: () => {
+        toast.success(t('journal.delete_success'));
+        setDeleteOpen(false);
+        setDeleteEvent(null);
+      },
+      onError: (error) => {
+        toast.error(tErrors(toI18nKey(error)));
+      },
+    });
   }
 
   const fetchChildOptions = useCallback(
     async (query: string): Promise<ComboboxOption[]> => {
-      const children = childrenQuery.data?.data ?? [];
+      const children = childrenQuery.data ?? [];
       const q = query.toLowerCase();
       return children
         .filter((c) => c.full_name.toLowerCase().includes(q))
@@ -645,8 +799,7 @@ function DesktopJournal() {
         id: 'child',
         header: () => t('columns.child'),
         cell: ({ row }) => {
-          const child = childrenMap.get(row.original.childId);
-          const name = child?.name ?? '—';
+          const name = row.original.child_name ?? '—';
           return (
             <div className="flex items-center gap-2">
               <Avatar className="size-7">
@@ -687,7 +840,18 @@ function DesktopJournal() {
         header: () => t('columns.recorded_by'),
         cell: ({ row }) => (
           <span className="text-[13px] text-[color:var(--text-3)]">
-            {row.original.recordedBy ?? '—'}
+            {row.original.recorded_by_full_name ?? '—'}
+          </span>
+        ),
+        enableSorting: false,
+        size: 120,
+      },
+      {
+        id: 'pickupUser',
+        header: () => t('columns.pickup_user'),
+        cell: ({ row }) => (
+          <span className="text-[13px] text-[color:var(--text-3)]">
+            {row.original.pickup_user_full_name ?? '—'}
           </span>
         ),
         enableSorting: false,
@@ -704,12 +868,8 @@ function DesktopJournal() {
         enableSorting: false,
       },
     ],
-    [t, tz, childrenMap],
+    [t, tz],
   );
-
-  const correctionChildName = correctionEvent
-    ? (childrenMap.get(correctionEvent.childId)?.name ?? '—')
-    : '—';
 
   const from = offset + 1;
   const to = offset + filteredData.length;
@@ -721,6 +881,16 @@ function DesktopJournal() {
           <h1 className="h1">{t('title')}</h1>
           <div className="page-sub">{t('events_title')}</div>
         </div>
+        <div className="flex gap-2">
+          <Button onClick={() => setManualMarkOpen(true)}>
+            <PlusIcon className="size-4" />
+            {t('journal.add_mark')}
+          </Button>
+        </div>
+      </div>
+
+      <div className="mb-4">
+        <ScanSectionTabs active="journal" />
       </div>
 
       <DataTable<AttendanceEvent>
@@ -737,14 +907,35 @@ function DesktopJournal() {
         filteredEmptyDescription={t('empty.filtered_description')}
         rowActions={[
           {
-            label: t('correction_modal.title'),
+            label: t('journal.action_correct'),
             icon: <PencilIcon className="size-3.5" />,
             onClick: handleCorrect,
+          },
+          {
+            label: t('journal.action_transfer'),
+            icon: <ArrowRightLeftIcon className="size-3.5" />,
+            onClick: handleTransfer,
+          },
+          {
+            label: t('journal.action_flip_type'),
+            icon: <RefreshCwIcon className="size-3.5" />,
+            onClick: handleFlipType,
+          },
+          {
+            label: t('journal.action_history'),
+            icon: <ClockIcon className="size-3.5" />,
+            onClick: handleHistory,
+          },
+          {
+            label: t('journal.action_delete'),
+            icon: <Trash2Icon className="size-3.5" />,
+            onClick: handleDelete,
+            variant: 'destructive',
           },
         ]}
         toolbar={
           <>
-            <div style={{ width: 220 }}>
+            <div className="w-[220px]">
               <EntityCombobox
                 value={childFilter}
                 onChange={(val) => {
@@ -772,7 +963,7 @@ function DesktopJournal() {
                 <SelectItem value="otp_pickup">{t('method.otp_pickup')}</SelectItem>
               </SelectContent>
             </Select>
-            <div style={{ width: 260 }}>
+            <div className="w-[260px]">
               <PeriodPicker
                 value={dateRange}
                 onChange={(v) => {
@@ -820,12 +1011,38 @@ function DesktopJournal() {
         </div>
       )}
 
+      {/* WHY key: forces remount on event/tab change so useState(initialTab) picks up
+         the new value and form.defaultValues reflect the new event — avoids prohibited
+         setState-in-effect or ref-during-render patterns (React 19 compiler rules). */}
       <CorrectionModal
+        key={`${correctionEvent?.id ?? 'none'}-${correctionInitialTab}`}
         event={correctionEvent}
         open={correctionOpen}
         onOpenChange={setCorrectionOpen}
-        childName={correctionChildName}
+        initialTab={correctionInitialTab}
       />
+
+      <TransferChildModal
+        event={transferEvent}
+        open={transferOpen}
+        onOpenChange={setTransferOpen}
+      />
+
+      <FlipTypeModal event={flipEvent} open={flipOpen} onOpenChange={setFlipOpen} />
+
+      <DestructiveConfirm
+        open={deleteOpen}
+        onOpenChange={setDeleteOpen}
+        title={t('journal.delete_title')}
+        description={t('journal.delete_description', {
+          child: deleteEvent?.child_name ?? '—',
+        })}
+        confirmLabel={t('journal.delete_confirm')}
+        onConfirm={confirmDelete}
+        loading={deleteMutation.isPending}
+      />
+
+      <ManualMarkModal open={manualMarkOpen} onOpenChange={setManualMarkOpen} />
     </div>
   );
 }

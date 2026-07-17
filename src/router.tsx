@@ -333,6 +333,13 @@ export const router = createBrowserRouter([
             },
           },
           {
+            path: 'attendance/checkin',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/attendance/checkin');
+              return { Component };
+            },
+          },
+          {
             path: 'diagnostics/templates',
             lazy: async () => {
               const { default: Component } = await import('@/routes/diagnostics/templates/index');

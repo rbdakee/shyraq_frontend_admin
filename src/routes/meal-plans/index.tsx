@@ -52,6 +52,7 @@ import {
   useUpdateMealItem,
   useDeleteMealItem,
   useCopyMealWeek,
+  useSetMealPlanPublished,
 } from '@/hooks/use-meal-plans';
 import type { MealPlan, MealItem, MultiLangText, CreateMealItemBody } from '@/hooks/use-meal-plans';
 import { resolveJsonbI18n } from '@/lib/jsonb-i18n';
@@ -364,10 +365,14 @@ function DayEditor({
   const [confirmDeletePlan, setConfirmDeletePlan] = useState(false);
 
   function handleCreatePlan() {
+    // Publish on create so the day is immediately visible in the Parent app —
+    // the parent menu endpoint filters is_published=true, so a draft-by-default
+    // plan silently never reaches parents. Admin can still hide a day via the
+    // "Опубликовано" switch below.
     const body = {
       date: toISODate(date),
       group_id: groupId ?? undefined,
-      is_published: false,
+      is_published: true,
     };
     void createPlan
       .mutateAsync(body)
@@ -733,12 +738,16 @@ function DesktopWeekGrid({
   locale,
   t,
   onEditDay,
+  onPublish,
+  publishingId,
 }: {
   days: Date[];
   plans: MealPlan[];
   locale: 'ru' | 'kk';
   t: (k: string, o?: Record<string, unknown>) => string;
   onEditDay: (date: Date) => void;
+  onPublish: (planId: string) => void;
+  publishingId: string | null;
 }) {
   const shortDays = locale === 'kk' ? SHORT_DAYS_KK : SHORT_DAYS_RU;
 
@@ -851,14 +860,27 @@ function DesktopWeekGrid({
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
+                gap: 6,
               }}
             >
               <Badge variant={plan?.is_published ? 'success' : 'neutral'} dot>
                 {plan ? t(`is_published.${String(plan.is_published)}`) : t('is_published.false')}
               </Badge>
-              <Button variant="ghost" size="icon-xs" onClick={() => onEditDay(day)}>
-                <PencilIcon />
-              </Button>
+              <div className="flex items-center gap-1">
+                {plan && !plan.is_published && (
+                  <Button
+                    variant="outline"
+                    size="xs"
+                    onClick={() => onPublish(plan.id)}
+                    disabled={publishingId === plan.id}
+                  >
+                    {t('publish.button')}
+                  </Button>
+                )}
+                <Button variant="ghost" size="icon-xs" onClick={() => onEditDay(day)}>
+                  <PencilIcon />
+                </Button>
+              </div>
             </div>
           </div>
         );
@@ -873,10 +895,14 @@ function MobileDayView({
   plan,
   locale,
   t,
+  onPublish,
+  publishingId,
 }: {
   plan: MealPlan | undefined;
   locale: 'ru' | 'kk';
   t: (k: string, o?: Record<string, unknown>) => string;
+  onPublish: (planId: string) => void;
+  publishingId: string | null;
 }) {
   const totalCal = computeDayCalories(plan);
 
@@ -921,9 +947,21 @@ function MobileDayView({
             {t('calories.unit')}
           </div>
         </div>
-        <Badge variant={plan.is_published ? 'success' : 'neutral'} dot>
-          {t(`is_published.${String(plan.is_published)}`)}
-        </Badge>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {!plan.is_published && (
+            <Button
+              variant="outline"
+              size="xs"
+              onClick={() => onPublish(plan.id)}
+              disabled={publishingId === plan.id}
+            >
+              {t('publish.button')}
+            </Button>
+          )}
+          <Badge variant={plan.is_published ? 'success' : 'neutral'} dot>
+            {t(`is_published.${String(plan.is_published)}`)}
+          </Badge>
+        </div>
       </div>
 
       {/* Meal type cards */}
@@ -1096,6 +1134,22 @@ export default function MealPlansPage() {
     group_id: selectedGroupId ?? undefined,
   });
 
+  const publishPlan = useSetMealPlanPublished();
+  const publishingId = publishPlan.isPending ? (publishPlan.variables?.id ?? null) : null;
+
+  function handlePublish(planId: string) {
+    publishPlan.mutate(
+      { id: planId, isPublished: true },
+      {
+        onSuccess: () => toast.success(t('publish.success')),
+        onError: (err: unknown) => {
+          toast.error(i18n.t(toI18nKey(err)));
+          if (!isAppError(err)) console.error(err);
+        },
+      },
+    );
+  }
+
   function getPlanForDate(d: Date): MealPlan | undefined {
     const iso = toISODate(d);
     return plans?.find((p) => p.date === iso);
@@ -1181,7 +1235,13 @@ export default function MealPlansPage() {
             })}
           </div>
 
-          <MobileDayView plan={dayPlan} locale={locale} t={t} />
+          <MobileDayView
+            plan={dayPlan}
+            locale={locale}
+            t={t}
+            onPublish={handlePublish}
+            publishingId={publishingId}
+          />
 
           {editingDay && (
             <DayEditor
@@ -1291,6 +1351,8 @@ export default function MealPlansPage() {
           locale={locale}
           t={t}
           onEditDay={(d) => setEditingDay(d)}
+          onPublish={handlePublish}
+          publishingId={publishingId}
         />
       )}
 

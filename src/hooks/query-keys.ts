@@ -1,4 +1,8 @@
-import type { AttendanceEventListFilters, DailyStatusListFilters } from '@/api/attendance';
+import type {
+  AttendanceEventListFilters,
+  DailyStatusListFilters,
+  HistoryListFilters,
+} from '@/api/attendance';
 import type { CameraListFilters } from '@/api/cameras';
 import type { NotificationListFilters } from '@/api/notifications';
 import type { ChildListFilters, OffsetPaginationParams } from '@/api/children';
@@ -147,6 +151,8 @@ export const qk = {
     events: (filters: AttendanceEventListFilters = {}) =>
       ['attendance', 'events', 'list', filters] as const,
     eventDetail: (id: string) => ['attendance', 'events', 'detail', id] as const,
+    eventHistory: (eventId: string, filters: HistoryListFilters = {}) =>
+      ['attendance', 'events', 'history', eventId, filters] as const,
     dailyStatuses: (filters: DailyStatusListFilters = {}) =>
       ['attendance', 'daily-statuses', 'list', filters] as const,
   },

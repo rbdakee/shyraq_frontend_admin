@@ -62,6 +62,23 @@ export interface paths {
     patch: operations['UsersController_updateMe_v1'];
     trace?: never;
   };
+  '/api/v1/users/me/avatar': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Upload current user avatar (image ≤5MB). Returns canonical avatar_url to PATCH into /users/me. */
+    post: operations['UsersController_uploadAvatar_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/auth/otp/request': {
     parameters: {
       query?: never;
@@ -363,6 +380,30 @@ export interface paths {
     patch: operations['KindergartenController_updateMySettings_v1'];
     trace?: never;
   };
+  '/api/v1/admin/kindergartens/me/logo': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Upload / replace the caller kindergarten branding logo.
+     * @description multipart/form-data, field name `file`. Accepts `image/*` ≤ 5 MB. Replaces any existing logo (best-effort deletes the previous file). Returns the presigned `logo_url`.
+     */
+    post: operations['AdminKindergartenLogoController_uploadLogo_v1'];
+    /**
+     * Clear the caller kindergarten branding logo.
+     * @description Sets `logo_url` to null and best-effort deletes the stored file. Idempotent — a kindergarten with no logo returns `{ logo_url: null }`.
+     */
+    delete: operations['AdminKindergartenLogoController_deleteLogo_v1'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/saas/kindergartens': {
     parameters: {
       query?: never;
@@ -574,6 +615,51 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/specialist-types': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * List the kindergarten specialist-type directory.
+     * @description Active rows only by default (the staff/diagnostics dropdown set). Pass `include_inactive=true` for the full CRUD screen. Ordered by sort_order, then code.
+     */
+    get: operations['AdminSpecialistTypeController_list_v1'];
+    put?: never;
+    /** Create a custom specialist type. */
+    post: operations['AdminSpecialistTypeController_create_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/specialist-types/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    post?: never;
+    /**
+     * Delete a custom specialist type.
+     * @description System rows are permanent (409 specialist_type_system_immutable — deactivate instead). A code still referenced by staff/diagnostics is blocked (409 specialist_type_in_use).
+     */
+    delete: operations['AdminSpecialistTypeController_delete_v1'];
+    options?: never;
+    head?: never;
+    /**
+     * Update a specialist type (rename / (de)activate / reorder).
+     * @description System rows can be renamed, deactivated and reordered — but not deleted. `code` is immutable.
+     */
+    patch: operations['AdminSpecialistTypeController_update_v1'];
+    trace?: never;
+  };
   '/api/v1/locations': {
     parameters: {
       query?: never;
@@ -766,6 +852,26 @@ export interface paths {
     get: operations['ChildController_statusHistory_v1'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/children/{id}/activate': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Activate a child card (card_created → active).
+     * @description Manual enrollment action: flips a card_created child to active and sets enrollment_date. Precondition: the child must have an active tariff assignment covering now (assign one via POST /admin/tariff-assignments first) — otherwise 409 child_activation_requires_tariff. Writes a card_created→active child_status_history audit row. Idempotent at the HTTP level — a second call on an already-active child returns 422 invalid_child_status_transition.
+     */
+    post: operations['ChildController_activate_v1'];
     delete?: never;
     options?: never;
     head?: never;
@@ -985,7 +1091,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** List pending_approval guardian rows on children where I am an approved primary. */
+    /** List pending_approval guardian rows on children where I am an approved primary. Tenant is resolved from the resource (the children I am primary of), not the token: a multi-kg parent (unscoped JWT) fans out across every kindergarten. */
     get: operations['ParentApprovalController_listPending_v1'];
     put?: never;
     post?: never;
@@ -1241,6 +1347,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/parent/children/{childId}/kindergarten': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get the kindergarten the child attends (name / address / phone). Available only to approved guardians of the child (ChildAccessGuard); tenant is derived from the child, so it works for multi-kg parents. */
+    get: operations['ParentKindergartenController_getKindergarten_v1'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/push-tokens': {
     parameters: {
       query?: never;
@@ -1372,6 +1495,23 @@ export interface paths {
     put?: never;
     /** Resolve a scanned Identity QR. Returns the user identity + (parent-only) linked children + per-role allowed_actions. */
     post: operations['StaffQrController_scan_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/qr/scan': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Resolve a scanned Identity QR. Returns the user identity + (parent-only) linked children + per-role allowed_actions. */
+    post: operations['AdminQrController_scan_v1'];
     delete?: never;
     options?: never;
     head?: never;
@@ -1647,7 +1787,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** List payments (filters: provider, status, child_id, from_date, to_date). */
+    /** List payments (filters: provider, status, child_id, refund_required, from_date, to_date). Pass refund_required=true to get the double-payment refund queue. */
     get: operations['AdminPaymentController_list_v1'];
     put?: never;
     post?: never;
@@ -2047,6 +2187,92 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/saas/kindergartens/{kindergartenId}/bcc/account': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Read BCC account status without secrets. */
+    get: operations['SaasBccAccountController_get_v1'];
+    /** Create or update a draft BCC merchant account. */
+    put: operations['SaasBccAccountController_upsert_v1'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/saas/kindergartens/{kindergartenId}/bcc/account/check': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Run BCC TRTYPE=800 and activate the account on success. */
+    post: operations['SaasBccAccountController_check_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/saas/kindergartens/{kindergartenId}/bcc/account/disable': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Disable new BCC payments without deleting history. */
+    post: operations['SaasBccAccountController_disable_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/saas/kindergartens/{kindergartenId}/bcc/account/rotate-mac': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Rotate the encrypted MAC key and require a new connection check. */
+    post: operations['SaasBccAccountController_rotateMac_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/saas/kindergartens/{kindergartenId}/bcc/account/rotate-callback-credentials': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Rotate callback token and Basic credentials; return them once. */
+    post: operations['SaasBccAccountController_rotateCallbackCredentials_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/admin/kaspi/connect/init': {
     parameters: {
       query?: never;
@@ -2159,8 +2385,25 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Get a single invoice with its line items. Re-checks guardian-of-child access; nanny → 403. */
+    /** Get a single invoice with its line items. Tenant resolved from the invoice (InvoiceAccessGuard); re-checks guardian-of-child access; nanny → 403. */
     get: operations['ParentInvoiceController_getOne_v1'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/parent/invoices/{id}/payment-methods': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List globally enabled payment providers that are active for the invoice kindergarten. */
+    get: operations['ParentInvoiceController_listPaymentMethods_v1'];
     put?: never;
     post?: never;
     delete?: never;
@@ -2220,6 +2463,76 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/parent/payment-profile': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Get private billing details; falls back to the verified login phone when no profile is saved. */
+    get: operations['ParentPaymentProfileController_get_v1'];
+    /** Atomically save both private billing fields without changing the login phone. */
+    put: operations['ParentPaymentProfileController_save_v1'];
+    post?: never;
+    /** Delete both saved billing fields. */
+    delete: operations['ParentPaymentProfileController_delete_v1'];
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/payments/bcc/checkout/{token}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Consume a one-time BCC checkout token and POST the signed form from the WebView. */
+    get: operations['BccCheckoutController_open_v1'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/payments/bcc/return': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Neutral BACKREF page. It never treats the browser return as payment success. */
+    get: operations['BccCheckoutController_return_v1'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/webhooks/payments/bcc/{callbackToken}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Receive an authenticated BCC URL notification */
+    post: operations['BccCallbackController_callback_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/webhooks/payments/{provider}': {
     parameters: {
       query?: never;
@@ -2229,7 +2542,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Unified webhook endpoint. provider ∈ mock|halyk_epay|kaspi_pay|tiptoppay|freedom_pay. Returns 200 for known business outcomes (success / duplicate / unknown invoice). Returns 400 webhook_signature_invalid when the provider port rejects the signature so misconfiguration fires provider-side alerts. */
+    /** Unified webhook endpoint. provider ∈ mock|halyk_epay|kaspi_pay|tiptoppay|freedom_pay|bcc. Returns 200 for known business outcomes (success / duplicate / unknown invoice). Returns 400 webhook_signature_invalid when the provider port rejects the signature so misconfiguration fires provider-side alerts. */
     post: operations['PaymentWebhookController_webhook_v1'];
     delete?: never;
     options?: never;
@@ -2621,6 +2934,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/staff/attendance/today': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Aggregate attendance donut counts for one Asia/Almaty calendar day. Mentors MUST pass a groupId they are actively assigned to; specialist/reception may omit it for a whole-kindergarten summary. */
+    get: operations['StaffAttendanceController_today_v1'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/staff/attendance/check-in': {
     parameters: {
       query?: never;
@@ -2741,6 +3071,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/attendance/check-in': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Record a check-in. Use after POST /admin/qr/scan (QR flow), or with a childId picked by hand (manual entry / back-fill).
+     * @description Omit `recordedAt` for a live arrival. Pass a past `recordedAt` to back-fill a day that was not recorded at the time — the row, its timeline entry and its audit entry are still written, but the parent push is suppressed (see the notification note on check-out).
+     */
+    post: operations['AdminAttendanceController_checkIn_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/attendance/check-out': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Record a check-out. `pickupUserId` must be an approved active pickup guardian for the child.
+     * @description Same back-fill semantics as check-in. Note check-out deliberately does NOT change the child’s daily status — the intra-day status only moves on check-in or via POST /admin/daily-status.
+     */
+    post: operations['AdminAttendanceController_checkOut_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/admin/attendance-events': {
     parameters: {
       query?: never;
@@ -2769,11 +3139,38 @@ export interface paths {
     get: operations['AdminAttendanceController_getEvent_v1'];
     put?: never;
     post?: never;
+    /**
+     * Soft-delete an attendance event recorded by mistake.
+     * @description The row is tombstoned, not dropped, so its history stays resolvable — but it disappears from every read: the events list, the child timeline, and the dashboard counters. The paired timeline entry is removed and daily_status is recomputed (a child left with no check-in that day falls back from `present` to `absent`, while an explicit `sick` / `on_vacation` is preserved). Re-deleting returns 404. Silent: no parent notification.
+     */
+    delete: operations['AdminAttendanceController_deleteEvent_v1'];
+    options?: never;
+    head?: never;
+    /**
+     * Admin-level patch of an attendance event. No edit-window restriction (admin can fix any historical event).
+     * @description Beyond the staff-patchable fields, an admin may correct `childId` (record filed against the wrong kid) and `eventType` (mis-pressed button). Both cascade to the paired timeline entry and recompute daily_status for every affected child+day. `method` stays immutable — it records how the row came to exist. Silent: no parent notification.
+     */
+    patch: operations['AdminAttendanceController_patchEvent_v1'];
+    trace?: never;
+  };
+  '/api/v1/admin/attendance-events/{eventId}/history': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Correction history for one attendance event — who changed what, and when.
+     * @description Newest first. Reads `audit_log`, so it survives the event being soft-deleted: pass the id of a deleted event to see the `delete` entry and its `before` snapshot. An event never touched since creation returns exactly one `create` entry.
+     */
+    get: operations['AdminAttendanceController_getEventHistory_v1'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
-    /** Admin-level patch of an attendance event. No edit-window restriction (admin can fix any historical event). */
-    patch: operations['AdminAttendanceController_patchEvent_v1'];
+    patch?: never;
     trace?: never;
   };
   '/api/v1/admin/daily-status': {
@@ -2786,7 +3183,11 @@ export interface paths {
     /** Paged list of child_daily_status records. Filter by childId and/or date range. */
     get: operations['AdminAttendanceController_listDailyStatuses_v1'];
     put?: never;
-    post?: never;
+    /**
+     * Set a child’s status for a date (absent / sick / on_vacation / late / early_pickup / present). Upsert on (childId, date).
+     * @description An explicit status outranks anything inferred from the event log: a `sick` set here is not overwritten by a later check-in, nor demoted when events are corrected. Returns 200 (upsert), not 201.
+     */
+    post: operations['AdminAttendanceController_setDailyStatus_v1'];
     delete?: never;
     options?: never;
     head?: never;
@@ -3059,7 +3460,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Request an OTP code for the trusted-person sub-flow. Generates a 6-digit code, stores under `otp:request:trusted-person:{userId}` (TTL 300s), SMSes to `phone`. Per-phone rate-limit shared with auth login (`rate:otp:{phone}`). */
+    /** Request an OTP code for the trusted-person sub-flow. Generates a 6-digit code, stores under `otp:request:trusted-person:{userId}` (TTL 1800s), and sends it to the requesting parent's own registered phone (re-auth). Per-phone rate-limit shared with auth login (`rate:otp:{phone}`). */
     post: operations['ParentParentRequestController_requestOtp_v1'];
     delete?: never;
     options?: never;
@@ -3424,6 +3825,23 @@ export interface paths {
     put?: never;
     /** Increment group_stories.views counter. Called by Parent App on story view. Accessible to mentor, admin AND parent. */
     post: operations['StaffStoriesController_view_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/staff/media': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Upload a single staff media image (jpeg/png/webp ≤ 10 MB). Returns canonical url + key + bytes for use in timeline/progress-note/diagnostic record fields. */
+    post: operations['StaffMediaController_upload_v1'];
     delete?: never;
     options?: never;
     head?: never;
@@ -3810,6 +4228,74 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/staff/my-groups': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** The caller's active mentor-group assignments with display metadata (name, age range, room, primary flag, active-children count). */
+    get: operations['StaffGroupsController_myGroups_v1'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/staff/my-groups/{groupId}/children': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Roster of active children in one of the caller's assigned groups, with each child's day_status for today (Asia/Almaty). Opaque-cursor paginated. */
+    get: operations['StaffGroupsController_groupRoster_v1'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/staff/children': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Active children of the caller's kindergarten for specialist diagnostics child-picking. Opaque-cursor paginated. The `specialist_scope` flag is retained per the mobile contract; the route is specialist-only. */
+    get: operations['StaffChildController_specialistChildren_v1'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/staff/children/{id}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Full child card (group, allergies, medical notes, approved guardians). Kindergarten-scoped — readable by any staff role of the child's kindergarten. */
+    get: operations['StaffChildController_childCard_v1'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3903,6 +4389,13 @@ export interface components {
        */
       locale?: 'kk' | 'ru';
     };
+    AvatarUploadResponseDto: {
+      /**
+       * @description Canonical avatar URL. PATCH it into /users/me { avatarUrl }. Presigned on read.
+       * @example /api/v1/media/avatars/aaaa-uuid/f1e2-uuid.jpg
+       */
+      avatar_url: string;
+    };
     RequestOtpDto: {
       /**
        * @description Kazakhstan phone number in E.164 format
@@ -3924,7 +4417,7 @@ export interface components {
       otp_ref: string;
       /**
        * @description TTL in seconds.
-       * @example 300
+       * @example 1800
        */
       expires_in: number;
     };
@@ -3958,6 +4451,18 @@ export interface components {
       kindergarten_id: string | null;
       /** @example null */
       group_id: string | null;
+      /**
+       * @description Raw specialist-type enum. Non-null only when role === "specialist"; null otherwise. Mobile builds its own i18n label map.
+       * @example null
+       * @enum {string|null}
+       */
+      specialist_type:
+        | 'psychologist'
+        | 'speech_therapist'
+        | 'music_teacher'
+        | 'physical_ed'
+        | 'nutritionist'
+        | null;
     };
     KindergartenSummaryResponseDto: {
       /** @example 5b3d3b8a-7f4f-4d2a-9c84-9a7c1c1c1c1c */
@@ -4119,15 +4624,10 @@ export interface components {
        */
       role: 'admin' | 'mentor' | 'specialist' | 'reception';
       /**
+       * @description Specialist-type code. Required when role=specialist; forbidden otherwise. Must be an ACTIVE code from the kindergarten directory (GET /admin/specialist-types) — else 400 specialist_type_unknown.
        * @example psychologist
-       * @enum {string}
        */
-      specialist_type?:
-        | 'psychologist'
-        | 'speech_therapist'
-        | 'music_teacher'
-        | 'physical_ed'
-        | 'nutritionist';
+      specialist_type?: string;
       /** @example 2026-04-24 */
       hired_at?: string;
     };
@@ -4140,16 +4640,10 @@ export interface components {
        */
       role?: 'admin' | 'mentor' | 'specialist' | 'reception';
       /**
+       * @description Specialist-type code (null to clear). When set on a role=specialist member, must be an ACTIVE directory code (GET /admin/specialist-types) — else 400 specialist_type_unknown.
        * @example psychologist
-       * @enum {string|null}
        */
-      specialist_type?:
-        | 'psychologist'
-        | 'speech_therapist'
-        | 'music_teacher'
-        | 'physical_ed'
-        | 'nutritionist'
-        | null;
+      specialist_type?: Record<string, never> | null;
       /** @example 2026-04-24 */
       hired_at?: Record<string, never> | null;
       /** @example 2026-10-01 */
@@ -4166,6 +4660,11 @@ export interface components {
       address: string | null;
       /** @example +77272221100 */
       phone: string | null;
+      /**
+       * @description Branding logo. Short-lived presigned media URL (or null when unset) — the stored value is a canonical media key, signed on the way out by MediaSignInterceptor. Upload/replace via POST /admin/kindergartens/me/logo.
+       * @example https://balam-media.object.pscloud.io/7c2c2b6a/2026-07/9f2c….png?X-Amz-…
+       */
+      logo_url: string | null;
       /** @example standard */
       plan: string;
       /**
@@ -4197,6 +4696,13 @@ export interface components {
        *     }
        */
       settings: Record<string, never>;
+    };
+    KindergartenLogoResponseDto: {
+      /**
+       * @description Presigned, ready-to-render logo URL after upload (or null after DELETE). Also surfaced as `logo_url` on the kindergarten object.
+       * @example https://balam-media.object.pscloud.io/7c2c2b6a/2026-07/9f2c….png?X-Amz-…
+       */
+      logo_url: string | null;
     };
     CreateKindergartenAdminDto: {
       /**
@@ -4505,6 +5011,78 @@ export interface components {
       /** @example 2026-01-15T10:00:00.000Z */
       created_at: string;
     };
+    SpecialistTypeResponseDto: {
+      /** @example 9f2c8a1b-3d4e-4f5a-8b6c-7d8e9f0a1b2c */
+      id: string;
+      /**
+       * @description Machine code (immutable). Referenced by staff_members.specialist_type and diagnostic_templates.specialist_type.
+       * @example doctor_nutritionist
+       */
+      code: string;
+      /**
+       * @description Localised display labels. At least one of ru/kk is present; extra locales allowed.
+       * @example {
+       *       "ru": "Врач Нутрициолог",
+       *       "kk": "Нутрициолог дәрігер"
+       *     }
+       */
+      name_i18n: Record<string, never>;
+      /**
+       * @description System (seeded) rows cannot be deleted, only deactivated.
+       * @example true
+       */
+      is_system: boolean;
+      /** @example true */
+      is_active: boolean;
+      /**
+       * @description Ascending display order.
+       * @example 5
+       */
+      sort_order: number;
+      /** @example 2026-07-10T10:00:00.000Z */
+      created_at: string;
+      /** @example 2026-07-10T10:00:00.000Z */
+      updated_at: string;
+    };
+    CreateSpecialistTypeDto: {
+      /**
+       * @description Immutable machine code — lowercase snake_case, letter-led, 2–64 chars. Unique per kindergarten.
+       * @example art_therapist
+       */
+      code: string;
+      /**
+       * @description Localised labels object. At least one of `ru` / `kk` must be a non-empty string.
+       * @example {
+       *       "ru": "Арт-терапевт",
+       *       "kk": "Арт-терапевт"
+       *     }
+       */
+      name_i18n: Record<string, never>;
+      /**
+       * @default true
+       * @example true
+       */
+      is_active: boolean;
+      /**
+       * @description Ascending display order. Defaults after the system rows.
+       * @example 100
+       */
+      sort_order?: number;
+    };
+    UpdateSpecialistTypeDto: {
+      /**
+       * @description Localised labels object. At least one of `ru` / `kk` must be non-empty.
+       * @example {
+       *       "ru": "Нейропсихолог (Психолог)",
+       *       "kk": "Нейропсихолог"
+       *     }
+       */
+      name_i18n?: Record<string, never>;
+      /** @example false */
+      is_active?: boolean;
+      /** @example 3 */
+      sort_order?: number;
+    };
     LocationDto: {
       /** @example a1b2c3d4-1234-5678-abcd-1234567890ab */
       id: string;
@@ -4589,6 +5167,21 @@ export interface components {
       status: 'card_created' | 'active' | 'archived';
       /** @example b2c3d4e5-1234-5678-abcd-1234567890ab */
       current_group_id: Record<string, never> | null;
+      /**
+       * @description Display name of the current group, resolved from `groups` (identity overlay). Null when the child has no group, the group name is blank, or the overlay was not built for this response (e.g. cross-tenant parent listing).
+       * @example Подготовительная «А»
+       */
+      current_group_name: Record<string, never> | null;
+      /**
+       * @description staff_members.id of the active mentor of the child current group (group_mentors row with unassigned_at IS NULL). Null when the child has no group, the group has no active mentor, or the overlay was not built for this response (only the parent child-card endpoint resolves it).
+       * @example d3e4f5a6-2345-6789-bcde-2345678901bc
+       */
+      current_mentor_id: Record<string, never> | null;
+      /**
+       * @description Display name of the active mentor, resolved via the staff identity fallback (staff_members.full_name ?? users.full_name). Null when there is no active mentor, the staff row/name is missing/blank, or the overlay was not built for this response.
+       * @example Динара Сериковна
+       */
+      current_mentor_name: Record<string, never> | null;
       /** @example null */
       enrollment_date: Record<string, never> | null;
       /** @example null */
@@ -4703,6 +5296,7 @@ export interface components {
       /** @example 2 */
       total: number;
     };
+    ActivateChildDto: Record<string, never>;
     ArchiveChildDto: {
       /**
        * @description Human-readable reason for archiving (1–500 characters).
@@ -5045,6 +5639,21 @@ export interface components {
        */
       location_id: string;
     };
+    ParentKindergartenDto: {
+      /** @example 331faeff-2ab2-43a8-b504-7c34df8b547c */
+      id: string;
+      /** @example Детский сад «Солнышко» */
+      name: string;
+      /** @example Алматы, ул. Абая, 1 */
+      address: Record<string, never> | null;
+      /** @example +77272221100 */
+      phone: Record<string, never> | null;
+      /**
+       * @description Branding logo. Short-lived presigned media URL (or null when unset). Safe to drop straight into an <img src>. Re-fetch the kindergarten to refresh an expired link.
+       * @example https://balam-media.object.pscloud.io/331faeff/2026-07/9f2c….png?X-Amz-…
+       */
+      logo_url: string | null;
+    };
     RegisterPushTokenDto: {
       /**
        * @description FCM/APNS device token (max 512 chars).
@@ -5244,6 +5853,7 @@ export interface components {
         | 'payment.completed'
         | 'payment.failed'
         | 'payment.refunded'
+        | 'payment.refund_required'
         | 'refund.processed'
         | 'enrollment.first_invoice_skipped'
         | 'child.archived'
@@ -5965,7 +6575,7 @@ export interface components {
        * @example mock
        * @enum {string}
        */
-      provider: 'mock' | 'halyk_epay' | 'kaspi_pay' | 'tiptoppay' | 'freedom_pay' | 'cash';
+      provider: 'mock' | 'halyk_epay' | 'kaspi_pay' | 'tiptoppay' | 'freedom_pay' | 'bcc' | 'cash';
       /**
        * @description Transaction id assigned by the provider.
        * @example MOCK-TXN-0001
@@ -5991,6 +6601,21 @@ export interface components {
        * @example null
        */
       refund_id: Record<string, never> | null;
+      /**
+       * @description True when this completed payment is a duplicate (another guardian already paid the same invoice) and needs a manual admin refund. Show "Нужен возврат" in the admin app.
+       * @example false
+       */
+      refund_required: boolean;
+      /**
+       * @description Why a refund is required (e.g. double_payment). Null otherwise.
+       * @example double_payment
+       */
+      refund_reason: Record<string, never> | null;
+      /**
+       * @description The FIRST (kept) payment this one duplicates — link to it in the admin app ("Двойная оплата, см. оплату <id>"). Null when not a duplicate.
+       * @example pa1b2c3d-0006-0006-0006-000000000006
+       */
+      duplicate_of_payment_id: Record<string, never> | null;
       /** @example 2026-06-10T11:55:00.000Z */
       created_at: string;
       /** @example 2026-06-10T12:00:00.000Z */
@@ -6759,6 +7384,142 @@ export interface components {
        */
       alarm?: string | null;
     };
+    UpsertBccAccountDto: {
+      /** @example SHYRAQ_TEST_MERCHANT */
+      merchant_id: string;
+      /** @example 88888881 */
+      terminal_id: string;
+      /** @example Shyraq Test */
+      merchant_name?: string;
+      /**
+       * @example test
+       * @enum {string}
+       */
+      environment: 'test' | 'live';
+      /**
+       * @description First 16-byte HEX component. Never persisted.
+       * @example 690B5589573ACB3608DB7395A319B175
+       */
+      mac_key_component_1: string;
+      /**
+       * @description Second 16-byte HEX component. Never persisted.
+       * @example 02BBF98BB3411445D15498E2DC22E3E1
+       */
+      mac_key_component_2: string;
+    };
+    BccConnectionResultDto: {
+      /** @example true */
+      success: boolean;
+      /** @example 0 */
+      action: Record<string, never> | null;
+      /** @example 00 */
+      rc: Record<string, never> | null;
+      /** @example APPROVED */
+      rc_text: Record<string, never> | null;
+    };
+    BccAccountProvisioningResponseDto: {
+      /** @example true */
+      connected: boolean;
+      /**
+       * @example active
+       * @enum {string}
+       */
+      status: 'draft' | 'active' | 'disabled';
+      /** @example SHYRAQ_TEST_MERCHANT */
+      merchant_id: string;
+      /** @example 88888881 */
+      terminal_id: string;
+      /** @example Shyraq Test */
+      merchant_name: Record<string, never> | null;
+      /**
+       * @example test
+       * @enum {string}
+       */
+      environment: 'test' | 'live';
+      /** @example 2026-07-06T04:30:00.000Z */
+      last_connection_checked_at: Record<string, never> | null;
+      last_connection_result: components['schemas']['BccConnectionResultDto'] | null;
+      /**
+       * @description Returned only when callback credentials are first created.
+       * @example https://balam-api-dev.innodev.kz:443/api/v1/webhooks/payments/bcc/one-time-token
+       */
+      notify_url?: string;
+      /**
+       * @description Returned only when callback credentials are first created.
+       * @example bcc_30f6e124d82b2e8b0671654b
+       */
+      notify_username?: string;
+      /**
+       * @description Returned once. It cannot be recovered through GET.
+       * @example one-time-random-password
+       */
+      notify_password?: string;
+    };
+    BccAccountResponseDto: {
+      /** @example true */
+      connected: boolean;
+      /**
+       * @example active
+       * @enum {string}
+       */
+      status: 'draft' | 'active' | 'disabled';
+      /** @example SHYRAQ_TEST_MERCHANT */
+      merchant_id: string;
+      /** @example 88888881 */
+      terminal_id: string;
+      /** @example Shyraq Test */
+      merchant_name: Record<string, never> | null;
+      /**
+       * @example test
+       * @enum {string}
+       */
+      environment: 'test' | 'live';
+      /** @example 2026-07-06T04:30:00.000Z */
+      last_connection_checked_at: Record<string, never> | null;
+      last_connection_result: components['schemas']['BccConnectionResultDto'] | null;
+    };
+    BccConnectionCheckResponseDto: {
+      /** @example true */
+      connected: boolean;
+      /**
+       * @example active
+       * @enum {string}
+       */
+      status: 'draft' | 'active' | 'disabled';
+      /** @example 2026-07-06T04:30:00.000Z */
+      checked_at: string;
+      result: components['schemas']['BccConnectionResultDto'];
+    };
+    BccDisableResponseDto: {
+      /**
+       * @example disabled
+       * @enum {string}
+       */
+      status: 'disabled';
+    };
+    RotateBccMacDto: {
+      /**
+       * @description First 16-byte HEX component. Never persisted.
+       * @example 690B5589573ACB3608DB7395A319B175
+       */
+      mac_key_component_1: string;
+      /**
+       * @description Second 16-byte HEX component. Never persisted.
+       * @example 02BBF98BB3411445D15498E2DC22E3E1
+       */
+      mac_key_component_2: string;
+    };
+    BccCallbackCredentialsResponseDto: {
+      /** @example https://balam-api-dev.innodev.kz:443/api/v1/webhooks/payments/bcc/one-time-token */
+      notify_url: string;
+      /** @example bcc_30f6e124d82b2e8b0671654b */
+      notify_username: string;
+      /**
+       * @description Returned once. It cannot be recovered through GET.
+       * @example one-time-random-password
+       */
+      notify_password: string;
+    };
     KaspiInitResponseDto: {
       /**
        * @description Opaque Kaspi process id — pass it to send-phone and verify-otp.
@@ -6854,6 +7615,23 @@ export interface components {
        */
       status: 'revoked';
     };
+    PaymentMethodDto: {
+      /**
+       * @example bcc
+       * @enum {string}
+       */
+      provider: 'mock' | 'halyk_epay' | 'kaspi_pay' | 'tiptoppay' | 'freedom_pay' | 'bcc';
+      /**
+       * @example redirect
+       * @enum {string}
+       */
+      kind: 'redirect' | 'deeplink';
+      /** @example BCC Карта */
+      display_name: string;
+    };
+    PaymentMethodsResponseDto: {
+      providers: components['schemas']['PaymentMethodDto'][];
+    };
     PaymentCalendarMonthDto: {
       /**
        * @description Period start as ISO date (first day of the month).
@@ -6917,11 +7695,11 @@ export interface components {
     };
     InitiatePaymentDto: {
       /**
-       * @description Payment provider. Use "mock" for dev/test; "cash" is admin-only.
+       * @description Payment provider. Use "mock" for dev/test; "cash" is admin-only. Legacy alias "kaspi" is accepted and normalized to "kaspi_pay".
        * @example mock
        * @enum {string}
        */
-      provider: 'mock' | 'halyk_epay' | 'kaspi_pay' | 'tiptoppay' | 'freedom_pay' | 'cash';
+      provider: 'mock' | 'halyk_epay' | 'kaspi_pay' | 'tiptoppay' | 'freedom_pay' | 'bcc' | 'cash';
       /**
        * @description full — pays the full remaining balance; partial — requires amount field.
        * @example full
@@ -6939,15 +7717,30 @@ export interface components {
        */
       idempotency_key: string;
       /**
-       * @description URL the provider redirects to after the payment page.
+       * @description Redirect URL for non-BCC providers. BCC rejects this field and uses the server-owned BACKREF.
        * @example https://app.shyraq.kz/payment/callback
        */
-      return_url: string;
+      return_url?: string;
       /**
        * @description Required when provider=kaspi_pay — phone Kaspi sends the remote invoice to. Ignored for other providers.
        * @example 77011234567
        */
       kaspi_phone_number?: string;
+      /**
+       * @description Required together with billing_address for provider=bcc.
+       * @example +77011234567
+       */
+      billing_phone?: string;
+      /**
+       * @description Required together with billing_phone for provider=bcc.
+       * @example г. Алматы, ул. Абая, 10
+       */
+      billing_address?: string;
+      /**
+       * @description When true for BCC, atomically saves both confirmed billing fields for future payments.
+       * @example false
+       */
+      save_billing_profile?: boolean;
     };
     InitiatePaymentResponseDto: {
       /** @example pa1b2c3d-0007-0007-0007-000000000007 */
@@ -6971,26 +7764,41 @@ export interface components {
        */
       months: 3 | 6 | 12 | 24;
       /**
-       * @description Payment provider for the prepayment.
+       * @description Payment provider for the prepayment. Legacy alias "kaspi" is accepted and normalized to "kaspi_pay".
        * @example mock
        * @enum {string}
        */
-      provider: 'mock' | 'halyk_epay' | 'kaspi_pay' | 'tiptoppay' | 'freedom_pay' | 'cash';
+      provider: 'mock' | 'halyk_epay' | 'kaspi_pay' | 'tiptoppay' | 'freedom_pay' | 'bcc' | 'cash';
       /**
        * @description Client-generated UUID v4 idempotency key.
        * @example b2c3d4e5-f6a7-8901-bcde-f12345678901
        */
       idempotency_key: string;
       /**
-       * @description Redirect URL after provider payment page.
+       * @description Redirect URL for non-BCC providers. BCC uses the server-owned BACKREF.
        * @example https://app.shyraq.kz/payment/prepayment/callback
        */
-      return_url: string;
+      return_url?: string;
       /**
        * @description Required when provider=kaspi_pay — phone Kaspi sends the remote invoice to. Ignored for other providers.
        * @example 77011234567
        */
       kaspi_phone_number?: string;
+      /**
+       * @description Required together with billing_address for provider=bcc.
+       * @example +77011234567
+       */
+      billing_phone?: string;
+      /**
+       * @description Required together with billing_phone for provider=bcc.
+       * @example г. Алматы, ул. Абая, 10
+       */
+      billing_address?: string;
+      /**
+       * @description When true for BCC, atomically saves both confirmed billing fields.
+       * @example false
+       */
+      save_billing_profile?: boolean;
     };
     PrepaymentPreviewDto: {
       /**
@@ -7030,6 +7838,23 @@ export interface components {
        */
       deeplink?: Record<string, never> | null;
       preview: components['schemas']['PrepaymentPreviewDto'];
+    };
+    PaymentProfileResponseDto: {
+      /** @example +77011234567 */
+      billing_phone: string;
+      /** @example г. Алматы, ул. Абая, 10 */
+      billing_address: Record<string, never> | null;
+      /** @example true */
+      saved: boolean;
+    };
+    SavePaymentProfileDto: {
+      /**
+       * @description Billing phone used for card payments. This never changes the login phone.
+       * @example +77011234567
+       */
+      billing_phone: string;
+      /** @example г. Алматы, ул. Абая, 10 */
+      billing_address: string;
     };
     PaymentWebhookDto: Record<string, never>;
     WebhookAckDto: Record<string, never>;
@@ -7084,6 +7909,8 @@ export interface components {
       photo_url?: Record<string, never>;
       /** @example 350 */
       calories?: Record<string, never>;
+      /** @example 08:30 */
+      serve_time?: Record<string, never>;
       /** @example 0 */
       position: number;
     };
@@ -7157,6 +7984,11 @@ export interface components {
        */
       calories?: number;
       /**
+       * @description Serve time HH:mm
+       * @example 08:30
+       */
+      serve_time?: string;
+      /**
        * @description Display order (0 = first)
        * @example 0
        */
@@ -7209,6 +8041,11 @@ export interface components {
       photo_url?: string;
       /** @example 350 */
       calories?: number;
+      /**
+       * @description Serve time HH:mm
+       * @example 08:30
+       */
+      serve_time?: string;
       /** @example 1 */
       position?: number;
     };
@@ -7236,6 +8073,11 @@ export interface components {
       endTime: string;
       /** @example Утренний круг */
       activityName: string;
+      /**
+       * @example lesson
+       * @enum {string}
+       */
+      category: 'lesson' | 'activity' | 'meal' | 'sleep';
       /** @example b2a1c0d9-0000-0000-0000-000000000001 */
       locationId?: Record<string, never> | null;
       /** @example Сбор в круг */
@@ -7320,6 +8162,13 @@ export interface components {
       endTime: string;
       /** @example Утренний круг */
       activityName: string;
+      /**
+       * @description Slot type for week-grid colouring. Server default is "activity" if omitted.
+       * @default activity
+       * @example lesson
+       * @enum {string}
+       */
+      category: 'lesson' | 'activity' | 'meal' | 'sleep';
       /** @example b2a1c0d9-0000-0000-0000-000000000001 */
       locationId?: string;
       /** @example Сбор в круг, обсуждение дня */
@@ -7337,6 +8186,11 @@ export interface components {
       endTime?: string;
       /** @example ИЗО */
       activityName?: string;
+      /**
+       * @example meal
+       * @enum {string}
+       */
+      category?: 'lesson' | 'activity' | 'meal' | 'sleep';
       /** @example b2a1c0d9-0000-0000-0000-000000000001 */
       locationId?: string | null;
       /** @example Уточнённое описание */
@@ -7356,8 +8210,18 @@ export interface components {
       templateSlotId?: Record<string, never> | null;
       /** @example Утренний круг */
       activityName: string;
+      /**
+       * @example activity
+       * @enum {string}
+       */
+      category: 'lesson' | 'activity' | 'meal' | 'sleep';
       /** @example b2a1c0d9-0000-0000-0000-000000000001 */
       locationId?: Record<string, never> | null;
+      /**
+       * @description Display name resolved from locationId → locations.name. null when locationId is null, the location is not found, or its name is blank/whitespace.
+       * @example Музыкальный зал
+       */
+      location_name: Record<string, never> | null;
       /** @example 2026-05-04T09:00:00.000Z */
       startsAt: string;
       /** @example 2026-05-04T09:45:00.000Z */
@@ -7381,6 +8245,13 @@ export interface components {
       groupId: string;
       /** @example Прогулка */
       activityName: string;
+      /**
+       * @description Day-view colour bucket. Server default "activity" if omitted.
+       * @default activity
+       * @example activity
+       * @enum {string}
+       */
+      category: 'lesson' | 'activity' | 'meal' | 'sleep';
       /** @example b2a1c0d9-0000-0000-0000-000000000001 */
       locationId?: string;
       /**
@@ -7396,6 +8267,11 @@ export interface components {
     UpdateActivityEventDto: {
       /** @example Прогулка (изменено) */
       activityName?: string;
+      /**
+       * @example activity
+       * @enum {string}
+       */
+      category?: 'lesson' | 'activity' | 'meal' | 'sleep';
       /** @example b2a1c0d9-0000-0000-0000-000000000001 */
       locationId?: string;
       /** @example 2026-05-04T10:00:00.000Z */
@@ -7534,6 +8410,38 @@ export interface components {
       kindergartens: components['schemas']['RolloutKindergartenItemDto'][];
       totals: components['schemas']['RolloutTotalsDto'];
     };
+    StaffAttendanceTodayResponseDto: {
+      /**
+       * @description Children whose last event today is check_in.
+       * @example 42
+       */
+      in_kindergarten: number;
+      /**
+       * @description Children whose last event today is check_out.
+       * @example 7
+       */
+      checked_out: number;
+      /**
+       * @description daily_status='absent' AND no check_in event that day.
+       * @example 5
+       */
+      absent: number;
+      /**
+       * @description daily_status='on_vacation'.
+       * @example 3
+       */
+      on_vacation: number;
+      /**
+       * @description daily_status='sick'.
+       * @example 2
+       */
+      sick: number;
+      /**
+       * @description daily_status='late'.
+       * @example 4
+       */
+      late: number;
+    };
     CheckInDto: {
       /**
        * @description Child to check in.
@@ -7559,6 +8467,11 @@ export interface components {
       /** @example cccccccc-cccc-cccc-cccc-cccccccccccc */
       childId: string;
       /**
+       * @description Display name of the child (identity overlay: children.id → children.full_name within the kindergarten; includes archived children). null when the child row is missing or cross-tenant.
+       * @example Алихан Сериков
+       */
+      child_name?: Record<string, never> | null;
+      /**
        * @example check_in
        * @enum {string}
        */
@@ -7574,10 +8487,20 @@ export interface components {
        */
       recordedBy?: Record<string, never> | null;
       /**
+       * @description Display name of the recorder (identity overlay: staff_members.id → users.full_name). null when recordedBy is absent or the name is empty/whitespace.
+       * @example Айгуль Сатпаева
+       */
+      recorded_by_full_name?: Record<string, never> | null;
+      /**
        * @description users.id picking up the child (check_out only).
        * @example aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
        */
       pickupUserId?: Record<string, never> | null;
+      /**
+       * @description Display name of the pickup user (identity overlay: users.id → users.full_name). null when pickupUserId is absent (non check_out events) or the name is empty/whitespace.
+       * @example Бахыт Нурланова
+       */
+      pickup_user_full_name?: Record<string, never> | null;
       /** @description pickup_requests.id (B11+); always null in B8. */
       pickupRequestId?: Record<string, never> | null;
       /** @example Прибыл с папой */
@@ -7640,9 +8563,9 @@ export interface components {
        */
       mediaUrls?: string[];
       /**
+       * @description Freeform jsonb. Adaptive shape per entry_type (BR-013, server-enforced): mood → { mood: 'happy'|'ok'|'sad' }; meal → { ate: 'all'|'half'|'little' }. The typed key is validated only when present (out-of-range → 422 invalid_timeline_metadata); extra keys are ignored; other entry types are not validated.
        * @example {
-       *       "mood": "happy",
-       *       "energyLevel": "high"
+       *       "mood": "happy"
        *     }
        */
       metadata?: Record<string, never>;
@@ -7694,6 +8617,11 @@ export interface components {
        * @example sssssssss-ssss-ssss-ssss-ssssssssssss
        */
       recordedBy?: Record<string, never> | null;
+      /**
+       * @description Display name of the author (identity overlay: staff_members.id → users.full_name via the staff identity fallback). null when recordedBy is absent or the name is empty/whitespace.
+       * @example Айгуль Сатпаева
+       */
+      recorded_by_full_name?: Record<string, never> | null;
       /** @example 2026-05-01T09:30:00.000Z */
       entryTime: string;
       /** @example 2026-05-01T09:30:01.234Z */
@@ -7711,8 +8639,9 @@ export interface components {
        */
       mediaUrls?: string[] | null;
       /**
+       * @description Freeform jsonb. Adaptive shape per entry_type (BR-013, server-enforced): mood → { mood: 'happy'|'ok'|'sad' }; meal → { ate: 'all'|'half'|'little' }. Validated against the entry’s (immutable) entry_type when present; out-of-range → 422 invalid_timeline_metadata.
        * @example {
-       *       "mood": "happy"
+       *       "mood": "ok"
        *     }
        */
       metadata?: Record<string, never> | null;
@@ -7764,8 +8693,85 @@ export interface components {
       note?: Record<string, never> | null;
       /** @example sssssssss-ssss-ssss-ssss-ssssssssssss */
       setBy?: Record<string, never> | null;
+      /**
+       * @description Display name of the staff member who set the status (identity overlay: staff_members.id → users.full_name via the staff identity fallback). null when setBy is absent or the name is empty/whitespace.
+       * @example Айгуль Сатпаева
+       */
+      set_by_full_name?: Record<string, never> | null;
       /** @example 2026-05-01T09:00:00.000Z */
       updatedAt: string;
+    };
+    AdminPatchAttendanceDto: {
+      /**
+       * @description New recorded_at (ISO UTC).
+       * @example 2026-05-01T08:55:00.000Z
+       */
+      recordedAt?: string;
+      /**
+       * @description New notes (overwrites previous).
+       * @example Корректировка времени
+       */
+      notes?: Record<string, never>;
+      /**
+       * @description New pickup_user_id (only valid on check_out events). Re-validated against guardian table when changed.
+       * @example aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+       */
+      pickupUserId?: string;
+      /**
+       * @description Re-point the event at a different child (admin only) — for a record filed against the wrong kid. Cascades: the paired timeline entry moves with it, and daily_status is recomputed for BOTH the old and the new child. On a check_out, the pickup user is re-validated against the new child’s guardians.
+       * @example cccccccc-cccc-cccc-cccc-cccccccccccc
+       */
+      childId?: string;
+      /**
+       * @description Flip check_in ⇄ check_out (admin only) — for a mis-pressed button. Flipping to check_in clears pickup_user_id. The paired timeline entry is replaced with one of the correct type.
+       * @example check_out
+       * @enum {string}
+       */
+      eventType?: 'check_in' | 'check_out';
+    };
+    AuditLogEntryResponseDto: {
+      /** @example 11111111-2222-3333-4444-555555555555 */
+      id: string;
+      /**
+       * @description 'create' carries only `after`, 'delete' only `before`, 'update' both.
+       * @example update
+       * @enum {string}
+       */
+      action: 'create' | 'update' | 'delete';
+      /**
+       * @description users.id of whoever performed the mutation. null for system/CLI paths.
+       * @example aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+       */
+      actorUserId?: Record<string, never> | null;
+      /**
+       * @description Display name of the actor (identity overlay: staff_members.id → users.full_name). null when the actor is absent, no longer resolvable, or the name is empty/whitespace.
+       * @example Ирина Кайратовна
+       */
+      actor_full_name?: Record<string, never> | null;
+      /**
+       * @description Row snapshot BEFORE the mutation. null on create.
+       * @example {
+       *       "childId": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+       *       "eventType": "check_in",
+       *       "recordedAt": "2026-05-01T09:00:00.000Z"
+       *     }
+       */
+      before?: {
+        [key: string]: unknown;
+      } | null;
+      /**
+       * @description Row snapshot AFTER the mutation. null on delete.
+       * @example {
+       *       "childId": "dddddddd-dddd-dddd-dddd-dddddddddddd",
+       *       "eventType": "check_in",
+       *       "recordedAt": "2026-05-01T09:00:00.000Z"
+       *     }
+       */
+      after?: {
+        [key: string]: unknown;
+      } | null;
+      /** @example 2026-05-01T10:15:00.000Z */
+      createdAt: string;
     };
     PickupRequestResponseDto: {
       /** @example 11111111-2222-3333-4444-555555555555 */
@@ -7962,6 +8968,11 @@ export interface components {
       kindergarten_id: string;
       /** @example cccccccc-cccc-cccc-cccc-cccccccccccc */
       child_id: string;
+      /**
+       * @description Child display name overlay (children.id → full_name within caller kg; includes archived). Null when missing/cross-tenant.
+       * @example Аружан Серикова
+       */
+      child_name: Record<string, never> | null;
       /** @example aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa */
       requester_user_id: string;
       /**
@@ -7999,10 +9010,20 @@ export interface components {
       /** @example bbbbbbbb-2222-3333-4444-bbbbbbbbbbbb */
       recipient_staff_id: Record<string, never> | null;
       /**
+       * @description Display name of the recipient staff member — overlay resolved from `staff_members.id` → `users.full_name` (staff identity fallback). Null when `recipient_staff_id` is null, the staff row is missing, or the resolved name is blank.
+       * @example Алия Серикова
+       */
+      recipient_staff_full_name: Record<string, never> | null;
+      /**
        * @description staff_member id of the reviewer (set when status is accepted/rejected).
        * @example null
        */
       reviewed_by: Record<string, never> | null;
+      /**
+       * @description Display name of the reviewer staff member — overlay resolved from `reviewed_by` (`staff_members.id`) → `users.full_name` (staff identity fallback). Null when `reviewed_by` is null, the staff row is missing, or the resolved name is blank.
+       * @example Алия Серикова
+       */
+      reviewed_by_full_name: Record<string, never> | null;
       /** @example null */
       reviewed_at: Record<string, never> | null;
       /** @example null */
@@ -8031,11 +9052,6 @@ export interface components {
        * @example cccccccc-cccc-cccc-cccc-cccccccccccc
        */
       child_id: string;
-      /**
-       * @description E.164 phone number — receives the verification SMS. Must match the trusted-person phone the parent will submit to /trusted-person endpoint.
-       * @example +77071234567
-       */
-      phone: string;
     };
     CreateTrustedPersonRequestDto: {
       /**
@@ -8157,6 +9173,11 @@ export interface components {
        * @example null
        */
       author_staff_id: Record<string, never> | null;
+      /**
+       * @description Display name of the message author — overlay resolved from whichever id is populated: `author_user_id` → `users.full_name`, else `author_staff_id` (`staff_members.id`) → `users.full_name` (staff identity fallback). Null when neither id is set, the underlying row is missing, or the resolved name is blank.
+       * @example Алия Серикова
+       */
+      author_full_name: Record<string, never> | null;
       /** @example Спасибо, можно ли подтвердить? */
       body: string;
       /**
@@ -8387,7 +9408,7 @@ export interface components {
        */
       enrollments_in_processing: number;
       /**
-       * @description Invoices with due_date < today (Asia/Almaty) AND status IN ('pending','partial').
+       * @description Invoices with due_date < today (Asia/Almaty) AND status IN ('pending','partial','overdue'). 'overdue' is included so rows already flipped by the nightly cron still count (no false zeros).
        * @example 4
        */
       invoices_overdue_count: number;
@@ -8431,7 +9452,7 @@ export interface components {
     };
     ProviderRowDto: {
       /**
-       * @description Payment provider — one of 'mock','halyk_epay','kaspi_pay','tiptoppay','freedom_pay','cash'.
+       * @description Payment provider — one of 'mock','halyk_epay','kaspi_pay','tiptoppay','freedom_pay','bcc','cash'.
        * @example kaspi_pay
        */
       provider: string;
@@ -8451,7 +9472,7 @@ export interface components {
       paid: components['schemas']['PaymentBucketDto'];
       /** @description Invoices with status IN ('pending','partial') AND NOT overdue (due_date >= today). */
       pending: components['schemas']['PaymentBucketDto'];
-      /** @description Invoices with due_date < today (Asia/Almaty) AND status IN ('pending','partial'). */
+      /** @description Invoices with due_date < today (Asia/Almaty) AND status IN ('pending','partial','overdue'). 'overdue' is included so rows already flipped by the nightly cron still count (no false zeros). */
       overdue: components['schemas']['PaymentBucketDto'];
       /** @description Invoices with status = 'refunded'. */
       refunded: components['schemas']['PaymentBucketDto'];
@@ -8628,6 +9649,11 @@ export interface components {
       kindergarten_id: string;
       /** @example cccccccc-cccc-cccc-cccc-cccccccccccc */
       child_id: string;
+      /**
+       * @description Child display name (identity overlay: children.id → children.full_name, resolved within the caller kindergarten; includes archived children). Null when the child row is missing or cross-tenant.
+       * @example Алихан Сериков
+       */
+      child_name: Record<string, never> | null;
       /** @example aaaaaaaa-1111-1111-1111-aaaaaaaaaaaa */
       template_id: string;
       /**
@@ -8642,6 +9668,16 @@ export interface components {
       template_version: number;
       /** @example bbbbbbbb-2222-2222-2222-bbbbbbbbbbbb */
       specialist_id: string;
+      /**
+       * @description Specialist display name resolved from staff_members.id → staff identity fallback (staff_members.full_name ?? users.full_name). Null when the staff row is missing or the resolved name is empty/whitespace-only.
+       * @example Айгерим Нурланкызы
+       */
+      specialist_full_name: Record<string, never> | null;
+      /**
+       * @description Specialist-type code resolved from staff_members.specialist_type. A code from the per-kindergarten specialist_types directory (GET /admin/specialist-types). Null when the staff row is missing or the member is not a specialist.
+       * @example speech_therapist
+       */
+      specialist_type: string | null;
       /**
        * @description Assessment date (ISO date YYYY-MM-DD).
        * @example 2026-05-01
@@ -8750,6 +9786,11 @@ export interface components {
       child_id: string;
       /** @example bbbbbbbb-2222-2222-2222-bbbbbbbbbbbb */
       mentor_id: string;
+      /**
+       * @description Display name of the note's mentor, resolved from staff_members → users (identity overlay). Null when the mentor has no resolvable profile name, or when the overlay was not built for this response.
+       * @example Айгерим Нурланкызы
+       */
+      mentor_full_name: Record<string, never> | null;
       /** @example Ребёнок активно участвовал в занятиях, демонстрирует интерес к рисованию. */
       body: string;
       /**
@@ -8825,6 +9866,152 @@ export interface components {
     MyTodosResponseDto: {
       /** @description Children whose latest diagnostic is older than 6 months or who have never been assessed. Sorted: never-assessed first, then most-stale first. */
       children_needing_diagnostic: components['schemas']['ChildNeedingDiagnosticDto'][];
+    };
+    MyGroupResponseDto: {
+      /**
+       * @description Group id.
+       * @example a1b2c3d4-0000-0000-0000-000000000001
+       */
+      id: string;
+      /**
+       * @description Group display name.
+       * @example Күншуақ
+       */
+      name: string;
+      /**
+       * @description Human-readable age range. Both bounds present → "4–5 лет" (en-dash); only the lower bound → "4+ лет"; neither set → null.
+       * @example 4–5 лет
+       */
+      age_range: Record<string, never> | null;
+      /**
+       * @description Display name of the group's current location (room), or null when no location is assigned.
+       * @example Каб. 204
+       */
+      room: Record<string, never> | null;
+      /**
+       * @description Whether this is the caller's primary assignment for the group (from the group_mentors row).
+       * @example true
+       */
+      is_primary: boolean;
+      /**
+       * @description Count of active children currently assigned to the group.
+       * @example 22
+       */
+      children_count: number;
+    };
+    RosterChildResponseDto: {
+      /**
+       * @description Child id.
+       * @example c3b30bb7-0000-0000-0000-000000000001
+       */
+      id: string;
+      /**
+       * @description Child full name.
+       * @example Алихан Сериков
+       */
+      full_name: string;
+      /**
+       * @description Date of birth (YYYY-MM-DD).
+       * @example 2020-06-14
+       */
+      date_of_birth: string;
+      /**
+       * @description Child photo URL (presigned on read), or null.
+       * @example https://cdn.example.com/media/kg/2026-06/abc.jpg
+       */
+      photo_url: Record<string, never> | null;
+      /**
+       * @description The child's current group id, or null.
+       * @example a1b2c3d4-0000-0000-0000-000000000001
+       */
+      current_group_id: Record<string, never> | null;
+      /**
+       * @description Today's child_daily_status (Asia/Almaty), or null when no row exists for the current day.
+       * @example present
+       * @enum {string|null}
+       */
+      day_status: 'present' | 'absent' | 'sick' | 'late' | 'early_pickup' | 'on_vacation' | null;
+    };
+    RosterPageResponseDto: {
+      items: components['schemas']['RosterChildResponseDto'][];
+      /**
+       * @description Opaque cursor for the next page. null when this is the last page (fewer items than `limit` were returned).
+       * @example NDA
+       */
+      next_cursor: Record<string, never> | null;
+    };
+    ChildCardGuardianDto: {
+      /**
+       * @description Guardian user id (users.id).
+       * @example aaaaaaaa-1111-1111-1111-aaaaaaaaaaaa
+       */
+      user_id: string;
+      /**
+       * @description Guardian display name (from the linked users row), or null.
+       * @example Айгүл Серикова
+       */
+      full_name: Record<string, never> | null;
+      /**
+       * @description Guardian role surfaced as the relation.
+       * @example primary
+       * @enum {string}
+       */
+      relation: 'primary' | 'secondary' | 'nanny';
+      /**
+       * @description Guardian phone (from the linked users row), or null.
+       * @example +77011234567
+       */
+      phone: Record<string, never> | null;
+      /**
+       * @description Whether the guardian is authorized to pick up the child.
+       * @example true
+       */
+      can_pickup: boolean;
+    };
+    ChildCardResponseDto: {
+      /**
+       * @description Child id.
+       * @example c3b30bb7-0000-0000-0000-000000000001
+       */
+      id: string;
+      /**
+       * @description Child full name.
+       * @example Алихан Сериков
+       */
+      full_name: string;
+      /**
+       * @description Date of birth (YYYY-MM-DD).
+       * @example 2020-06-14
+       */
+      date_of_birth: string;
+      /**
+       * @description Child photo URL (presigned on read), or null.
+       * @example https://cdn.example.com/media/kg/2026-06/abc.jpg
+       */
+      photo_url: Record<string, never> | null;
+      /**
+       * @description Current group id, or null.
+       * @example a1b2c3d4-0000-0000-0000-000000000001
+       */
+      current_group_id: Record<string, never> | null;
+      /**
+       * @description Current group display name (overlay), or null.
+       * @example Күншуақ
+       */
+      group_name: Record<string, never> | null;
+      /**
+       * @description Allergies. The DB stores a single free-text `allergy_notes`; it is surfaced here as a single-element array (empty when unset).
+       * @example [
+       *       "Орехи"
+       *     ]
+       */
+      allergies: string[];
+      /**
+       * @description Free-text medical notes, or null.
+       * @example Поллиноз весной
+       */
+      medical_notes: Record<string, never> | null;
+      guardians: components['schemas']['ChildCardGuardianDto'][];
     };
   };
   responses: never;
@@ -8955,6 +10142,48 @@ export interface operations {
       };
       /** @description iin_already_taken / unique_violation */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  UsersController_uploadAvatar_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Single image. Field name `file`. jpg/png/webp, ≤5MB. */
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /** Format: binary */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AvatarUploadResponseDto'];
+        };
+      };
+      /** @description avatar_file_required / avatar_type_invalid / avatar_too_large */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: {
         headers: {
           [name: string]: unknown;
         };
@@ -9255,12 +10484,8 @@ export interface operations {
         role?: 'admin' | 'mentor' | 'specialist' | 'reception';
         /** @description Filter by is_active. */
         is_active?: boolean;
-        specialist_type?:
-          | 'psychologist'
-          | 'speech_therapist'
-          | 'music_teacher'
-          | 'physical_ed'
-          | 'nutritionist';
+        /** @description Filter by specialist-type code (any directory code — no enum constraint). */
+        specialist_type?: string;
         /** @description Show only archived rows when true; only non-archived when false. */
         archived?: boolean;
         /** @description Substring match against full_name / phone (ILIKE). */
@@ -9531,6 +10756,108 @@ export interface operations {
         content?: never;
       };
       /** @description Caller is not an admin OR the body contains a fiscal_* key (`fiscal_settings_forbidden`). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Own kindergarten not found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminKindergartenLogoController_uploadLogo_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Single image file in the `file` field. */
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /**
+           * Format: binary
+           * @description Branding logo. `image/*` (png/jpeg/webp/…) ≤ 5 MB.
+           */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['KindergartenLogoResponseDto'];
+        };
+      };
+      /** @description logo_required (empty) / logo_type_invalid (not image/*) / logo_too_large (> 5 MB). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not an admin. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Own kindergarten not found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminKindergartenLogoController_deleteLogo_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['KindergartenLogoResponseDto'];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not an admin. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -10249,6 +11576,202 @@ export interface operations {
       };
     };
   };
+  AdminSpecialistTypeController_list_v1: {
+    parameters: {
+      query?: {
+        /** @description Include deactivated rows. Default false (active only) — the staff/diagnostics dropdown only wants active ones. */
+        include_inactive?: boolean;
+      };
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpecialistTypeResponseDto'][];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not an admin. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminSpecialistTypeController_create_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CreateSpecialistTypeDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpecialistTypeResponseDto'];
+        };
+      };
+      /** @description Validation failed (specialist_type_code_invalid / specialist_type_name_required). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not an admin. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description specialist_type_code_taken — code already exists in this kg. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminSpecialistTypeController_delete_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not an admin. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description specialist_type_not_found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description specialist_type_system_immutable (system row) / specialist_type_in_use (still referenced). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminSpecialistTypeController_update_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateSpecialistTypeDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['SpecialistTypeResponseDto'];
+        };
+      };
+      /** @description Validation failed. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not an admin. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description specialist_type_not_found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   LocationController_list_v1: {
     parameters: {
       query?: {
@@ -10804,6 +12327,81 @@ export interface operations {
       };
     };
   };
+  ChildController_activate_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ActivateChildDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChildDto'];
+        };
+      };
+      /** @description Bearer missing / invalid / revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not admin. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Child not found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Child has no active tariff assignment — assign a tariff before activating. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Child is not in card_created (already active or archived). */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Rate limited. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   ChildController_archive_v1: {
     parameters: {
       query?: never;
@@ -11352,13 +12950,6 @@ export interface operations {
       };
       /** @description Bearer missing/invalid/revoked. */
       401: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description tenant_required. */
-      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -11930,6 +13521,50 @@ export interface operations {
       };
     };
   };
+  ParentKindergartenController_getKindergarten_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        childId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ParentKindergartenDto'];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not an approved guardian of this child. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description kindergarten_not_found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   PushTokenController_register_v1: {
     parameters: {
       query?: never;
@@ -12255,6 +13890,75 @@ export interface operations {
         content?: never;
       };
       /** @description Caller role is not staff (admin/mentor/specialist/reception). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description qr_token_not_found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description qr_token_expired or qr_token_revoked. */
+      410: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description qr_rate_limit_exceeded — 60 calls per 60s budget on X-Device-Id is exhausted. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminQrController_scan_v1: {
+    parameters: {
+      query?: never;
+      header: {
+        /** @description Device id used at OTP-verify. Must match an active refresh_token row for the calling user. */
+        'X-Device-Id': string;
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ScanQrRequestDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ScanQrResponseDto'];
+        };
+      };
+      /** @description Validation error / missing X-Device-Id. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked OR no active session for X-Device-Id. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller role is not admin/reception. */
       403: {
         headers: {
           [name: string]: unknown;
@@ -13496,12 +15200,21 @@ export interface operations {
   AdminPaymentController_list_v1: {
     parameters: {
       query?: {
-        /** @description Filter by payment provider. */
-        provider?: 'mock' | 'halyk_epay' | 'kaspi_pay' | 'tiptoppay' | 'freedom_pay' | 'cash';
+        /** @description Filter by payment provider. Legacy alias "kaspi" → "kaspi_pay". */
+        provider?:
+          | 'mock'
+          | 'halyk_epay'
+          | 'kaspi_pay'
+          | 'tiptoppay'
+          | 'freedom_pay'
+          | 'bcc'
+          | 'cash';
         /** @description Filter by payment status. */
         status?: 'initiated' | 'processing' | 'completed' | 'failed' | 'refunded';
         /** @description Filter by child. */
         child_id?: string;
+        /** @description Pass "true" to return only payments flagged as needing a manual refund (double payments). */
+        refund_required?: string;
         /** @description Return payments with paid_at or created_at >= this date. */
         from_date?: string;
         /** @description Return payments with paid_at or created_at <= this date. */
@@ -15026,6 +16739,453 @@ export interface operations {
       };
     };
   };
+  SaasBccAccountController_get_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        kindergartenId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BccAccountResponseDto'];
+        };
+      };
+      /** @description Malformed request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing or invalid. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not a SaaS operator. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description bcc_account_not_found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description State conflict. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation error. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Rate limited. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SaasBccAccountController_upsert_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        kindergartenId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpsertBccAccountDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BccAccountProvisioningResponseDto'];
+        };
+      };
+      /** @description Malformed request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing or invalid. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not a SaaS operator. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description kindergarten_not_found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description bcc_account_active. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation error or bcc_mac_components_invalid. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Rate limited. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SaasBccAccountController_check_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        kindergartenId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BccConnectionCheckResponseDto'];
+        };
+      };
+      /** @description Malformed request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing or invalid. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not a SaaS operator. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description bcc_account_not_found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid account state. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation error. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Rate limited. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description bcc_gateway_unavailable or bcc_connection_check_failed. */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SaasBccAccountController_disable_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        kindergartenId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BccDisableResponseDto'];
+        };
+      };
+      /** @description Malformed request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing or invalid. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not a SaaS operator. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description bcc_account_not_found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid account state. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation error. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Rate limited. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SaasBccAccountController_rotateMac_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        kindergartenId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RotateBccMacDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BccAccountResponseDto'];
+        };
+      };
+      /** @description Malformed request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing or invalid. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not a SaaS operator. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description bcc_account_not_found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid account state. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation error or bcc_mac_components_invalid. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Rate limited. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  SaasBccAccountController_rotateCallbackCredentials_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        kindergartenId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['BccCallbackCredentialsResponseDto'];
+        };
+      };
+      /** @description Malformed request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing or invalid. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not a SaaS operator. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description bcc_account_not_found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid account state. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation error. */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Rate limited. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   AdminKaspiConnectController_init_v1: {
     parameters: {
       query?: never;
@@ -15345,6 +17505,50 @@ export interface operations {
       };
     };
   };
+  ParentInvoiceController_listPaymentMethods_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PaymentMethodsResponseDto'];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description not_a_guardian / nanny_cannot_view_invoice. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description invoice_not_found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   ParentInvoiceController_paymentCalendar_v1: {
     parameters: {
       query: {
@@ -15409,7 +17613,7 @@ export interface operations {
           'application/json': components['schemas']['InitiatePaymentResponseDto'];
         };
       };
-      /** @description Validation error / amount mismatch / payment_provider_mismatch (dto.provider is not the deployment active PAYMENT_PROVIDER). */
+      /** @description Validation error / amount mismatch / payment_provider_unavailable. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -15471,7 +17675,7 @@ export interface operations {
           'application/json': components['schemas']['InitiatePrepaymentResponseDto'];
         };
       };
-      /** @description prepayment_horizon_not_configured / months_out_of_range / payment_provider_mismatch (dto.provider is not the deployment active PAYMENT_PROVIDER) / validation error. */
+      /** @description prepayment_horizon_not_configured / months_out_of_range / payment_provider_unavailable / validation error. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -15501,6 +17705,178 @@ export interface operations {
       };
       /** @description payment_idempotency_conflict. */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ParentPaymentProfileController_get_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PaymentProfileResponseDto'];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ParentPaymentProfileController_save_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SavePaymentProfileDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PaymentProfileResponseDto'];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ParentPaymentProfileController_delete_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  BccCheckoutController_open_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        token: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Self-submitting HTML checkout bridge. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description bcc_checkout_expired */
+      410: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  BccCheckoutController_return_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Processing HTML page. */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  BccCallbackController_callback_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        callbackToken: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': unknown;
+        };
+      };
+      /** @description Malformed or mismatched callback */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Invalid callback credentials */
+      401: {
         headers: {
           [name: string]: unknown;
         };
@@ -17249,6 +19625,60 @@ export interface operations {
       };
     };
   };
+  StaffAttendanceController_today_v1: {
+    parameters: {
+      query?: {
+        /** @description Scope to one group. Required for mentor (active assignment enforced). */
+        groupId?: string;
+        /** @description ISO date YYYY-MM-DD. Defaults to Asia/Almaty today. */
+        date?: string;
+      };
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['StaffAttendanceTodayResponseDto'];
+        };
+      };
+      /** @description Validation error. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller role not allowed / mentor_group_required (mentor omitted groupId) / mentor_not_assigned_to_group (mentor not actively assigned to groupId). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Rate-limited. */
+      429: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   StaffAttendanceController_checkIn_v1: {
     parameters: {
       query?: never;
@@ -17730,6 +20160,112 @@ export interface operations {
       };
     };
   };
+  AdminAttendanceController_checkIn_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CheckInDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttendanceEventResponseDto'];
+        };
+      };
+      /** @description Validation error / tenant_required. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not admin/reception. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description child_not_found or staff_member_not_found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminAttendanceController_checkOut_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CheckOutDto'];
+      };
+    };
+    responses: {
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AttendanceEventResponseDto'];
+        };
+      };
+      /** @description Validation error / tenant_required. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not admin/reception, or `pickup_user_not_allowed` — the user is not an approved active pickup guardian for this child. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description child_not_found or staff_member_not_found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   AdminAttendanceController_listEvents_v1: {
     parameters: {
       query?: {
@@ -17833,6 +20369,49 @@ export interface operations {
       };
     };
   };
+  AdminAttendanceController_deleteEvent_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        eventId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not admin/reception. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description attendance_event_not_found (unknown, or already deleted). */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   AdminAttendanceController_patchEvent_v1: {
     parameters: {
       query?: never;
@@ -17846,7 +20425,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['PatchAttendanceDto'];
+        'application/json': components['schemas']['AdminPatchAttendanceDto'];
       };
     };
     responses: {
@@ -17872,15 +20451,63 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Caller is not admin/reception. */
+      /** @description Caller is not admin/reception, or `pickup_user_not_allowed` for the resulting (child, pickup user) pair. */
       403: {
         headers: {
           [name: string]: unknown;
         };
         content?: never;
       };
-      /** @description attendance_event_not_found. */
+      /** @description attendance_event_not_found or child_not_found. */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminAttendanceController_getEventHistory_v1: {
+    parameters: {
+      query?: {
+        /** @description Max entries to return. Defaults to the repository default. */
+        limit?: number;
+        offset?: number;
+      };
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        eventId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AuditLogEntryResponseDto'][];
+        };
+      };
+      /** @description Validation error / tenant_required. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not admin/reception. */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -17932,6 +20559,59 @@ export interface operations {
       };
       /** @description Caller is not admin/reception. */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminAttendanceController_setDailyStatus_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SetDailyStatusDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DailyStatusResponseDto'];
+        };
+      };
+      /** @description Validation error / tenant_required. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not admin/reception. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description child_not_found or staff_member_not_found. */
+      404: {
         headers: {
           [name: string]: unknown;
         };
@@ -20699,6 +23379,59 @@ export interface operations {
       };
     };
   };
+  StaffMediaController_upload_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    /** @description Single image upload. Field name is `file`. */
+    requestBody: {
+      content: {
+        'multipart/form-data': {
+          /**
+           * Format: binary
+           * @description Single image file. `image/jpeg|png|webp` ≤ 10 MB.
+           */
+          file: string;
+        };
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UploadMediaResponseDto'];
+        };
+      };
+      /** @description media_file_required / media_type_invalid / media_too_large. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not mentor/specialist/reception/admin. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   ParentContentController_getContentFeed_v1: {
     parameters: {
       query?: {
@@ -22046,6 +24779,183 @@ export interface operations {
       };
       /** @description child_access_denied / nanny_no_diagnostics_access. */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StaffGroupsController_myGroups_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MyGroupResponseDto'][];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller role not allowed. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StaffGroupsController_groupRoster_v1: {
+    parameters: {
+      query?: {
+        /** @description Opaque pagination cursor returned as `next_cursor` by the previous page. Omit for the first page. Malformed values are rejected with 400. */
+        cursor?: string;
+        /** @description Page size. Default 20, maximum 100. */
+        limit?: number;
+      };
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        groupId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RosterPageResponseDto'];
+        };
+      };
+      /** @description Validation error / malformed cursor (invalid_cursor). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller role not allowed / mentor_not_assigned_to_group (caller has no active assignment for this group in this kindergarten). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StaffChildController_specialistChildren_v1: {
+    parameters: {
+      query?: {
+        /** @description Mobile contract flag — request the kindergarten-wide active-children scope for specialist diagnostics. The route is specialist-only, so the scope is always applied regardless of value. */
+        specialist_scope?: boolean;
+        /** @description Opaque pagination cursor returned as `next_cursor` by the previous page. Omit for the first page. Malformed values are rejected with 400. */
+        cursor?: string;
+        /** @description Page size. Default 20, maximum 100. */
+        limit?: number;
+      };
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RosterPageResponseDto'];
+        };
+      };
+      /** @description Validation error / malformed cursor (invalid_cursor). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller role not allowed. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  StaffChildController_childCard_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ChildCardResponseDto'];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller role not allowed. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description child_not_found (child is not in the caller's kindergarten). */
+      404: {
         headers: {
           [name: string]: unknown;
         };

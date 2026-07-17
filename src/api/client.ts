@@ -1,6 +1,7 @@
 import ky, { isHTTPError } from 'ky';
 import i18n from '@/lib/i18n';
 import { tokenStorage } from '@/lib/token-storage';
+import { getDeviceId } from '@/lib/device-id';
 import { AppError, parseApiError } from './errors';
 import { env } from '@/env';
 
@@ -34,6 +35,7 @@ export async function tryRefreshOnce(): Promise<void> {
           headers: {
             Authorization: `Bearer ${tokenStorage.getAccess() ?? ''}`,
             'x-custom-lang': coerceLang(i18n.language),
+            'X-Device-Id': getDeviceId(),
           },
         })
         .json<{ access_token: string; refresh_token: string }>();
@@ -81,6 +83,7 @@ export const apiClient = ky.create({
     beforeRequest: [
       async ({ request }) => {
         request.headers.set('x-custom-lang', coerceLang(i18n.language));
+        request.headers.set('X-Device-Id', getDeviceId());
 
         let token = tokenStorage.getAccess();
         if (!token && !isAuthFree(request.url) && tokenStorage.getRefresh()) {
@@ -118,7 +121,17 @@ export const apiClient = ky.create({
     beforeError: [
       ({ error }) => {
         if (isHTTPError(error)) {
-          return parseApiError(error.data, error.response.status);
+          const appErr = parseApiError(error.data, error.response.status);
+          // WHY: 429 Retry-After header needed by QR scan countdown (HANDOFF §20.2)
+          if (error.response.status === 429) {
+            const raw = error.response.headers.get('Retry-After');
+            // WHY: header is optional and may be an HTTP-date; NaN would leak into the countdown
+            const ra = raw == null ? Number.NaN : Number(raw);
+            if (Number.isFinite(ra)) {
+              return new AppError(appErr.code, 429, { retryAfter: ra });
+            }
+          }
+          return appErr;
         }
         return error;
       },

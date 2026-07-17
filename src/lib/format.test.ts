@@ -9,6 +9,7 @@ import {
   formatIinMasked,
   getInitials,
   toISODate,
+  toISODateTz,
   slugifyKey,
 } from './format';
 
@@ -62,6 +63,27 @@ describe('toISODate', () => {
   it('handles year boundaries', () => {
     expect(toISODate(new Date(2025, 11, 31))).toBe('2025-12-31');
     expect(toISODate(new Date(2026, 0, 1))).toBe('2026-01-01');
+  });
+});
+
+describe('toISODateTz', () => {
+  it('returns the date in the given timezone (basic round-trip)', () => {
+    // 2026-07-15T12:00:00Z is midday UTC — still July 15 in Almaty (UTC+5)
+    expect(toISODateTz(new Date('2026-07-15T12:00:00Z'), 'Asia/Almaty')).toBe('2026-07-15');
+  });
+
+  it('rolls to next day when UTC evening crosses midnight in Asia/Almaty', () => {
+    // 2026-05-01T20:00:00Z → in Asia/Almaty (UTC+5) it is 01:00 on May 2
+    expect(toISODateTz(new Date('2026-05-01T20:00:00Z'), 'Asia/Almaty')).toBe('2026-05-02');
+  });
+
+  it('stays on current day in UTC for the same instant', () => {
+    expect(toISODateTz(new Date('2026-05-01T20:00:00Z'), 'UTC')).toBe('2026-05-01');
+  });
+
+  it('zero-pads single-digit month and day', () => {
+    // 2026-01-02T00:00:00Z → Asia/Almaty 05:00 Jan 2
+    expect(toISODateTz(new Date('2026-01-02T00:00:00Z'), 'Asia/Almaty')).toBe('2026-01-02');
   });
 });
 

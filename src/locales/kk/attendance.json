@@ -3,6 +3,52 @@
   "events_title": "Оқиғалар журналы",
   "daily_status_title": "Күндік мәртебелер",
 
+  "tab_journal": "Журнал",
+  "tab_daily_status": "Күндік мәртебе",
+  "tab_checkin": "Кіру/шығу",
+
+  "checkin": {
+    "startCamera": "Камераны қосу",
+    "pause": "Тоқтату",
+    "resume": "Жалғастыру",
+    "manualMark": "Қолмен белгілеу",
+    "camera": "Камера {{n}}",
+    "placeholder": {
+      "title": "Сканерлеу күтілуде",
+      "text": "Белгілеуді бастау үшін камераны ата-ананың QR-кодына бағыттаңыз"
+    },
+    "status": {
+      "pointQr": "Ата-ананың QR-кодын бағыттаңыз",
+      "cameraOff": "Камера өшірулі",
+      "starting": "Камера іске қосылуда…",
+      "recognizing": "Танылуда…",
+      "paused": "Камера тоқтатылды",
+      "denied": "Камераға рұқсат жоқ",
+      "noDevice": "Камера табылмады",
+      "rateLimit": "Сканерлеу тым жиі, {{seconds}} сек күтіңіз"
+    },
+    "error": {
+      "deniedTitle": "Камераға рұқсат жоқ",
+      "deniedText": "Браузер баптауларында камераға рұқсат беріп, бетті жаңартыңыз",
+      "noDeviceTitle": "Камера табылмады",
+      "noDeviceText": "Құрылғыға камера қосып, қайталап көріңіз"
+    },
+    "hint": {
+      "inKindergartenSince": "Бақшада {{time}} бері",
+      "leftAt": "{{time}} кетті",
+      "notArrivedYet": "Әлі келген жоқ"
+    },
+    "noPickupRights": "Бұл ата-ананың баланы алып кету құқығы жоқ — белгілеу түймелері өшірілген",
+    "noChildren": "Бұл ата-ананың сіздің бақшаңызда балалары жоқ",
+    "todayFeed": "Бүгін белгіленгендер",
+    "toast_success": "{{name}} — {{action}} {{time}}",
+    "duplicateConfirm": {
+      "title": "Қайталанған келу",
+      "description": "Келу {{time}} белгіленген. Қайта белгілеу керек пе?",
+      "confirm": "Иә, белгілеу"
+    }
+  },
+
   "filters": {
     "child": "Бала",
     "child_placeholder": "Барлық балалар",
@@ -51,16 +97,80 @@
     "on_vacation": "Демалыста"
   },
 
-  "correction_modal": {
+  "journal": {
+    "add_mark": "Белгілеу",
+    "action_correct": "Түзету",
+    "action_transfer": "Басқа балаға ауыстыру",
+    "action_flip_type": "Түрін өзгерту",
+    "action_history": "Өзгерістер тарихы",
+    "action_delete": "Жою",
+    "transfer_title": "Жазбаны ауыстыру",
+    "transfer_description": "{{name}} жазбасын басқа балаға ауыстыру",
+    "transfer_child_placeholder": "Баланы таңдаңыз",
+    "transfer_confirm": "Ауыстыру",
+    "transfer_success": "Жазба ауыстырылды",
+    "flip_type_title": "Оқиға түрін өзгерту",
+    "flip_type_description": "{{child}} үшін түрін «{{from}}» → «{{to}}» етіп өзгерту",
+    "flip_type_confirm": "Өзгерту",
+    "flip_type_success": "Оқиға түрі өзгертілді",
+    "delete_title": "Жазбаны жою",
+    "delete_description": "{{child}} қатысу жазбасы жойылады. Бұл әрекетті болдырмау мүмкін емес.",
+    "delete_confirm": "Жою",
+    "delete_success": "Жазба жойылды"
+  },
+
+  "correction": {
     "title": "Жазбаны түзету",
+    "tab_edit": "Түзету",
+    "tab_history": "Тарих",
     "recorded_at": "Жазу уақыты",
     "notes": "Ескертпе",
     "notes_placeholder": "Түзету себебі",
     "pickup_user": "Алып кеткен",
-    "pickup_user_placeholder": "Пайдаланушыны таңдаңыз",
+    "pickup_user_placeholder": "Алып кетушіні таңдаңыз",
+    "no_pickup_guardians": "Алып кету құқығы бар қамқоршылар жоқ",
+    "current_pickup": "Ағымдағы",
     "save": "Сақтау",
     "cancel": "Болдырмау",
     "success": "Жазба жаңартылды"
+  },
+
+  "history": {
+    "empty": "Өзгерістер жазбалары жоқ",
+    "action_create": "Құру",
+    "action_update": "Өзгерту",
+    "action_delete": "Жою",
+    "record_created": "Жазба құрылды",
+    "record_deleted": "Жазба жойылды",
+    "field_childId": "Бала",
+    "field_eventType": "Оқиға түрі",
+    "field_recordedAt": "Уақыт",
+    "field_notes": "Ескертпе",
+    "field_pickupUserId": "Алып кеткен",
+    "field_recordedBy": "Жазған",
+    "field_method": "Әдіс"
+  },
+
+  "manual": {
+    "title": "Қолмен белгілеу",
+    "child": "Бала",
+    "child_placeholder": "Баланы таңдаңыз",
+    "child_required": "Баланы таңдаңыз",
+    "event_type": "Белгілеу түрі",
+    "recorded_at": "Уақыт",
+    "recorded_at_required": "Уақытты көрсетіңіз",
+    "notes": "Ескертпе",
+    "notes_placeholder": "Пікір (міндетті емес)",
+    "pickup_user": "Кім алып кетеді",
+    "pickup_user_placeholder": "Алып кетушіні таңдаңыз",
+    "pickup_user_required": "Алып кетушіні көрсетіңіз",
+    "select_child_first": "Алдымен баланы таңдаңыз",
+    "no_pickup_guardians": "Алып кету құқығы бар қамқоршылар жоқ",
+    "backfill_warning": "Ата-анаға хабарлама жіберілмейді — күні бүгінгіден ерекшеленеді",
+    "submit": "Белгілеу",
+    "cancel": "Болдырмау",
+    "success_check_in": "Келу белгіленді",
+    "success_check_out": "Кету белгіленді"
   },
 
   "daily_board": {
@@ -72,6 +182,15 @@
     "on_vacation": "Демалыста",
     "sick": "Ауырады",
     "no_data": "Таңдалған күнге деректер жоқ"
+  },
+
+  "dailyStatus": {
+    "editTitle": "Мәртебені өзгерту",
+    "note": "Ескертпе",
+    "notePlaceholder": "Себебі (міндетті емес)",
+    "save": "Сақтау",
+    "cancel": "Болдырмау",
+    "success": "Мәртебе жаңартылды"
   },
 
   "empty": {

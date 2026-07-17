@@ -941,6 +941,50 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 
 ---
 
+## B27 — Журнал посещаемости: QR-скан + ручное ведение · post-MVP (backend attendance-register update 2026-07-15)
+
+**Goal:** админка начинает **вести** журнал прихода/ухода, а не только показывать его: скан QR родителя, ручная отметка (в т.ч. задним числом), структурные правки, удаление, история изменений, редактируемый дневной статус. Desktop + mobile.
+
+**Inputs:** `docs/ATTENDANCE_REGISTER_FRONTEND_GUIDE.md` (гайд бэкенда); HANDOFF §20 (контракты, сверены с живой схемой локального бэка); DESIGN §6.12 (спека всех четырёх экранов); OPEN_QUESTIONS §A30 (отклонение от дизайна + движок сканера + объём), §A31 (X-Device-Id), §A32 (роль reception), §A33 (хинт состояния). VIS: `screens-ops.jsx` L163 (AttendanceJournal — только журнал/дневной статус, экрана скана нет), `mobile-screens.jsx` L661–770.
+
+**Backend-состояние (2026-07-15):** обновы **на dev не выкачены**, живут на локальном бэке `http://localhost:3000` (`/docs-json` содержит все 10 роутов §20, сид есть). `pnpm gen:api` гоняем **против локального** ⇒ закоммиченный `openapi.d.ts` временно разъедется с dev. Это осознанно; перегенерить против dev, когда обновы доедут. Против прод — никогда (CLAUDE §8).
+
+**Слайсы (порядок обязателен — §10 гайда):**
+
+- **S1 — `X-Device-Id` (блокер, §A31).** `lib/device-id.ts` (UUID + localStorage, ленивая генерация) + unit-тест (персист, регенерация после clear). Заголовок глобально в `apiClient.beforeRequest` + явно в `tryRefreshOnce` (идёт мимо интерцептора) + `verifyOtp` (прокинуть из `login.tsx` — сейчас параметр есть, но не передаётся) + `selectRole` (сейчас не шлёт вообще — главная ловушка). **Без S1 остальное физически не проверить.**
+- **S2 — api + hooks.** `pnpm gen:api` против localhost:3000. `api/attendance.ts` += `checkIn`, `checkOut`, `deleteAttendanceEvent`, `getAttendanceEventHistory`, `setDailyStatus`; Zod += оверлеи (`child_name`, `recorded_by_full_name`, `pickup_user_full_name`, `set_by_full_name`), `PatchAttendanceBody` += `childId`/`eventType`. `api/qr.ts` += `scanQr` (заголовок `X-Device-Id`). Hooks + query keys + инвалидация (после `eventType`-правки — инвалидация списка, id пересоздаётся).
+- **S3 — `/attendance/checkin` desktop (§6.12.1).** Сканер (`BarcodeDetector` + lazy `@zxing/browser` fallback), карточка родителя, выбор ребёнка (без автовыбора), хинт состояния + guard от дубля (§A33), кнопки по `allowedActions`, лента «Отмечено сегодня» (тот же запрос питает хинты), автосброс ~4 сек. Все состояния: `linkedChildren: []`, `allowedActions: []`, 410, 429 + `Retry-After`, 401 `no_active_session_for_device`.
+- **S4 — модал «Ручная отметка» (§6.12.2).** RHF+Zod, Dialog/FullScreenSheet. Ребёнок combobox → тип → время → заметка; для «Уход» — combobox опекунов с `can_pickup`. Back-fill баннер «уведомление не отправится» при дате ≠ сегодня.
+- **S5 — журнал: правки/удаление/история (§6.12.3).** Оверлей-имена (**удалить** резолв через `useChildrenList({limit:500})`); row-actions «Перенести на другого ребёнка» / «Поменять тип» / «Удалить» (`DestructiveConfirm`) / «История»; модал → два таба (Правка + История с диффом `before`→`after`). Ролевой гейт **не делаем** (§A32). Заодно починить `pickupUserId` — сейчас сырой UUID-input (`index.tsx:200`).
+  > 🐞 **Живой баг, чинится этим слайсом.** `attendance/index.tsx:63` `CHILDREN_FETCH_LIMIT = 500` бьётся о backend `ListChildrenQueryDto.limit` `@Max(100)` → запрос молча 422-ится → `childrenMap` пустая → **в журнале все имена детей сейчас «—»** (desktop и mobile). Это тот же трап, что вычищен в 9 других местах коммитами `953f6d0`/`e1cbdd1`. Переход на оверлеи закрывает его сам. Где имя ребёнка нужно помимо оверлеев (комбобоксы в S4) — брать `useAllChildren` (пейджит по 100), **никогда** `useChildrenList({limit > 100})`.
+- **S6 — дневной статус upsert (§6.12.4).** Поповер статуса + заметка → 200 (не 201). Группировка по группам на фронте (`groupId`-фильтра у эндпоинта нет).
+- **S7 — mobile (§6.12.5).** `/attendance/checkin` фуллскрин-камера + результат в bottom-sheet; оживить две заглушечные кнопки топбара (`index.tsx:358-364`): `+` → ручная отметка, новая QR-кнопка → checkin.
+- **S8 — i18n + error-map.** Namespace `attendance` (ru+kk). Коды в `error-map.ts` + `errors.json`: `no_active_session_for_device`, `qr_token_not_found`, `qr_token_expired`, `qr_token_revoked`, `qr_rate_limit_exceeded`, `pickup_user_not_allowed`, `staff_member_not_found` (live-only, в гайде нет). Уже есть: `child_not_found`, `attendance_event_not_found` — проверить, не дублировать.
+
+**Файлы:** `src/lib/device-id.ts` (new), `src/api/client.ts`, `src/api/auth.ts`, `src/routes/login.tsx`, `src/api/attendance.ts`, `src/api/qr.ts`, `src/hooks/use-attendance.ts`, `src/hooks/query-keys.ts`, `src/routes/attendance/checkin.tsx` (new), `src/routes/attendance/index.tsx`, `src/routes/attendance/daily-status.tsx`, `src/components/layout/nav-config.ts`, `src/router.tsx`, `src/lib/error-map.ts`, `src/locales/{ru,kk}/{attendance,errors}.json`, `src/api/types/openapi.d.ts` (regen).
+
+**Acceptance:**
+
+- [ ] `X-Device-Id` уходит на `otp/verify`, `role/select`, `refresh`, `qr/scan`; UUID персистит между сессиями; `lib/device-id.ts` покрыт unit-тестом. Скан против локального бэка отвечает `200`, а не `401 no_active_session_for_device` (**после перелогина** — §A31).
+- [ ] Скан → карточка родителя + его дети; **автовыбора первого ребёнка нет**; `linkedChildren: []` → «нет детей в этом садике»; `allowedActions: []` → кнопки disabled + баннер.
+- [ ] Скан ничего не пишет: отметка — отдельный вызов; `check_out` шлёт `pickupUserId` = `user.id` из скана.
+- [ ] 410 → «попросите переоткрыть экран»; 429 → таймер из `Retry-After`; ошибки — через `error-map`, сырой `err.message` не показывается.
+- [ ] Ручная отметка: check-in и check-out работают; дата ≠ сегодня → баннер «уведомление не отправится»; «кто забирает» — combobox опекунов, не UUID-input.
+- [ ] Правки: `recordedAt`/`notes`/`pickupUserId`; структурные `childId`/`eventType` (после переворота типа список инвалидируется, старый id не держим); `DELETE` → запись исчезает, повторное → 404; История показывает `create|update|delete` + актора + дифф, в т.ч. для удалённых.
+- [ ] Дневной статус редактируется (upsert → 200); явный `sick` не сбрасывается приходом (проверка на сиде).
+- [ ] Хинт «В саду с 08:42» из ленты событий; повторный «Приход» → подтверждение. `present/absent` на фронте **не вычисляется** (§A33).
+- [ ] Журнал не грузит 500 детей ради имён — имена из оверлеев.
+- [ ] Mobile: скан с камеры телефона + ручная отметка; заглушечные кнопки топбара больше не мёртвые.
+- [ ] Гейт: `pnpm build` + `pnpm lint --max-warnings=0` + `pnpm test` exit 0. (`pnpm typecheck` — no-op, типы проверяет только `build`.) Browser QA — за владельцем: нужен реальный QR родителя + камера.
+
+**Риски:**
+
+- Ручного ввода токена нет (§A30) → отказ в доступе к камере = скан недоступен, остаётся только ручная отметка по ФИО.
+- `openapi.d.ts` разъезжается с dev до выката обнов — перегенерить, когда доедут.
+- Перелогин всех действующих сессий после S1 — обязателен, иначе скан отвечает 401.
+
+---
+
 ## Tracker
 
 | Батч | Тема                                        | Приоритет | Статус |
@@ -972,6 +1016,7 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 | B24  | Опекуны: подтвердить/отклонить (admin)      | post-MVP  | [ ]    |
 | B25  | Опекуны: ФИО/телефон (N2 closed)            | post-MVP  | [ ]    |
 | B26  | Presigned media + cache-hardening           | post-MVP  | [x]    |
+| B27  | Посещаемость: QR-скан + ручное ведение      | post-MVP  | [ ]    |
 
 ---
 

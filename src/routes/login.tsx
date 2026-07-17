@@ -9,6 +9,7 @@ import { toast } from 'sonner';
 
 import { cn } from '@/lib/cn';
 import { toI18nKey, isAppError } from '@/lib/error-map';
+import { getDeviceId } from '@/lib/device-id';
 import { useUiStore } from '@/stores/ui-store';
 import { useSessionStore } from '@/stores/session-store';
 import { useRequestOtp, useVerifyOtp, useSelectRole, hasAdminRole } from '@/hooks/use-auth';
@@ -163,7 +164,7 @@ function LoginPage() {
   function handleOtpSubmit(data: OtpForm) {
     setOtpError('');
     verifyOtp.mutate(
-      { phone, code: data.code },
+      { phone, code: data.code, deviceId: getDeviceId() },
       {
         onSuccess: (res) => {
           if (!hasAdminRole(res)) {

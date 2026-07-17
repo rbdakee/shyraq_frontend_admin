@@ -126,6 +126,22 @@ export function toISODate(d: Date): string {
   return `${year}-${month}-${day}`;
 }
 
+/**
+ * Timezone-aware `YYYY-MM-DD`. Uses Intl.DateTimeFormat to extract calendar
+ * fields in the given IANA timezone, so "today" is always correct for the
+ * kindergarten even if the browser runs in a different zone.
+ */
+export function toISODateTz(d: Date, timeZone: string): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(d);
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '00';
+  return `${get('year')}-${get('month')}-${get('day')}`;
+}
+
 const CYRILLIC_TRANSLIT: Record<string, string> = {
   а: 'a',
   б: 'b',
