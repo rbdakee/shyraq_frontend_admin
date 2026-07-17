@@ -72,6 +72,19 @@ export function useDeleteMealPlan() {
   });
 }
 
+// Non-keyed variant so a list of day cards can each publish their own plan
+// without violating rules-of-hooks (useUpdateMealPlan is keyed by a single id).
+export function useSetMealPlanPublished() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, isPublished }: { id: string; isPublished: boolean }) =>
+      updateMealPlan(id, { is_published: isPublished }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: qk.mealPlans.all });
+    },
+  });
+}
+
 export function useCreateMealItem(planId: string) {
   const queryClient = useQueryClient();
   return useMutation({
