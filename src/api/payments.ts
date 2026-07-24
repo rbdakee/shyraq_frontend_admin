@@ -7,6 +7,7 @@ export const PaymentProviderEnum = z.enum([
   'kaspi_pay',
   'tiptoppay',
   'freedom_pay',
+  'bcc',
   'cash',
 ]);
 

@@ -16,5 +16,6 @@ export const PROVIDER_I18N_KEYS: Record<PaymentProvider, string> = {
   kaspi_pay: 'payments.provider.kaspi_pay',
   tiptoppay: 'payments.provider.tiptoppay',
   freedom_pay: 'payments.provider.freedom_pay',
+  bcc: 'payments.provider.bcc',
   cash: 'payments.provider.cash',
 };
