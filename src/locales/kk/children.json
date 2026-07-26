@@ -31,6 +31,7 @@
     "status": "Күйі",
     "enrollment_date": "Қабылдау күні",
     "age": "Жасы",
+    "outstanding": "Қарыз",
     "date_of_birth": "Туған күні",
     "actions": "Әрекеттер"
   },
@@ -89,6 +90,8 @@
     "header": "Бала карточкасы",
     "archived_banner": "Бала мұрағатта",
     "not_found": "Карточка табылмады немесе рұқсат жоқ",
+    "outstanding_label": "Қарыз",
+    "no_outstanding": "қарыз жоқ",
 
     "tabs": {
       "profile": "Профиль",
@@ -205,7 +208,7 @@
     "payments": {
       "title": "Төлемдер",
       "header": "Төлемдер және шоттар",
-      "caption": "Алдын ала қарау · толық ақпарат «Биллинг» бөлімінде",
+      "caption": "Баланың барлық шоттары · қолма-қол төлем — шот жолынан",
       "empty": "Төлемдер жоқ",
       "view_all": "Барлық төлемдер",
       "empty_title": "Шоттар әзірге жоқ",
@@ -213,8 +216,17 @@
       "col_invoice": "Шот",
       "col_period": "Кезең",
       "col_amount": "Сома",
+      "col_paid": "Төленді",
+      "col_remaining": "Қалдық",
       "col_status": "Күйі",
-      "col_due": "Мерзім"
+      "col_due": "Мерзім",
+      "pay_cash": "Қолма-қол",
+      "invoices_title": "Шоттар",
+      "payments_header": "Төлемдер",
+      "payments_caption": "Баланың барлық төлем тарихы",
+      "payments_empty": "Төлемдер әзірге жоқ",
+      "load_error": "Деректерді жүктеу мүмкін болмады",
+      "mobile_progress": "Төленді {{paid}} · Қалды {{remaining}}"
     },
 
     "tariff": {

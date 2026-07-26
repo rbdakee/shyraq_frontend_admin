@@ -28,6 +28,7 @@
 | N10 | ~~Schedule slot без поля `category` (тип слота)~~ **resolved 2026-06-11**                   | `resolved`          | `/schedule/templates/:id` → цвет/категория слота (Урок/Активность/Еда/Сон)        |
 | N11 | ~~Нет endpoint/поля логотипа садика (`logo_url` + upload)~~ **resolved 2026-07-10**         | `resolved`          | `/settings` → вкладка «Общие», карточка «Логотип» (загрузка/удаление/превью)      |
 | N12 | ~~`specialist_type` — фиксированный enum; нет admin-managed типов~~ **resolved 2026-07-10** | `resolved`          | `/staff`, `/diagnostics`, `/settings` → вкладка «Специальности» (CRUD-справочник) |
+| N13 | ~~`manual-mark-paid` без суммы — частичная оплата наличными невозможна~~ **resolved 2026-07-26** | `resolved`     | `/billing/invoices/:id` → диалог «Отметить оплату наличными» (поле «Сумма»)       |
 
 ---
 
@@ -249,6 +250,33 @@ _Исходный gap ниже — для истории._
 **Backward-compat.** Минимум — аддитивное расширение enum. Полноценно — миграция: сид существующих 5 значений как системных строк справочника (не удаляемых).
 
 **Источник.** Запрос владельца (2026-07-10). **Действие фронта (когда backend отдаст):** минимум — добавить метку в `staff.json` (ru+kk) + значение в `SpecialistTypeEnum` (`src/api/staff.ts`); полноценно — новый модуль справочника + заменить фронт-i18n-мапу на backend-`name_i18n`. Пока — заведена запись, метка не добавляется (иначе Select предложит невалидное значение).
+
+---
+
+## N13 — `manual-mark-paid` без суммы: частичная оплата наличными · `resolved` (2026-07-26)
+
+**Решение (backend deployed dev 2026-07-26, коммит `3fc6611`).** `ManualMarkPaidInvoiceDto` += `amount?: number | null` (`@IsNumber() @Min(1)` → 422 при `amount < 1`). Семантика — ровно предложенный ниже контракт: omitted/`null`/`== amount_remaining` → legacy full-settlement (`paid`); `0 < amount < amount_remaining` → cash-платёж `completed` на `amount`, счёт → `partial` (в т.ч. из `overdue`), `invoice.paid` не эмитится, повторные взносы допустимы; `amount > amount_remaining` → 409 `invoice_status_invalid` (`details.attemptedAction = amount_mismatch_partial`); по `paid` счёту → 409 `invoice_already_paid`, по `cancelled`/`refunded` → 409 `invoice_status_invalid`. Swagger обновлён. Фронт (B29) выравнен: клиентский минимум 1 ₸ для частичной суммы, 409 → тост + refetch; `gen:api` перегенерён.
+
+_Исходный запрос ниже — для истории._
+
+---
+
+## ~~N13 (исходный запрос)~~ — `manual-mark-paid` без суммы: частичную оплату наличными зарегистрировать нельзя
+
+**Нужно фронту.** Касса садика принимает наличные частями («родитель принёс 30 000 из 135 000»). Диалог «Отметить оплату наличными» на карточке счёта (`/billing/invoices/:id`) должен принимать сумму и оставлять счёт в `partial`, если внесён не весь остаток (запрос владельца 2026-07-26).
+
+**Live backend (проверено 2026-07-26: `/docs-json` + `invoice.service.ts#manualMarkPaid`).** `POST /admin/invoices/:id/manual-mark-paid` тело `{paid_at?, payer_user_id?, note?}` — суммы нет. Поведение: счёт **всегда** флипается в `paid` целиком; синтезируется payment `provider='cash' completed` на **остаток** (residual) на момент вызова. Комментарий в коде фиксирует: «partial cash payments are not supported». ⚠️ Глобальный ValidationPipe — `whitelist: true` **без** `forbidNonWhitelisted` (`src/utils/validation-options.ts`): неизвестное поле `amount` от клиента будет **молча вырезано**, счёт закроется полностью → слать `amount` до деплоя поддержки опасно (фронт гейтит — OPEN_QUESTIONS §A37).
+
+**Предлагаемый контракт (аддитивный; зеркалит gateway-partial в `initiate_payment`, `PaymentInitiationMode='partial'`).** `ManualMarkPaidInvoiceDto` += `amount?: number`:
+
+- omitted / `null` / `== amount_remaining` → текущее поведение (cash-платёж на весь остаток, счёт → `paid`) — полная обратная совместимость;
+- `0 < amount < amount_remaining` → payment `provider='cash' completed` на `amount`; счёт → `partial` (`markPartialConditional`, в т.ч. из `overdue` — прецедент B22a H14); событие `invoice.paid` НЕ эмитится (как у шлюза при partial-платеже);
+- `amount <= 0 || amount > amount_remaining` → отказ 409/422 (зеркально `amount_mismatch_partial` в `initiate_payment`);
+- response — обновлённый `InvoiceResponseDto` (пересчитанные `amount_paid`/`amount_remaining`), как сейчас.
+
+**Backward-compat.** Чисто аддитивное опциональное поле — существующие клиенты (Admin mark-paid без суммы) не затронуты.
+
+**Источник.** Запрос владельца (2026-07-26). OPEN_QUESTIONS §A37, PLAN §B29. **Действие фронта (сделано в B29, frontend-first):** поле «Сумма» в диалоге (prefill = остаток, валидация `0 < x ≤ остаток`); `amount` кладётся в тело только когда введено меньше остатка; post-response guard от whitelist-стригания. Частичный сценарий заработает после деплоя: перегенерить `gen:api`, снять пометку «pending backend» в HANDOFF §13.
 
 ---
 

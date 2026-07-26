@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   formatMoney,
+  parseMoneyInput,
   formatDateTime,
   formatDate,
   formatPhone,
@@ -108,6 +109,68 @@ describe('formatMoney', () => {
     const result = formatMoney(120000);
     const spaceCode = result.charCodeAt(3);
     expect(spaceCode).toBe(32);
+  });
+
+  it('formats fractional .5 with one decimal digit', () => {
+    expect(formatMoney(13.5)).toBe('13,5 ₸');
+  });
+
+  it('formats fractional .55 with two decimal digits', () => {
+    expect(formatMoney(13.55)).toBe('13,55 ₸');
+  });
+
+  it('formats large fractional amount with grouping', () => {
+    expect(formatMoney(120000.5)).toBe('120 000,5 ₸');
+  });
+});
+
+describe('parseMoneyInput', () => {
+  it('parses a plain integer', () => {
+    expect(parseMoneyInput('85000')).toBe(85000);
+  });
+
+  it('parses space-grouped digits', () => {
+    expect(parseMoneyInput('85 000')).toBe(85000);
+  });
+
+  it('parses NBSP-grouped digits', () => {
+    expect(parseMoneyInput('85 000')).toBe(85000);
+  });
+
+  it('parses comma as decimal separator', () => {
+    expect(parseMoneyInput('13,5')).toBe(13.5);
+  });
+
+  it('parses dot as decimal separator with two decimals', () => {
+    expect(parseMoneyInput('13.55')).toBe(13.55);
+  });
+
+  it('rejects more than two decimals', () => {
+    expect(parseMoneyInput('13.555')).toBeNull();
+  });
+
+  it('rejects empty string', () => {
+    expect(parseMoneyInput('')).toBeNull();
+  });
+
+  it('rejects whitespace-only string', () => {
+    expect(parseMoneyInput('   ')).toBeNull();
+  });
+
+  it('rejects negative amounts', () => {
+    expect(parseMoneyInput('-500')).toBeNull();
+  });
+
+  it('rejects non-numeric text', () => {
+    expect(parseMoneyInput('12a')).toBeNull();
+  });
+
+  it('rejects trailing decimal separator', () => {
+    expect(parseMoneyInput('12,')).toBeNull();
+  });
+
+  it('parses zero (range checks are the caller’s job)', () => {
+    expect(parseMoneyInput('0')).toBe(0);
   });
 });
 

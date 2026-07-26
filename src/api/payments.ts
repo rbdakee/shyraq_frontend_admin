@@ -50,6 +50,7 @@ export interface PaymentListFilters {
   provider?: PaymentProvider;
   status?: PaymentStatus;
   child_id?: string;
+  invoice_id?: string;
   from_date?: string;
   to_date?: string;
   cursor?: string;
@@ -63,6 +64,7 @@ export async function listPayments(
   if (filters.provider) searchParams.provider = filters.provider;
   if (filters.status) searchParams.status = filters.status;
   if (filters.child_id) searchParams.child_id = filters.child_id;
+  if (filters.invoice_id) searchParams.invoice_id = filters.invoice_id;
   if (filters.from_date) searchParams.from_date = filters.from_date;
   if (filters.to_date) searchParams.to_date = filters.to_date;
   if (filters.cursor) searchParams.cursor = filters.cursor;

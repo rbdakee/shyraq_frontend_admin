@@ -1,9 +1,6 @@
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useForm, type Resolver } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { toast } from 'sonner';
 import {
   ChevronRightIcon,
@@ -22,52 +19,38 @@ import { StickyBottomBar } from '@/components/layout/sticky-bottom-bar';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DestructiveConfirm } from '@/components/feedback/destructive-confirm';
 import { ErrorState } from '@/components/feedback/error-state';
 import { EmptyState } from '@/components/feedback/empty-state';
 import { SkeletonLine, SkeletonBox } from '@/components/feedback/skeleton';
-import {
-  useInvoice,
-  useMarkInvoicePaid,
-  useCancelInvoice,
-  type InvoiceStatus,
-} from '@/hooks/use-invoices';
+import { useInvoice, useCancelInvoice, type InvoiceStatus } from '@/hooks/use-invoices';
+import { useInfinitePaymentsList } from '@/hooks/use-payments';
 import { useAllChildren } from '@/hooks/use-children';
 import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
-import { formatMoney, formatDate, getInitials } from '@/lib/format';
+import { formatMoney, formatDate, formatDateTime, getInitials } from '@/lib/format';
+import { uniqueById } from '@/lib/collections';
 import { toI18nKey, isAppError } from '@/lib/error-map';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
-import { INVOICE_STATUS_BADGE } from './invoice-constants';
+import { INVOICE_STATUS_BADGE, MARKABLE_STATUSES } from './invoice-constants';
+import { PAYMENT_STATUS_BADGE, PROVIDER_I18N_KEYS } from '../payments/payment-constants';
+import { MarkPaidDialog } from './mark-paid-dialog';
 
 const CANCELLABLE_STATUSES: InvoiceStatus[] = ['pending', 'partial'];
-const MARKABLE_STATUSES: InvoiceStatus[] = ['pending', 'partial', 'overdue'];
-
-const MarkPaidSchema = z.object({
-  paid_at: z.string().default(''),
-  note: z.string().default(''),
-});
-
-type MarkPaidForm = z.infer<typeof MarkPaidSchema>;
 
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();
   const { t } = useTranslation('billing');
+  const navigate = useNavigate();
   const tz = DEFAULT_TIMEZONE;
   const { isMobile } = useBreakpoint();
 
   const invoiceQuery = useInvoice(id ?? '');
+  const paymentsInfinite = useInfinitePaymentsList(
+    { invoice_id: id ?? '' },
+    { enabled: !!id },
+  );
+  const payments = uniqueById(paymentsInfinite.data?.pages.flat() ?? []);
   const invoice = invoiceQuery.data;
 
   useBreadcrumbLabel(
@@ -81,38 +64,7 @@ export default function InvoiceDetailPage() {
   const [markPaidOpen, setMarkPaidOpen] = useState(false);
   const [cancelOpen, setCancelOpen] = useState(false);
 
-  const markPaidMutation = useMarkInvoicePaid(id ?? '');
   const cancelMutation = useCancelInvoice(id ?? '');
-
-  const markPaidForm = useForm<MarkPaidForm>({
-    resolver: zodResolver(MarkPaidSchema) as Resolver<MarkPaidForm>,
-    defaultValues: { paid_at: '', note: '' },
-  });
-
-  function handleMarkPaid(data: MarkPaidForm) {
-    markPaidMutation.mutate(
-      {
-        paid_at: data.paid_at || null,
-        note: data.note || null,
-      },
-      {
-        onSuccess: () => {
-          setMarkPaidOpen(false);
-          markPaidForm.reset();
-          toast.success(t('invoices.mark_paid.success'));
-        },
-        onError: (err) => {
-          if (isAppError(err) && err.code === 'invoice_already_paid') {
-            toast.error(t('errors:invoice_already_paid'));
-            void invoiceQuery.refetch();
-          } else {
-            toast.error(t(toI18nKey(err), { defaultValue: t('errors:unknown_error') }));
-          }
-          console.error(err);
-        },
-      },
-    );
-  }
 
   function handleCancel(reason?: string) {
     cancelMutation.mutate(
@@ -158,6 +110,11 @@ export default function InvoiceDetailPage() {
     invoice.discount_pct > 0 &&
     invoice.amount_due !== invoice.amount_after_discount;
   const lineItems = invoice.line_items ?? [];
+  const paidRatio =
+    invoice.amount_after_discount > 0
+      ? Math.min(invoice.amount_paid / invoice.amount_after_discount, 1)
+      : 0;
+  const showRemaining = invoice.status === 'partial' || invoice.status === 'overdue';
 
   const statusTone: Record<string, string> = {
     paid: 'success',
@@ -171,66 +128,7 @@ export default function InvoiceDetailPage() {
 
   const dialogs = (
     <>
-      <Dialog open={markPaidOpen} onOpenChange={setMarkPaidOpen}>
-        <DialogContent className="sm:max-w-[440px] rounded-[var(--r-xl)] border-[var(--line)] bg-[var(--bg-elev)] p-0 shadow-[var(--shadow-3)]">
-          <DialogHeader className="px-[22px] pt-[18px] pb-3">
-            <DialogTitle className="text-[17px] font-bold tracking-[-0.01em] text-[color:var(--text-1)]">
-              {t('invoices.mark_paid.title')}
-            </DialogTitle>
-            <DialogDescription className="text-[13px] text-[color:var(--text-3)]">
-              {formatMoney(invoice.amount_after_discount)}
-            </DialogDescription>
-          </DialogHeader>
-
-          <form
-            onSubmit={markPaidForm.handleSubmit(handleMarkPaid)}
-            className="flex flex-col gap-4 px-[22px] pb-[18px]"
-          >
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
-                {t('invoices.mark_paid.paid_at')}
-              </Label>
-              <Input
-                type="datetime-local"
-                {...markPaidForm.register('paid_at')}
-                placeholder={t('invoices.mark_paid.paid_at_placeholder')}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
-                {t('invoices.mark_paid.note')}
-              </Label>
-              <Textarea
-                {...markPaidForm.register('note')}
-                placeholder={t('invoices.mark_paid.note_placeholder')}
-                rows={2}
-                className="min-h-[60px] resize-y border-[var(--border)] bg-[var(--bg-elev)] text-[14px] text-[color:var(--text-1)] placeholder:text-[color:var(--text-4)]"
-              />
-            </div>
-
-            <div className="flex items-start gap-2 rounded-[var(--r-md)] bg-[var(--info-soft)] p-3">
-              <InfoIcon className="mt-0.5 size-4 shrink-0 text-[color:var(--info-fg)]" />
-              <div className="text-[12.5px] text-[color:var(--text-2)]">
-                {t('invoices.mark_paid.info_banner')}
-              </div>
-            </div>
-
-            <DialogFooter className="-mx-0 -mb-0 rounded-b-[var(--r-xl)] border-t border-[var(--line)] bg-transparent px-[22px] py-[14px]">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setMarkPaidOpen(false)}
-                className="border-[var(--border)] bg-[var(--bg-elev)] text-[color:var(--text-1)] hover:bg-[var(--bg-sunken)]"
-              >
-                {t('invoices.mark_paid.cancel')}
-              </Button>
-              <Button type="submit" disabled={markPaidMutation.isPending}>
-                {t('invoices.mark_paid.confirm')}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <MarkPaidDialog invoice={invoice} open={markPaidOpen} onOpenChange={setMarkPaidOpen} />
 
       <DestructiveConfirm
         open={cancelOpen}
@@ -282,12 +180,48 @@ export default function InvoiceDetailPage() {
             <div style={{ fontSize: 32, fontWeight: 700, letterSpacing: '-0.02em', marginTop: 4 }}>
               {formatMoney(invoice.amount_after_discount)}
             </div>
-            {invoice.status === 'paid' && (
-              <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>
-                {t('mobile.invoice_detail_paid_at', {
-                  date: formatDate(invoice.updated_at, tz),
-                })}
+            {invoice.status === 'paid' ? (
+              <div style={{ fontSize: 12, color: 'var(--success-fg)', marginTop: 6 }}>
+                {t('mobile.invoice_detail_paid_in_full')}
               </div>
+            ) : (
+              invoice.amount_paid > 0 && (
+                <div style={{ marginTop: 8 }}>
+                  <div
+                    style={{
+                      height: 4,
+                      borderRadius: 2,
+                      background: 'var(--bg-sunken)',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: '100%',
+                        width: `${paidRatio * 100}%`,
+                        borderRadius: 2,
+                        background: 'var(--primary)',
+                        transition: 'width 0.3s ease',
+                      }}
+                    />
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      fontSize: 11,
+                      marginTop: 4,
+                    }}
+                  >
+                    <span style={{ color: 'var(--text-3)' }}>
+                      {t('mobile.invoice_detail_amount_paid')}: {formatMoney(invoice.amount_paid)}
+                    </span>
+                    <span style={{ color: 'var(--danger-fg)', fontWeight: 600 }}>
+                      {t('mobile.invoice_detail_amount_remaining')}: {formatMoney(invoice.amount_remaining)}
+                    </span>
+                  </div>
+                </div>
+              )
             )}
           </div>
 
@@ -337,15 +271,91 @@ export default function InvoiceDetailPage() {
                 {formatMoney(invoice.amount_after_discount)}
               </span>
             </div>
+            <div className="m-kv">
+              <span className="k">{t('mobile.invoice_detail_amount_paid')}</span>
+              <span className="v">{formatMoney(invoice.amount_paid)}</span>
+            </div>
+            {invoice.status === 'paid' ? (
+              <div className="m-kv">
+                <span className="k" style={{ color: 'var(--success-fg)' }}>
+                  {t('mobile.invoice_detail_paid_in_full')}
+                </span>
+                <span className="v" style={{ color: 'var(--success-fg)' }}>
+                  {formatMoney(0)}
+                </span>
+              </div>
+            ) : (
+              <div className="m-kv">
+                <span
+                  className="k"
+                  style={showRemaining ? { color: 'var(--danger-fg)', fontWeight: 600 } : undefined}
+                >
+                  {t('mobile.invoice_detail_amount_remaining')}
+                </span>
+                <span
+                  className="v"
+                  style={showRemaining ? { color: 'var(--danger-fg)', fontWeight: 600 } : undefined}
+                >
+                  {formatMoney(invoice.amount_remaining)}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="m-section-h">
             <div className="m-section-title">{t('mobile.invoice_detail_payments')}</div>
           </div>
           <div className="m-card flush">
-            <div className="px-4 py-6 text-center text-[12px] text-[color:var(--text-3)]">
-              {t('invoices.detail.payments_unavailable_hint')}
-            </div>
+            {payments.length === 0 ? (
+              <div className="px-4 py-6 text-center text-[12px] text-[color:var(--text-3)]">
+                {t('mobile.invoice_detail_payments_empty')}
+              </div>
+            ) : (
+              <>
+                {payments.map((p) => (
+                  <div
+                    key={p.id}
+                    className="m-inv-row"
+                    onClick={() => navigate(`/billing/payments/${p.id}`)}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="m-row-title" style={{ fontSize: '13.5px' }}>
+                        {formatMoney(p.amount)}
+                      </div>
+                      <div
+                        style={{
+                          display: 'flex',
+                          gap: 6,
+                          fontSize: '11.5px',
+                          color: 'var(--text-3)',
+                          marginTop: 3,
+                        }}
+                      >
+                        <span>{t(PROVIDER_I18N_KEYS[p.provider])}</span>
+                        <span>·</span>
+                        <span>{formatDateTime(p.created_at, tz)}</span>
+                      </div>
+                    </div>
+                    <Badge variant={PAYMENT_STATUS_BADGE[p.status]} dot>
+                      {t(`payments.status.${p.status}`)}
+                    </Badge>
+                  </div>
+                ))}
+                {paymentsInfinite.hasNextPage && (
+                  <div className="px-4 py-3 text-center">
+                    <button
+                      type="button"
+                      className="m-btn"
+                      style={{ width: '100%' }}
+                      onClick={() => void paymentsInfinite.fetchNextPage()}
+                      disabled={paymentsInfinite.isFetchingNextPage}
+                    >
+                      {t('invoices.detail.load_more_payments')}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           <div className="m-section-h">
@@ -482,6 +492,45 @@ export default function InvoiceDetailPage() {
                 {formatMoney(invoice.amount_due)}
               </div>
             )}
+            <div className="mt-2 flex flex-col items-end gap-1">
+              <div className="text-[12px] text-[color:var(--text-3)]">
+                {t('invoices.detail.amount_paid_label')}:{' '}
+                <span className="tabular-nums font-semibold text-[color:var(--text-1)]">
+                  {formatMoney(invoice.amount_paid)}
+                </span>
+              </div>
+              {invoice.status === 'paid' ? (
+                <div className="text-[12px] font-semibold text-[color:var(--success-fg)]">
+                  {t('invoices.detail.paid_in_full')}
+                </div>
+              ) : (
+                <div className="text-[12px] text-[color:var(--text-3)]">
+                  {t('invoices.detail.amount_remaining_label')}:{' '}
+                  <span
+                    className={`tabular-nums font-semibold${showRemaining ? ' text-[color:var(--danger-fg)]' : ' text-[color:var(--text-1)]'}`}
+                  >
+                    {formatMoney(invoice.amount_remaining)}
+                  </span>
+                </div>
+              )}
+              <div
+                className="mt-1 overflow-hidden rounded-full"
+                style={{
+                  width: 160,
+                  height: 4,
+                  background: 'var(--bg-sunken)',
+                }}
+              >
+                <div
+                  className="h-full rounded-full"
+                  style={{
+                    width: `${paidRatio * 100}%`,
+                    background: invoice.status === 'paid' ? 'var(--success-fg)' : 'var(--primary)',
+                    transition: 'width 0.3s ease',
+                  }}
+                />
+              </div>
+            </div>
           </div>
         </div>
 
@@ -584,18 +633,84 @@ export default function InvoiceDetailPage() {
             )}
           </div>
 
-          {/* Related payments (degraded) */}
+          {/* Related payments */}
           <div className="overflow-hidden rounded-[var(--r-lg)] border border-[var(--line)] bg-[var(--bg-elev)]">
             <div className="border-b border-[var(--line)] px-5 py-3">
               <h3 className="text-[15px] font-bold text-[color:var(--text-1)]">
                 {t('invoices.detail.related_payments')}
               </h3>
             </div>
-            <EmptyState
-              icon={<CreditCardIcon className="size-9 text-[color:var(--text-4)]" />}
-              title={t('invoices.detail.payments_unavailable')}
-              text={t('invoices.detail.payments_unavailable_hint')}
-            />
+            {paymentsInfinite.isPending ? (
+              <div className="p-5">
+                <SkeletonBox height={80} />
+              </div>
+            ) : payments.length === 0 ? (
+              <EmptyState
+                icon={<CreditCardIcon className="size-9 text-[color:var(--text-4)]" />}
+                title={t('invoices.detail.payments_empty')}
+              />
+            ) : (
+              <>
+                <table className="w-full border-collapse text-[13.5px]">
+                  <thead>
+                    <tr>
+                      <th className="border-b border-[var(--line)] bg-[var(--bg-subtle)] px-3.5 py-2.5 text-left text-xs font-semibold uppercase tracking-[0.04em] text-[color:var(--text-3)]">
+                        {t('payments.columns.date')}
+                      </th>
+                      <th className="border-b border-[var(--line)] bg-[var(--bg-subtle)] px-3.5 py-2.5 text-right text-xs font-semibold uppercase tracking-[0.04em] text-[color:var(--text-3)]">
+                        {t('payments.columns.amount')}
+                      </th>
+                      <th className="border-b border-[var(--line)] bg-[var(--bg-subtle)] px-3.5 py-2.5 text-left text-xs font-semibold uppercase tracking-[0.04em] text-[color:var(--text-3)]">
+                        {t('payments.columns.provider')}
+                      </th>
+                      <th className="border-b border-[var(--line)] bg-[var(--bg-subtle)] px-3.5 py-2.5 text-left text-xs font-semibold uppercase tracking-[0.04em] text-[color:var(--text-3)]">
+                        {t('payments.columns.status')}
+                      </th>
+                      <th className="border-b border-[var(--line)] bg-[var(--bg-subtle)] px-3.5 py-2.5 text-xs font-semibold uppercase tracking-[0.04em] text-[color:var(--text-3)]" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payments.map((p) => (
+                      <tr
+                        key={p.id}
+                        className="cursor-pointer border-b border-[var(--line)] transition-colors last:border-b-0 hover:bg-[var(--bg-sunken)]"
+                        onClick={() => navigate(`/billing/payments/${p.id}`)}
+                      >
+                        <td className="px-3.5 py-3 text-[color:var(--text-1)]">
+                          {formatDateTime(p.created_at, tz)}
+                        </td>
+                        <td className="px-3.5 py-3 text-right font-semibold tabular-nums text-[color:var(--text-1)]">
+                          {formatMoney(p.amount)}
+                        </td>
+                        <td className="px-3.5 py-3 text-[color:var(--text-2)]">
+                          {t(PROVIDER_I18N_KEYS[p.provider])}
+                        </td>
+                        <td className="px-3.5 py-3">
+                          <Badge variant={PAYMENT_STATUS_BADGE[p.status]} dot>
+                            {t(`payments.status.${p.status}`)}
+                          </Badge>
+                        </td>
+                        <td className="px-3.5 py-3 text-right">
+                          <ChevronRightIcon className="inline-block size-3.5 text-[color:var(--text-4)]" />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {paymentsInfinite.hasNextPage && (
+                  <div className="border-t border-[var(--line)] px-5 py-3 text-center">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => void paymentsInfinite.fetchNextPage()}
+                      disabled={paymentsInfinite.isFetchingNextPage}
+                    >
+                      {t('invoices.detail.load_more_payments')}
+                    </Button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Discounts section */}

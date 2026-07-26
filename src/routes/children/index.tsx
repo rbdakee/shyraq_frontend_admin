@@ -22,7 +22,7 @@ import { useChildrenList } from '@/hooks/use-children';
 import { useGroups } from '@/hooks/use-groups';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { cn } from '@/lib/cn';
-import { formatDate, formatIinMasked, getInitials } from '@/lib/format';
+import { formatDate, formatIinMasked, formatMoney, getInitials } from '@/lib/format';
 import { DEFAULT_TIMEZONE, SEARCH_DEBOUNCE_MS } from '@/lib/constants';
 
 type ChildrenListData = NonNullable<ReturnType<typeof useChildrenList>['data']>;
@@ -179,6 +179,23 @@ export default function ChildrenListPage() {
         cell: ({ row }) => <ChildStatusBadge status={row.original.status} t={t} />,
       },
       {
+        id: 'outstanding',
+        header: () => <div className="text-right">{t('columns.outstanding')}</div>,
+        cell: ({ row }) => {
+          const val = row.original.outstanding_total;
+          if (val == null) return null;
+          if (val === 0) {
+            return <div className="text-right tabular-nums text-[color:var(--text-4)]">—</div>;
+          }
+          return (
+            <div className="text-right tabular-nums font-semibold text-[color:var(--danger-fg)]">
+              {formatMoney(val)}
+            </div>
+          );
+        },
+        enableSorting: false,
+      },
+      {
         id: 'enrollment_date',
         header: () => t('columns.enrollment_date'),
         cell: ({ row }) =>
@@ -248,6 +265,11 @@ export default function ChildrenListPage() {
             </div>
           </div>
           <div className="m-row-meta">
+            {row.outstanding_total != null && row.outstanding_total > 0 && (
+              <span className="tabular-nums text-[11px] font-semibold text-[color:var(--danger-fg)]">
+                {formatMoney(row.outstanding_total)}
+              </span>
+            )}
             <ChildStatusBadge status={row.status} t={t} />
             <ChevronRightIcon className="m-row-chev size-4" />
           </div>

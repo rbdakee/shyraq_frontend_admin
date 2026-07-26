@@ -1755,7 +1755,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Mark an invoice as paid via cash/off-platform settlement. Idempotent at the conditional-UPDATE level. */
+    /** Mark an invoice as paid via cash/off-platform settlement. Optional `amount` records a partial cash receipt (invoice → partial). Idempotent at the conditional-UPDATE level. */
     post: operations['AdminInvoiceController_manualMarkPaid_v1'];
     delete?: never;
     options?: never;
@@ -1787,7 +1787,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** List payments (filters: provider, status, child_id, refund_required, from_date, to_date). Pass refund_required=true to get the double-payment refund queue. */
+    /** List payments (filters: provider, status, child_id, invoice_id, refund_required, from_date, to_date). Pass invoice_id to get the payment history of a single invoice; refund_required=true for the double-payment refund queue. */
     get: operations['AdminPaymentController_list_v1'];
     put?: never;
     post?: never;
@@ -2395,6 +2395,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/parent/invoices/{id}/payments': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Payment history for a single invoice (newest first). Lets the parent see how much was paid, by whom, and when. Tenant resolved from the invoice (InvoiceAccessGuard); re-checks guardian-of-child access; nanny → 403. */
+    get: operations['ParentInvoiceController_listPayments_v1'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/parent/invoices/{id}/payment-methods': {
     parameters: {
       query?: never;
@@ -2809,6 +2826,28 @@ export interface paths {
     put?: never;
     /** Manual trigger of the cron `schedule:auto-copy` — projects active templates onto next week. Idempotent per group. */
     post: operations['ScheduleAdminController_copyWeek_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/admin/schedule/week-snapshots/rebuild': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Force re-projection of active templates onto every already-materialized week from the current ISO week forward.
+     * @description Template edits normally re-sync themselves — every template/slot mutation calls this same routine. This endpoint is the manual escape hatch for one-off data repair (e.g. weeks materialized before the auto-resync existed, which parents still see as stale ghost slots).
+     *
+     *     Only rewrites events with `origin=template`, `status=scheduled` and `starts_at > now`: ad-hoc events, events already started/completed/cancelled, and anything earlier today are all preserved. Weeks without a snapshot are NOT materialized here — the weekly cron owns that horizon. Safe to re-run; running it twice in a row is a no-op the second time.
+     */
+    post: operations['ScheduleAdminController_rebuildWeekSnapshots_v1'];
     delete?: never;
     options?: never;
     head?: never;
@@ -4582,6 +4621,7 @@ export interface components {
       pending_role_select: boolean;
       roles: components['schemas']['RoleResponseDto'][];
     };
+    Object: Record<string, never>;
     StaffMemberDto: {
       /** @example stf-1234-5678-abcd-1234567890ab */
       id: string;
@@ -4627,7 +4667,7 @@ export interface components {
        * @description Specialist-type code. Required when role=specialist; forbidden otherwise. Must be an ACTIVE code from the kindergarten directory (GET /admin/specialist-types) — else 400 specialist_type_unknown.
        * @example psychologist
        */
-      specialist_type?: string;
+      specialist_type?: Record<string, never>;
       /** @example 2026-04-24 */
       hired_at?: string;
     };
@@ -5182,6 +5222,11 @@ export interface components {
        * @example Динара Сериковна
        */
       current_mentor_name: Record<string, never> | null;
+      /**
+       * @description Total outstanding billing balance for the child in KZT: sum of max(0, amount_after_discount − paid) over the child non-terminal invoices (cancelled/refunded excluded; fully-paid invoices contribute 0). Resolved via the billing overlay on the admin children list (GET /children). Null when the overlay was not built for this response (e.g. single-child endpoints) — treat null as "not computed", 0 as "nothing owed".
+       * @example 58000
+       */
+      outstanding_total: Record<string, never> | null;
       /** @example null */
       enrollment_date: Record<string, never> | null;
       /** @example null */
@@ -6431,6 +6476,16 @@ export interface components {
        */
       amount_after_discount: number;
       /**
+       * @description Sum of completed payments toward this invoice in KZT. Always present (0 when nothing paid). May slightly exceed amount_after_discount on sub-tenge rounding of a provider charge.
+       * @example 50000
+       */
+      amount_paid: number;
+      /**
+       * @description Remaining balance in KZT: max(0, amount_after_discount − amount_paid). Always present (0 when fully paid / cancelled / refunded).
+       * @example 58000
+       */
+      amount_remaining: number;
+      /**
        * @example pending
        * @enum {string}
        */
@@ -6544,6 +6599,11 @@ export interface components {
        * @example Оплачено наличными в кассе
        */
       note?: Record<string, never> | null;
+      /**
+       * @description Cash amount received in KZT. Omitted or equal to amount_remaining → full settlement, invoice flips to `paid` (legacy behavior). 0 < amount < amount_remaining → partial cash receipt, invoice flips to `partial`. Amounts ≤ 0 or > amount_remaining are rejected with 409 `invoice_status_invalid` (mirrors payment_mode=partial of POST /payments/initiate).
+       * @example 30000
+       */
+      amount?: Record<string, never> | null;
     };
     CancelInvoiceDto: {
       /**
@@ -8204,10 +8264,16 @@ export interface components {
       /** @example a1b2c3d4-0000-0000-0000-000000000010 */
       groupId: string;
       /**
-       * @description null = ad-hoc event
+       * @description Originating template slot. Nullable, and null does NOT imply ad-hoc: the FK is ON DELETE SET NULL, so editing a template clears it on events already projected from the deleted slot. Read `origin` to tell provenance.
        * @example b1a2c3d4-0000-0000-0000-000000000001
        */
       templateSlotId?: Record<string, never> | null;
+      /**
+       * @description Durable provenance, set once at creation. 'template' = projected from a schedule template slot; 'adhoc' = created directly by staff. Unlike `templateSlotId` this survives deletion of the originating slot, so `origin='template'` with `templateSlotId=null` identifies an orphaned event whose template slot is gone.
+       * @example template
+       * @enum {string}
+       */
+      origin: 'template' | 'adhoc';
       /** @example Утренний круг */
       activityName: string;
       /**
@@ -8222,9 +8288,15 @@ export interface components {
        * @example Музыкальный зал
        */
       location_name: Record<string, never> | null;
-      /** @example 2026-05-04T09:00:00.000Z */
+      /**
+       * @description Rendered in the kindergarten timezone (Asia/Almaty) with numeric offset — same instant as UTC, but naive clients read local wall-clock time directly.
+       * @example 2026-05-04T14:00:00.000+05:00
+       */
       startsAt: string;
-      /** @example 2026-05-04T09:45:00.000Z */
+      /**
+       * @description Rendered in the kindergarten timezone (Asia/Almaty) with numeric offset — same instant as UTC, but naive clients read local wall-clock time directly.
+       * @example 2026-05-04T14:45:00.000+05:00
+       */
       endsAt?: Record<string, never> | null;
       /**
        * @example scheduled
@@ -8255,11 +8327,14 @@ export interface components {
       /** @example b2a1c0d9-0000-0000-0000-000000000001 */
       locationId?: string;
       /**
-       * @description ISO timestamp (UTC).
+       * @description ISO timestamp. A zoneless value (e.g. 2026-05-04T09:00) is interpreted as kindergarten-local (Asia/Almaty); a value with Z or an offset is honoured as-is.
        * @example 2026-05-04T09:00:00.000Z
        */
       startsAt: string;
-      /** @example 2026-05-04T09:45:00.000Z */
+      /**
+       * @description ISO timestamp. A zoneless value (e.g. 2026-05-04T09:00) is interpreted as kindergarten-local (Asia/Almaty); a value with Z or an offset is honoured as-is.
+       * @example 2026-05-04T09:45:00.000Z
+       */
       endsAt?: string;
       /** @example Доп. событие — выход в парк */
       notes?: string;
@@ -8274,9 +8349,15 @@ export interface components {
       category?: 'lesson' | 'activity' | 'meal' | 'sleep';
       /** @example b2a1c0d9-0000-0000-0000-000000000001 */
       locationId?: string;
-      /** @example 2026-05-04T10:00:00.000Z */
+      /**
+       * @description ISO timestamp. A zoneless value (e.g. 2026-05-04T09:00) is interpreted as kindergarten-local (Asia/Almaty); a value with Z or an offset is honoured as-is.
+       * @example 2026-05-04T10:00:00.000Z
+       */
       startsAt?: string;
-      /** @example 2026-05-04T11:00:00.000Z */
+      /**
+       * @description ISO timestamp. A zoneless value (e.g. 2026-05-04T09:00) is interpreted as kindergarten-local (Asia/Almaty); a value with Z or an offset is honoured as-is.
+       * @example 2026-05-04T11:00:00.000Z
+       */
       endsAt?: string;
       /** @example Заметка */
       notes?: string;
@@ -8319,6 +8400,30 @@ export interface components {
        * @example 24
        */
       totalEvents: number;
+    };
+    RebuildWeekSnapshotsDto: {
+      /**
+       * @description Narrow the rebuild to a single group. Omit (or send null) to rebuild every group of this kindergarten — which is what a kindergarten-wide template (group_id = null) requires.
+       * @example a1b2c3d4-0000-0000-0000-000000000010
+       */
+      groupId?: string | null;
+    };
+    RematerializeSummaryDto: {
+      /**
+       * @description Distinct (group, week) pairs re-projected — one per already-materialized week from the current ISO week forward.
+       * @example 2
+       */
+      rebuiltWeeks: number;
+      /**
+       * @description Stale template-projected events removed (origin='template', status='scheduled', starts_at > now). Ad-hoc events and anything already started or past are never counted here.
+       * @example 76
+       */
+      deletedEvents: number;
+      /**
+       * @description Fresh events written from the current template definitions (only those starting after now).
+       * @example 76
+       */
+      insertedEvents: number;
     };
     ScheduleWeekDayDto: {
       /**
@@ -10485,7 +10590,7 @@ export interface operations {
         /** @description Filter by is_active. */
         is_active?: boolean;
         /** @description Filter by specialist-type code (any directory code — no enum constraint). */
-        specialist_type?: string;
+        specialist_type?: components['schemas']['Object'];
         /** @description Show only archived rows when true; only non-archived when false. */
         archived?: boolean;
         /** @description Substring match against full_name / phone (ILIKE). */
@@ -15126,7 +15231,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Invoice already paid / refunded / cancelled (state-machine conflict). */
+      /** @description Invoice already paid / refunded / cancelled (state-machine conflict), or `amount` is ≤ 0 / exceeds amount_remaining (amount_mismatch_partial). */
       409: {
         headers: {
           [name: string]: unknown;
@@ -15213,6 +15318,8 @@ export interface operations {
         status?: 'initiated' | 'processing' | 'completed' | 'failed' | 'refunded';
         /** @description Filter by child. */
         child_id?: string;
+        /** @description Filter by invoice — returns only payments toward this invoice (payment history of a single invoice on the admin invoice-detail page). */
+        invoice_id?: string;
         /** @description Pass "true" to return only payments flagged as needing a manual refund (double payments). */
         refund_required?: string;
         /** @description Return payments with paid_at or created_at >= this date. */
@@ -17505,6 +17612,50 @@ export interface operations {
       };
     };
   };
+  ParentInvoiceController_listPayments_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PaymentResponseDto'][];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description not_a_guardian / nanny_cannot_view_invoice. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description invoice_not_found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   ParentInvoiceController_listPaymentMethods_v1: {
     parameters: {
       query?: never;
@@ -19215,6 +19366,52 @@ export interface operations {
         };
       };
       /** @description Validation error. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not admin. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ScheduleAdminController_rebuildWeekSnapshots_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['RebuildWeekSnapshotsDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['RematerializeSummaryDto'];
+        };
+      };
+      /** @description Validation error (groupId is not a UUID) / tenant_required. */
       400: {
         headers: {
           [name: string]: unknown;

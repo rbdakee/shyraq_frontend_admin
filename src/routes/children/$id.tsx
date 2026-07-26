@@ -17,6 +17,7 @@ import {
   PlusIcon,
   CheckIcon,
   XIcon,
+  BanknoteIcon,
 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -71,7 +72,19 @@ import {
 import { useGroups } from '@/hooks/use-groups';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
-import { formatDate, getInitials, formatPhone } from '@/lib/format';
+import { useInvoicesList, type InvoiceResponseDto } from '@/hooks/use-invoices';
+import { useInfinitePaymentsList } from '@/hooks/use-payments';
+import {
+  INVOICE_STATUS_BADGE,
+  MARKABLE_STATUSES,
+} from '@/routes/billing/invoices/invoice-constants';
+import { MarkPaidDialog } from '@/routes/billing/invoices/mark-paid-dialog';
+import {
+  PAYMENT_STATUS_BADGE,
+  PROVIDER_I18N_KEYS,
+} from '@/routes/billing/payments/payment-constants';
+import { uniqueById } from '@/lib/collections';
+import { formatDate, formatDateTime, formatMoney, getInitials, formatPhone } from '@/lib/format';
 import {
   resolveGuardianName,
   guardianStatusVariant,
@@ -81,7 +94,7 @@ import {
   type GuardianRole,
 } from '@/lib/guardian';
 import { getErrorCode, toI18nKey } from '@/lib/error-map';
-import { DEFAULT_TIMEZONE } from '@/lib/constants';
+import { DEFAULT_TIMEZONE, MOBILE_BILLING_ROW_CAP } from '@/lib/constants';
 import { TransferModalContext } from './transfer-modal-context';
 
 type ChildStatus = 'card_created' | 'active' | 'archived';
@@ -90,7 +103,7 @@ const ProfileTab = lazy(() => import('./tabs/profile-tab'));
 const GuardiansTab = lazy(() => import('./tabs/guardians-tab'));
 const GroupHistoryTab = lazy(() => import('./tabs/group-history-tab'));
 const TimelineTab = lazy(() => import('./tabs/timeline-tab'));
-const PaymentsPreviewTab = lazy(() => import('./tabs/payments-preview-tab'));
+const BillingTab = lazy(() => import('./tabs/billing-tab'));
 const DiagnosticsPreviewTab = lazy(() => import('./tabs/diagnostics-preview-tab'));
 const StatusHistoryTab = lazy(() => import('./tabs/status-history-tab'));
 const FaceTab = lazy(() => import('./tabs/face-tab'));
@@ -141,7 +154,7 @@ function TabSkeleton() {
 
 export default function ChildDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { t } = useTranslation('children');
+  const { t } = useTranslation(['children', 'billing']);
   const navigate = useNavigate();
   const tz = DEFAULT_TIMEZONE;
 
@@ -268,6 +281,24 @@ export default function ChildDetailPage() {
   }
 
   const { isMobile } = useBreakpoint();
+
+  // Mobile Billing section data (B30). Desktop reads the same query keys via
+  // the lazy billing tab, so nothing double-fetches.
+  const mobileInvoicesQuery = useInvoicesList(
+    { child_id: id ?? '' },
+    { enabled: isMobile && !!id },
+  );
+  const mobilePaymentsInfinite = useInfinitePaymentsList(
+    { child_id: id ?? '' },
+    { enabled: isMobile && !!id },
+  );
+  const mobileInvoices = [...(mobileInvoicesQuery.data ?? [])].sort((a, b) =>
+    b.created_at.localeCompare(a.created_at),
+  );
+  const mobilePayments = uniqueById(mobilePaymentsInfinite.data?.pages.flat() ?? []);
+  const [mobileMarkPaidInvoice, setMobileMarkPaidInvoice] = useState<InvoiceResponseDto | null>(
+    null,
+  );
 
   const inviteGuardianMutation = useInviteChildGuardian(id ?? '');
   const approveGuardianMutation = useApproveChildGuardian(id ?? '');
@@ -540,6 +571,127 @@ export default function ChildDetailPage() {
                 {child.enrollment_date ? formatDate(child.enrollment_date, tz) : '—'}
               </span>
             </div>
+            {child.outstanding_total != null && (
+              <div className="m-kv">
+                <span className="k">{t('detail.outstanding_label')}</span>
+                <span className="v">
+                  {child.outstanding_total > 0 ? (
+                    <span className="tabular-nums font-semibold text-[color:var(--danger-fg)]">
+                      {formatMoney(child.outstanding_total)}
+                    </span>
+                  ) : (
+                    <span className="text-[color:var(--text-4)]">
+                      {t('detail.no_outstanding')}
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Invoices (B30) */}
+          <div className="m-section-h">
+            <div className="m-section-title">{t('detail.payments.invoices_title')}</div>
+            <button
+              type="button"
+              className="m-iconbtn ghost"
+              onClick={() => navigate(`/billing/invoices?child=${id}`)}
+              aria-label={t('detail.payments.view_all')}
+            >
+              <ArrowRightIcon className="size-5" />
+            </button>
+          </div>
+          <div className="m-card flush">
+            {mobileInvoicesQuery.isPending ? (
+              <div className="p-4">
+                <SkeletonLine width={200} height={12} />
+              </div>
+            ) : mobileInvoices.length === 0 ? (
+              <div className="p-4 text-center text-[13px] text-[color:var(--text-3)]">
+                {t('detail.payments.empty_title')}
+              </div>
+            ) : (
+              mobileInvoices.slice(0, MOBILE_BILLING_ROW_CAP).map((inv) => (
+                <div key={inv.id} className="m-list-row">
+                  <button
+                    type="button"
+                    className="min-w-0 flex-1 text-left"
+                    onClick={() => navigate(`/billing/invoices/${inv.id}`)}
+                  >
+                    <div className="m-row-title truncate">
+                      {t(`billing:invoices.type.${inv.invoice_type}`)} ·{' '}
+                      {formatMoney(inv.amount_after_discount)}
+                    </div>
+                    <div className="m-row-sub truncate">
+                      {formatDate(inv.period_start, tz)} – {formatDate(inv.period_end, tz)}
+                      {inv.amount_paid > 0 && inv.amount_remaining > 0
+                        ? ` · ${t('detail.payments.mobile_progress', {
+                            paid: formatMoney(inv.amount_paid),
+                            remaining: formatMoney(inv.amount_remaining),
+                          })}`
+                        : ''}
+                    </div>
+                  </button>
+                  <Badge
+                    variant={INVOICE_STATUS_BADGE[inv.status]}
+                    dot
+                    className="shrink-0 text-[10px]"
+                  >
+                    {t(`billing:invoices.status.${inv.status}`)}
+                  </Badge>
+                  {MARKABLE_STATUSES.includes(inv.status) && (
+                    <button
+                      type="button"
+                      className="m-iconbtn ghost shrink-0"
+                      onClick={() => setMobileMarkPaidInvoice(inv)}
+                      aria-label={t('detail.payments.pay_cash')}
+                    >
+                      <BanknoteIcon className="size-5" />
+                    </button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Payments history (B30) */}
+          <div className="m-section-h">
+            <div className="m-section-title">{t('detail.payments.payments_header')}</div>
+          </div>
+          <div className="m-card flush">
+            {mobilePaymentsInfinite.isPending ? (
+              <div className="p-4">
+                <SkeletonLine width={200} height={12} />
+              </div>
+            ) : mobilePayments.length === 0 ? (
+              <div className="p-4 text-center text-[13px] text-[color:var(--text-3)]">
+                {t('detail.payments.payments_empty')}
+              </div>
+            ) : (
+              mobilePayments.slice(0, MOBILE_BILLING_ROW_CAP).map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className="m-list-row w-full text-left"
+                  onClick={() => navigate(`/billing/payments/${p.id}`)}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="m-row-title truncate">
+                      {formatMoney(p.amount)} · {t(`billing:${PROVIDER_I18N_KEYS[p.provider]}`)}
+                    </div>
+                    <div className="m-row-sub truncate">{formatDateTime(p.created_at, tz)}</div>
+                  </div>
+                  <Badge
+                    variant={PAYMENT_STATUS_BADGE[p.status]}
+                    dot
+                    className="shrink-0 text-[10px]"
+                  >
+                    {t(`billing:payments.status.${p.status}`)}
+                  </Badge>
+                  <ChevronRightIcon className="size-4 shrink-0 text-[color:var(--text-4)]" />
+                </button>
+              ))
+            )}
           </div>
 
           {/* Tariff section */}
@@ -561,6 +713,14 @@ export default function ChildDetailPage() {
           maxLen={500}
           onConfirm={handleArchive}
           loading={archiveMutation.isPending}
+        />
+
+        <MarkPaidDialog
+          invoice={mobileMarkPaidInvoice}
+          open={mobileMarkPaidInvoice !== null}
+          onOpenChange={(open) => {
+            if (!open) setMobileMarkPaidInvoice(null);
+          }}
         />
 
         {/* Guardian detail sheet */}
@@ -931,6 +1091,23 @@ export default function ChildDetailPage() {
                   {t('detail.profile.enrollment_date')}:{' '}
                   {child.enrollment_date ? formatDate(child.enrollment_date, tz) : '—'}
                 </span>
+                {child.outstanding_total != null && (
+                  <>
+                    <span className="size-1 rounded-full bg-[var(--text-4)]" />
+                    <span>
+                      {t('detail.outstanding_label')}:{' '}
+                      {child.outstanding_total > 0 ? (
+                        <strong className="tabular-nums font-semibold text-[color:var(--danger-fg)]">
+                          {formatMoney(child.outstanding_total)}
+                        </strong>
+                      ) : (
+                        <span className="text-[color:var(--text-4)]">
+                          {t('detail.no_outstanding')}
+                        </span>
+                      )}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -1004,7 +1181,7 @@ export default function ChildDetailPage() {
           </TabsContent>
           <TabsContent value="payments">
             <Suspense fallback={<TabSkeleton />}>
-              <PaymentsPreviewTab childId={id!} />
+              <BillingTab childId={id!} />
             </Suspense>
           </TabsContent>
           <TabsContent value="diagnostics">
