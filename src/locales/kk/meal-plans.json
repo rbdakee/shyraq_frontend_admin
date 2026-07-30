@@ -18,12 +18,15 @@
   "copy_dialog": {
     "title": "Апта мәзірін көшіру керек пе?",
     "description": "Көрсетілген аптаның мәзірі келесі аптаға көшіріледі. Бар күндер өткізіледі.",
-    "from_monday": "Бастапқы апта дүйсенбісі",
+    "from_monday": "Бастапқы аптадағы күн",
+    "resolved_hint": "Бастапқы апта: {{from}} — {{to}} → көшірме: {{targetFrom}} — {{targetTo}}",
+    "date_required": "Күнді көрсетіңіз",
     "submit": "Көшіру",
     "cancel": "Болдырмау"
   },
   "copy": {
-    "success": "{{created}} жоспар көшірілді, {{skipped}} өткізілді"
+    "success": "{{created}} жоспар көшірілді, {{skipped}} өткізілді",
+    "nothing_created": "Ештеңе көшірілмеді: бұл күндерге мәзір бұрыннан бар ({{skipped}})"
   },
   "add_dish_button": "Тағам қосу",
   "is_published": {

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { startOfWeek, addDays, addWeeks, subWeeks, format, isToday } from 'date-fns';
+import { startOfWeek, addDays, addWeeks, subWeeks, format, isToday, parseISO } from 'date-fns';
 import { ru, kk } from 'date-fns/locale';
 import {
   RefreshCwIcon,
@@ -118,6 +118,14 @@ const MealItemFormSchema = z.object({
 });
 
 type MealItemFormValues = z.infer<typeof MealItemFormSchema>;
+
+// ── Zod schema for copy-week form ──
+
+const CopyWeekSchema = z.object({
+  sourceDate: z.string().refine((v) => !Number.isNaN(parseISO(v).getTime())),
+});
+
+type CopyWeekForm = z.infer<typeof CopyWeekSchema>;
 
 function parseFormToBody(v: MealItemFormValues): CreateMealItemBody {
   const body: CreateMealItemBody = {
@@ -651,58 +659,109 @@ function CopyWeekDialog({
   weekStart: Date;
 }) {
   const { t, i18n } = useTranslation('meal-plans');
+  const locale = i18n.language as 'ru' | 'kk';
   const copyWeek = useCopyMealWeek();
 
-  function handleCopy() {
+  const {
+    register,
+    handleSubmit,
+    control,
+    reset,
+    formState: { errors },
+  } = useForm<CopyWeekForm>({
+    resolver: zodResolver(CopyWeekSchema),
+    defaultValues: { sourceDate: toISODate(weekStart) },
+  });
+
+  // Any date resolves to the Monday of ITS week — the label promises a Monday
+  // and the backend rejects anything else, so snapping beats an error state.
+  const rawDate = useWatch({ control, name: 'sourceDate' });
+  const sourceMonday = rawDate ? getWeekMonday(parseISO(rawDate)) : null;
+
+  function handleClose(next: boolean) {
+    if (!next) reset({ sourceDate: toISODate(weekStart) });
+    onOpenChange(next);
+  }
+
+  const onSubmit = handleSubmit((data) => {
+    const monday = getWeekMonday(parseISO(data.sourceDate));
     void copyWeek
-      .mutateAsync({ fromMonday: toISODate(weekStart) })
+      .mutateAsync({ fromMonday: toISODate(monday) })
       .then((result) => {
-        toast.success(
-          t('copy.success', {
-            created: result.plans_created,
-            skipped: result.plans_skipped,
-          }),
-        );
-        onOpenChange(false);
+        // plans_created === 0 is a legitimate backend outcome (every target day
+        // already had a plan) — success-green would read as "menu copied".
+        if (result.plans_created === 0) {
+          toast.warning(t('copy.nothing_created', { skipped: result.plans_skipped }));
+        } else {
+          toast.success(
+            t('copy.success', {
+              created: result.plans_created,
+              skipped: result.plans_skipped,
+            }),
+          );
+        }
+        handleClose(false);
       })
       .catch((err: unknown) => {
         toast.error(i18n.t(toI18nKey(err)));
         if (!isAppError(err)) console.error(err);
       });
-  }
+  });
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent
         className="sm:max-w-[480px] rounded-[var(--r-xl)] border-[var(--line)] bg-[var(--bg-elev)] p-0 shadow-[var(--shadow-3)]"
         showCloseButton
       >
-        <DialogHeader className="px-[22px] pt-[18px] pb-3">
-          <DialogTitle className="text-[17px] font-bold tracking-[-0.01em] text-[color:var(--text-1)]">
-            {t('copy_dialog.title')}
-          </DialogTitle>
-          <DialogDescription className="text-[13px] text-[color:var(--text-3)]">
-            {t('copy_dialog.description')}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="px-[22px] pb-[14px]">
-          <label className="mb-1.5 block text-[12.5px] font-semibold text-[color:var(--text-2)]">
-            {t('copy_dialog.from_monday')}
-          </label>
-          <Input
-            readOnly
-            value={format(weekStart, 'dd.MM.yyyy')}
-            className="bg-[var(--bg-sunken)]"
-          />
-        </div>
-        <DialogFooter className="-mx-0 -mb-0 rounded-b-[var(--r-xl)] border-t border-[var(--line)] bg-transparent px-[22px] py-[14px]">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            {t('copy_dialog.cancel')}
-          </Button>
-          <Button onClick={handleCopy} disabled={copyWeek.isPending}>
-            {t('copy_dialog.submit')}
-          </Button>
-        </DialogFooter>
+        <form onSubmit={onSubmit}>
+          <DialogHeader className="px-[22px] pt-[18px] pb-3">
+            <DialogTitle className="text-[17px] font-bold tracking-[-0.01em] text-[color:var(--text-1)]">
+              {t('copy_dialog.title')}
+            </DialogTitle>
+            <DialogDescription className="text-[13px] text-[color:var(--text-3)]">
+              {t('copy_dialog.description')}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="px-[22px] pb-[14px]">
+            <label
+              htmlFor="copy-week-source-date"
+              className="mb-1.5 block text-[12.5px] font-semibold text-[color:var(--text-2)]"
+            >
+              {t('copy_dialog.from_monday')}
+            </label>
+            <Input
+              id="copy-week-source-date"
+              type="date"
+              aria-invalid={!!errors.sourceDate}
+              {...register('sourceDate')}
+            />
+            {errors.sourceDate ? (
+              <p className="mt-1.5 text-[12px] text-[color:var(--danger-fg)]">
+                {t('copy_dialog.date_required')}
+              </p>
+            ) : (
+              sourceMonday && (
+                <p className="mt-1.5 text-[12px] text-[color:var(--text-3)]">
+                  {t('copy_dialog.resolved_hint', {
+                    from: formatDayMonth(sourceMonday, locale),
+                    to: formatDayMonth(addDays(sourceMonday, 6), locale),
+                    targetFrom: formatDayMonth(addWeeks(sourceMonday, 1), locale),
+                    targetTo: formatDayMonth(addDays(addWeeks(sourceMonday, 1), 6), locale),
+                  })}
+                </p>
+              )
+            )}
+          </div>
+          <DialogFooter className="-mx-0 -mb-0 rounded-b-[var(--r-xl)] border-t border-[var(--line)] bg-transparent px-[22px] py-[14px]">
+            <Button type="button" variant="outline" onClick={() => handleClose(false)}>
+              {t('copy_dialog.cancel')}
+            </Button>
+            <Button type="submit" disabled={copyWeek.isPending}>
+              {t('copy_dialog.submit')}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
@@ -1372,7 +1431,10 @@ export default function MealPlansPage() {
       )}
 
       {/* Copy dialog */}
+      {/* Keyed by week so the form's defaultValues re-prefill when the viewed
+          week changes (cheaper than an effect syncing RHF state). */}
       <CopyWeekDialog
+        key={toISODate(weekStart)}
         open={copyDialogOpen}
         onOpenChange={setCopyDialogOpen}
         weekStart={weekStart}

@@ -448,7 +448,7 @@
 | POST   | `/admin/meal-plans/:id/items`         | `CreateMealItemDto = {meal_type*, dish_name*(MultiLangTextDto), description?(MultiLangTextDto), allergens?[], photo_url?, calories?, position?}`.                                     |
 | PATCH  | `/admin/meal-plans/:id/items/:itemId` | `UpdateMealItemDto` — те же поля опц.                                                                                                                                                 |
 | DELETE | `/admin/meal-plans/:id/items/:itemId` | Удалить блюдо.                                                                                                                                                                        |
-| POST   | `/admin/meal-plans/copy-week`         | `CopyWeekDto = {fromMonday*}` (camelCase, общий с §10!) — копия ПН–ПТ с указанной недели на следующую. Идемпотентно. Response: `CopyWeekSummaryDto = {plans_created, plans_skipped}`. |
+| POST   | `/admin/meal-plans/copy-week`         | `MealCopyWeekDto = {fromMonday*}` (camelCase; отдельная схема от §10 `CopyWeekDto` — см. §A37) — копия ПН–ВС с указанной недели на следующую (`+7` дней каждому плану). Идемпотентно **per (дата, группа)**: занятые дни пропускаются, свободные копируются. Response: `CopyWeekSummaryDto = {plans_created, plans_skipped}`, где `plans_skipped` — число реально конфликтующих дней. |
 
 `MealPlanResponseDto` = `{id, date, group_id?, is_published, notes?(MultiLangTextDto), source('manual'\|'cron'\|'copied'), copied_from?, items: MealItemResponseDto[], created_at, updated_at}`.
 
@@ -457,6 +457,8 @@
 Ошибки: `meal_plan_not_found`(404), `meal_plan_already_exists`(409), `meal_item_not_found`(404), `invalid_meal_type`(400), `group_not_found`(404).
 
 **Страницы:** недельный/месячный вид меню (выбор группы или «весь садик»), редактор дня (5 приёмов пищи, для каждого — список блюд с ru/kk названиями, аллергенами, калориями, фото), кнопка «Скопировать неделю», флаг публикации. Авто-копирование на след. неделю делает cron — UI показывает источник через `source` enum (`manual` / `cron` / `copied`).
+
+**Авто-копия (cron `weekly-rollout`):** BullMQ repeatable job в worker-процессе backend, `0 23 * * 0` tz `Asia/Almaty` (вс 23:00), `attempts: 3` + exp. backoff. Один тик = для каждого активного садика копия расписания (из шаблонов) + копия меню недели, которая заканчивается, на следующую. Копии получают `source='cron'`, `copied_from=<id источника>`, `is_published` **наследуется** от плана-источника (черновик остаётся черновиком и родителям не виден). Ручная кнопка идёт тем же путём, но проставляет `source='copied'`. В Admin UI триггера cron нет (SuperAdmin scope, §10).
 
 ---
 

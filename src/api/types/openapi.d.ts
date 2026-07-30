@@ -4449,16 +4449,15 @@ export interface components {
       app: 'parent' | 'staff' | 'admin';
     };
     OtpRequestResponseDto: {
+      /** @example true */
+      sent: boolean;
       /**
-       * @description Opaque Redis key reference — pass back via /trusted-person.
-       * @example otp:request:trusted-person:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+       * @description Whether a users row already existed for this phone (always true on the staff/admin path).
+       * @example true
        */
-      otp_ref: string;
-      /**
-       * @description TTL in seconds.
-       * @example 1800
-       */
-      expires_in: number;
+      registered: boolean;
+      /** @example 60 */
+      resend_after_sec: number;
     };
     VerifyOtpDto: {
       /**
@@ -7918,9 +7917,9 @@ export interface components {
     };
     PaymentWebhookDto: Record<string, never>;
     WebhookAckDto: Record<string, never>;
-    CopyWeekDto: {
+    MealCopyWeekDto: {
       /**
-       * @description ISO date YYYY-MM-DD — must be Monday (start of source week). copyWeekToNext projects from this week onto the following Monday.
+       * @description ISO date YYYY-MM-DD — Monday of the source week. Plans in that week are copied onto the following week.
        * @example 2026-04-27
        */
       fromMonday: string;
@@ -8383,6 +8382,13 @@ export interface components {
       copiedFrom?: Record<string, never> | null;
       /** @example 2026-04-30T10:00:00.000Z */
       createdAt: string;
+    };
+    CopyWeekDto: {
+      /**
+       * @description ISO date YYYY-MM-DD — must be Monday (start of source week). copyWeekToNext projects from this week onto the following Monday.
+       * @example 2026-04-27
+       */
+      fromMonday: string;
     };
     WeekCopySummaryDto: {
       /**
@@ -9157,6 +9163,18 @@ export interface components {
        * @example cccccccc-cccc-cccc-cccc-cccccccccccc
        */
       child_id: string;
+    };
+    TrustedPersonOtpRequestResponseDto: {
+      /**
+       * @description Opaque Redis key reference — pass back via /trusted-person.
+       * @example otp:request:trusted-person:aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+       */
+      otp_ref: string;
+      /**
+       * @description TTL in seconds.
+       * @example 1800
+       */
+      expires_in: number;
     };
     CreateTrustedPersonRequestDto: {
       /**
@@ -18082,7 +18100,7 @@ export interface operations {
     };
     requestBody: {
       content: {
-        'application/json': components['schemas']['CopyWeekDto'];
+        'application/json': components['schemas']['MealCopyWeekDto'];
       };
     };
     responses: {
@@ -21764,7 +21782,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['OtpRequestResponseDto'];
+          'application/json': components['schemas']['TrustedPersonOtpRequestResponseDto'];
         };
       };
       /** @description Validation error. */
