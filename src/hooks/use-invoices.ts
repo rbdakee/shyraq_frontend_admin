@@ -19,10 +19,14 @@ import { qk } from './query-keys';
 
 export type { InvoiceResponseDto, InvoiceStatus, InvoiceType };
 
-export function useInvoicesList(filters: InvoiceListFilters = {}) {
+export function useInvoicesList(
+  filters: InvoiceListFilters = {},
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: qk.invoices.list(filters),
     queryFn: () => listInvoices(filters),
+    enabled: options?.enabled,
   });
 }
 
@@ -51,6 +55,12 @@ export function useMarkInvoicePaid(id: string) {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: qk.invoices.detail(id) });
       void queryClient.invalidateQueries({ queryKey: qk.invoices.list() });
+      // manual-mark-paid synthesises a cash Payment row on the backend — the
+      // invoice card's payments block must refetch to show it.
+      void queryClient.invalidateQueries({ queryKey: qk.payments.all });
+      // A cash payment also lowers the child's outstanding_total shown in the
+      // children list and card header.
+      void queryClient.invalidateQueries({ queryKey: qk.children.all });
     },
   });
 }

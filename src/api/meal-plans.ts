@@ -37,10 +37,6 @@ export const MealPlanResponseDtoSchema = z.object({
   updated_at: z.string(),
 });
 
-export const CopyWeekDtoSchema = z.object({
-  fromMonday: z.string(),
-});
-
 export const CopyWeekSummaryDtoSchema = z.object({
   plans_created: z.number(),
   plans_skipped: z.number(),

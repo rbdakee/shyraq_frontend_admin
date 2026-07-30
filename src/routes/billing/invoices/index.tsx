@@ -157,7 +157,7 @@ export default function InvoicesListPage() {
     const pending = data.filter((i) => i.status === 'pending');
     const paid = data.filter((i) => i.status === 'paid');
     return {
-      overdueAmount: overdue.reduce((s, i) => s + i.amount_after_discount, 0),
+      overdueAmount: overdue.reduce((s, i) => s + i.amount_remaining, 0),
       overdueCount: overdue.length,
       pendingAmount: pending.reduce((s, i) => s + i.amount_after_discount, 0),
       pendingCount: pending.length,
@@ -218,6 +218,36 @@ export default function InvoicesListPage() {
                 </div>
               )}
             </div>
+          );
+        },
+        meta: { className: 'text-right' },
+      },
+      {
+        id: 'amount_paid',
+        header: () => t('invoices.columns.amount_paid'),
+        cell: ({ row }) => (
+          <span
+            className={`tabular-nums${row.original.amount_paid === 0 ? ' text-[color:var(--text-4)]' : ''}`}
+          >
+            {formatMoney(row.original.amount_paid)}
+          </span>
+        ),
+        meta: { className: 'text-right' },
+      },
+      {
+        id: 'amount_remaining',
+        header: () => t('invoices.columns.amount_remaining'),
+        cell: ({ row }) => {
+          const inv = row.original;
+          const isAccent =
+            inv.amount_remaining > 0 &&
+            (inv.status === 'partial' || inv.status === 'overdue');
+          return (
+            <span
+              className={`tabular-nums${isAccent ? ' font-semibold text-[color:var(--danger-fg)]' : ''}`}
+            >
+              {formatMoney(inv.amount_remaining)}
+            </span>
           );
         },
         meta: { className: 'text-right' },
@@ -379,6 +409,21 @@ export default function InvoicesListPage() {
                       <span>·</span>
                       <span>{t(`invoices.type.${inv.invoice_type}`)}</span>
                     </div>
+                    {inv.amount_paid > 0 && (
+                      <div
+                        style={{
+                          fontSize: 11,
+                          color: 'var(--text-3)',
+                          marginTop: 3,
+                        }}
+                      >
+                        {t('mobile.invoice_progress', {
+                          paid: formatMoney(inv.amount_paid),
+                          total: formatMoney(inv.amount_after_discount),
+                          remaining: formatMoney(inv.amount_remaining),
+                        })}
+                      </div>
+                    )}
                   </div>
                   <div
                     style={{

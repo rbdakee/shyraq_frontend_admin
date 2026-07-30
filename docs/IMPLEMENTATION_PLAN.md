@@ -985,6 +985,111 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 
 ---
 
+## B28 — Частичные оплаты: Оплачено/Остаток + долги детей · post-MVP (backend partial-payments update 2026-07-24)
+
+**Goal:** показать прогресс оплаты счёта (оплачено / остаток) + суммарный долг ребёнка; оживить блок «Связанные оплаты» на карточке счёта.
+
+**Inputs:** HANDOFF §13 (invoices: `amount_paid`, `amount_remaining`, `invoice_id`-фильтр на payments), §5 (children: `outstanding_total`); DESIGN §6.10.1 (B28 render-спека), §6.3 (B28 render-спека); OPEN_QUESTIONS §A35 (экран «Должники» — pending backend). Первоисточник: `PARTIAL_PAYMENT_ADMIN_HANDOFF.md` (корень репо), backend-коммит 18dfd2a (задеплоен dev 2026-07-24).
+
+**Backend-состояние (2026-07-24):** оба новых поля счёта (`amount_paid`, `amount_remaining`) и `outstanding_total` (в GET /children **и** GET /children/:id) подтверждены на live dev. Фильтр `invoice_id` на `GET /admin/payments` подтверждён. Серверный фильтр/сортировка детей по долгу — **принят бэкендом, но не сделан** (§A35).
+
+**Слайсы:**
+
+- **S1 — фундамент (Zod-схемы + formatMoney + unit-тесты).**
+  - `pnpm gen:api` → обновить `openapi.d.ts` (новые поля в InvoiceResponseDto + ChildDto + invoice_id query на payments).
+  - `api/invoices.ts` — Zod: `InvoiceSchema` += `amount_paid: z.number()`, `amount_remaining: z.number()`.
+  - `api/children.ts` — Zod: `ChildDtoSchema` += `outstanding_total: z.number().nullable()`. Учесть: на create/update может быть null.
+  - `api/payments.ts` — list-фильтр: параметр `invoice_id?: string` в `listPayments` query.
+  - `lib/format.ts` — `formatMoney`: поддержка дробных сумм (13.5 → «13,5 ₸»; 120000 → «120 000 ₸»). Unit-тест.
+  - Unit-тесты: Zod-схемы парсят живые ответы с новыми полями; `formatMoney` дробные.
+
+- **S2 — UI биллинга (список + карточка счёта + блок платежей, desktop + mobile).**
+  - `routes/billing/invoices/index.tsx` — desktop: две новые колонки «Оплачено» и «Остаток» после «К оплате» (muted при 0 / destructive-акцент при >0 на partial/overdue); KPI «Просрочено» считать по `amount_remaining` overdue-счетов.
+  - `routes/billing/invoices/index.tsx` — mobile: подстрока прогресса в `.m-inv-row` при `amount_paid > 0`; KPI-корректировка.
+  - `routes/billing/invoices/$id.tsx` — desktop + mobile: строки «Оплачено» / «Осталось» в блоке суммы + progress-bar; для `paid` — «Оплачено полностью».
+  - `routes/billing/invoices/$id.tsx` — блок «Связанные оплаты»: хук `usePayments({invoice_id})` → таблица (desktop) / `.m-list-row` (mobile): дата, сумма, провайдер, статус, ссылка на `/billing/payments/:id`. Заменяет заглушку §C14 (частично — оплаты; возвраты/фискальные остаются заглушкой).
+  - i18n `billing.json` ru+kk: ключи `invoices.amount_paid`, `invoices.amount_remaining`, `invoices.paid_in_full`, `invoices.remaining_accent`, `invoices.related_payments`.
+
+- **S3 — UI детей (колонка долга + шапка карточки, desktop + mobile).**
+  - `routes/children/index.tsx` — desktop: колонка «Долг» (>0 destructive, ===0 muted, ===null пусто; выравнивание вправо, `tabular-nums`).
+  - `routes/children/index.tsx` — mobile: в `.m-list-row` meta при долге >0 — сумма destructive.
+  - `routes/children/$id.tsx` — шапка карточки (desktop header + mobile Billing-секция): строка «Долг» (>0 destructive, ===0 «нет долга», null скрыта).
+  - i18n `children.json` ru+kk: ключи `detail.outstanding_total`, `detail.no_debt`, `list.column_debt`.
+
+**Acceptance:**
+
+- [ ] Поля `amount_paid`, `amount_remaining` из живых ответов парсятся Zod без ошибок; `outstanding_total` парсится как `number | null`.
+- [ ] `null` vs `0` у `outstanding_total` соблюдён: null → пусто/скрыто, 0 → «нет долга» (muted), >0 → destructive.
+- [ ] Остаток НЕ вычисляется на фронте — берётся готовое `amount_remaining`.
+- [ ] Бейдж/акцент «Осталось» показывается на `partial` И `overdue` (не только partial).
+- [ ] Дробные суммы (13.5 ₸) корректно рендерятся через `formatMoney`.
+- [ ] Блок «Связанные оплаты» на карточке счёта фильтрует через `GET /admin/payments?invoice_id=`.
+- [ ] i18n: все новые строки в ru + kk, без хардкода.
+- [ ] Гейт: `pnpm build` + `pnpm lint --max-warnings=0` + `pnpm test` exit 0.
+
+---
+
+## B29 — Частичная оплата наличными: поле «Сумма» в manual-mark-paid · post-MVP (backend N13 задеплоен dev 2026-07-26)
+
+**Goal:** регистрация частичной оплаты наличными из карточки счёта — поле «Сумма» в диалоге «Отметить оплату наличными»; счёт остаётся `partial`, пока остаток не погашен.
+
+**Inputs:** BACKEND_NEEDINGS §N13 (контракт-предложение `amount?`), OPEN_QUESTIONS §A37 (гейт до деплоя), HANDOFF §13, DESIGN §6.10.1 (B29 render-спека).
+
+**Backend-состояние (2026-07-26, обновлено):** задеплоен на dev (коммит `3fc6611`), Swagger обновлён. Контракт принят как предложен + уточнения: DTO `@IsNumber() @Min(1)` (422 при `amount < 1`), `amount > amount_remaining` → 409 `invoice_status_invalid` (`details.attemptedAction=amount_mismatch_partial`), повторные частичные взносы допустимы. Фронт-гейт §A37 (`amount` только при сумме < остатка + post-response guard) оставлен как защита от гонок.
+
+**Слайсы:**
+
+- **S1 — api + lib + диалог + i18n + тесты.**
+  - `api/invoices.ts` — `ManualMarkPaidBody` += `amount?: number`.
+  - `lib/format.ts` — `parseMoneyInput(raw): number | null` (запятая/точка, до 2 знаков, пробелы-разделители) + unit-тесты в `lib/format.test.ts`.
+  - `routes/billing/invoices/$id.tsx` — поле «Сумма» в MarkPaid-диалоге: prefill `amount_remaining` при каждом открытии (общий `openMarkPaid()` для desktop/mobile кнопок), Zod-refine на формат/`>0`, submit-проверка `≤ amount_remaining`; сабмит: сумма == остатку → тело без `amount`, < остатка → с `amount`; post-response guard → warning-тост; success-тосты полная/частичная.
+  - `hooks/use-invoices.ts` — `useMarkInvoicePaid` дополнительно инвалидирует `qk.payments.all` (новый cash-платёж сразу виден в блоке «Платежи по счёту»).
+  - i18n `billing.json` ru+kk: `invoices.mark_paid.amount_label|amount_placeholder|amount_hint|amount_invalid|amount_exceeds|success_partial|warning_closed_full`.
+  - Тесты: `lib/format.test.ts` (`parseMoneyInput`), `hooks/use-invoices.test.tsx` — `amount` пробрасывается в тело запроса / отсутствует, когда не передан.
+
+**Acceptance:**
+
+- [ ] Поле «Сумма» prefilled остатком при каждом открытии диалога (desktop и mobile кнопки); валидация: число >0, ≤ остатка, до 2 знаков; ошибка «не больше остатка» показывает остаток.
+- [ ] Сумма == остатку → тело запроса БЕЗ `amount` (идентично прежнему поведению, работает на текущем live).
+- [ ] Сумма < остатка → тело с `amount`; если ответ пришёл с `amount_remaining === 0` — warning-тост (§A37), не success.
+- [ ] После успеха инвалидируются invoices (list + detail) и payments (блок «Платежи по счёту» обновляется без перезагрузки).
+- [ ] Частичная сумма < 1 ₸ отклоняется клиентски (зеркало backend `@Min(1)`); 409 `invoice_already_paid`/`invoice_status_invalid` → тост + refetch счёта.
+- [ ] `pnpm gen:api` перегенерён после деплоя N13 (`amount` в `ManualMarkPaidInvoiceDto`).
+- [ ] i18n ru+kk, без хардкода.
+- [ ] Гейт: `pnpm build` + `pnpm lint --max-warnings=0` + `pnpm test` exit 0.
+- [ ] Браузер-QA частичного сценария (разблокирован деплоем N13 2026-07-26).
+
+---
+
+## B30 — Карточка ребёнка: счета + платежи + оплата наличными · post-MVP
+
+**Goal:** вкладка «Платежи» карточки ребёнка перестаёт быть заглушкой: все счета ребёнка (с оплачено/остатком), все его платежи, оплата наличными (полная/частичная) прямо из карточки; mobile-parity в Billing-секции.
+
+**Inputs:** DESIGN §6.3 (B30 render-спека), HANDOFF §5 (вкладка _Платежи_), §13 (контракты invoices/payments — `child_id`-фильтры существуют, новых endpoint'ов не нужно); прототип `screens-core.jsx` ChildDetail `tab === 'payments'` (каркас карточки).
+
+**Слайсы:**
+
+- **S1 — общий диалог mark-paid.**
+  - Извлечь диалог «Отметить оплату наличными» из `routes/billing/invoices/$id.tsx` в `routes/billing/invoices/mark-paid-dialog.tsx` (`MarkPaidDialog`: props `invoice`, `open`, `onOpenChange`; форма/валидация/тосты/guard §A37 внутри; форма монтируется при open → prefill остатка без useEffect).
+  - `useMarkInvoicePaid` — инвалидировать также `qk.children.all` (долг ребёнка в шапке/списке обновляется после наличной оплаты).
+  - Карточка счёта переведена на компонент, поведение 1:1 (desktop + mobile кнопки).
+- **S2 — вкладка «Платежи» (desktop).**
+  - `routes/children/tabs/payments-preview-tab.tsx` → `billing-tab.tsx`: таблица всех счетов ребёнка (`useInvoicesList({child_id})`): mono-id, период, сумма, оплачено, остаток, статус, срок + кнопка «Наличными» (markable) → `MarkPaidDialog`; строка → `/billing/invoices/:id`. Карточка «Платежи» (`useInfinitePaymentsList({child_id})`): дата, счёт-ссылка, сумма, провайдер, статус. Empty-state'ы прототипа.
+- **S3 — mobile Billing-секция (`routes/children/$id.tsx`).**
+  - Подсекция счетов (`.m-list-row` + trailing «Наличными» на markable, tap → карточка счёта) и подсекция платежей (tap → карточка платежа), кап N строк + «Все платежи»; общий `MarkPaidDialog` в дереве страницы.
+  - i18n `children.json` ru+kk (заголовки подсекций, колонки, действия).
+
+**Acceptance:**
+
+- [ ] Вкладка «Платежи» показывает ВСЕ счета ребёнка с колонками «Оплачено»/«Остаток» (акценты B28) и ВСЕ платежи; заглушка-empty только при реальном отсутствии данных.
+- [ ] «Наличными» из строки счёта (desktop-вкладка и mobile-секция) открывает B29-диалог с prefill остатка; частичная сумма оставляет счёт `partial`; после успеха обновляются счета, платежи И долг в шапке карточки ребёнка (без перезагрузки).
+- [ ] Кнопка скрыта для `paid`/`cancelled`/`refunded`.
+- [ ] Диалог mark-paid — один компонент на обе карточки (без копипасты).
+- [ ] i18n ru+kk, без хардкода.
+- [ ] Гейт: `pnpm build` + `pnpm lint --max-warnings=0` + `pnpm test` exit 0.
+
+---
+
 ## Tracker
 
 | Батч | Тема                                        | Приоритет | Статус |
@@ -1017,6 +1122,9 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 | B25  | Опекуны: ФИО/телефон (N2 closed)            | post-MVP  | [ ]    |
 | B26  | Presigned media + cache-hardening           | post-MVP  | [x]    |
 | B27  | Посещаемость: QR-скан + ручное ведение      | post-MVP  | [ ]    |
+| B28  | Частичные оплаты: Оплачено/Остаток + долги  | post-MVP  | [ ]    |
+| B29  | Частичная оплата наличными (поле «Сумма»)   | post-MVP  | [ ]    |
+| B30  | Карточка ребёнка: счета/платежи + наличные  | post-MVP  | [ ]    |
 
 ---
 

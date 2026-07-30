@@ -31,6 +31,8 @@ const validInvoice = {
   discount_pct: 10,
   discount_reason: 'Скидка многодетной семье',
   amount_after_discount: 108000,
+  amount_paid: 0,
+  amount_remaining: 108000,
   status: 'pending',
   due_date: '2026-06-25',
   description: 'Ежемесячная плата за июнь 2026',

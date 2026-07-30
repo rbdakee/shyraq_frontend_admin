@@ -169,9 +169,9 @@ HANDOFF §16+§18 обновлены под факт в wave-коммите B10.
    - `/admin/schedule/*` — **camelCase** (request + response): `groupId, validFrom, validUntil, isActive, dayOfWeek, startTime, endTime, activityName, locationId, weekStartDate, createdAt, copiedFrom, kindergartenId, startsAt, endsAt, templateSlotId, createdBy`. Совпадает с паттерном §A11 (enrollments).
    - `/admin/meal-plans/*` — **snake_case** (request + response): `meal_type, dish_name, group_id, is_published, copied_from, items, created_at, photo_url, plans_created, plans_skipped`. Совпадает с паттерном §A14/§A16 (invoices/payments/tariffs).
    - НЕ экстраполировать на соседние модули. В одной фиче (B11) два API-клиента с разным стилем — это норма для этого backend.
-2. **Copy-week DTO общий между §10 и §11:** `CopyWeekDto = {fromMonday*}` (camelCase, единый schema!), хотя соседние DTO модулей разные. ISO date YYYY-MM-DD, обязан быть понедельником. Target Monday = `fromMonday + 7`.
+2. ~~**Copy-week DTO общий между §10 и §11:** `CopyWeekDto = {fromMonday*}` (camelCase, единый schema!)~~ — **НЕВЕРНО, исправлено §A38 (2026-07-26):** «единая схема» была артефактом коллизии имён классов в Swagger; реальная meal-DTO принимала `source_week_start_date`, из-за чего ручная копия меню падала с 422. Актуально: schedule — `CopyWeekDto = {fromMonday*}`, meal — `MealCopyWeekDto = {fromMonday*}`, две разные схемы. ISO date YYYY-MM-DD, обязан быть понедельником. Target Monday = `fromMonday + 7`.
 3. **Copy-week scope глобальный:** `POST /admin/schedule/week-snapshots/copy` принимает только `fromMonday` — копирует **все группы садика**, нет фильтра `groupId`. HANDOFF §10 ранее обещал per-group `{group_id, source_week_start_date}` — переписан под факт. Per-group вариант — backend-ask §B1 / BACKEND_NEEDINGS N9. Response: `WeekCopySummaryDto = {copiedGroups, skippedGroups, totalEvents}`.
-4. **Meal-plans copy-week response asymmetric:** `CopyWeekSummaryDto = {plans_created, plans_skipped}` (snake_case, без `totalItems`-аналога). Не путать с `WeekCopySummaryDto` (schedule).
+4. **Meal-plans copy-week response asymmetric:** `CopyWeekSummaryDto = {plans_created, plans_skipped}` (snake_case, без `totalItems`-аналога). Не путать с `WeekCopySummaryDto` (schedule). Семантика `plans_skipped` уточнена в §A38: с 2026-07-26 это число конфликтующих (дата, группа), а не «вся неделя занята».
 5. **`MealPlanResponseDto.source` enum live:** `manual | cron | copied`. HANDOFF §11 ранее писал `manual | auto_copied_from_previous_week` — переписан под факт.
 6. **`UpdateMealPlanDto.notes` — i18n (MultiLangTextDto), не plain string.** HANDOFF §11 переписан → в UI используется PairedI18nField.
 7. **Activity events admin-CRUD доступен на backend:** `POST/PATCH/DELETE /admin/schedule/activity-events[/:id]` + `CreateActivityEventDto/UpdateActivityEventDto` существуют. HANDOFF §10 ранее обещал read-only → переписан. UI-дизайн VIS этого CRUD не описывает → §B2 (design ask). На B11 строим минимальный CRUD на существующих primitives (см. §B2).
@@ -401,6 +401,72 @@ Live OpenAPI inspection during manual QA showed `ContentListResponseDto = {items
 **Процедурная заметка.** Кодер реализовал это до записи в OPEN_QUESTIONS и сообщил постфактум. По CLAUDE §6 порядок обратный — сначала запись и согласование. Зафиксировано, чтобы прецедент не читался как норма.
 
 **Связано:** §A30 (зонтичное решение), DESIGN §6.12.3/§6.12.5, PLAN §B27 S7.
+
+---
+
+### A35 — Экран «Должники» / серверный фильтр-сортировка детей по `outstanding_total` · resolved (2026-07-24, pending backend batch)
+
+**Контекст.** B28 добавляет `ChildDto.outstanding_total` (суммарный долг). Естественное продолжение — экран «Должники»: серверная сортировка / фильтрация детей по величине долга (показать только с долгом, отсортировать по убыванию). Бэкенд **принял задачу** (2026-07-24), но реализация пойдёт **отдельным backend-батчем**. Варианты дизайна API обсуждены: (a) фильтр/сортировка на `GET /children` — `sort=outstanding_desc` + `has_debt=true`; (b) отдельный эндпоинт `GET /admin/billing/debtors`. Какой выберут — решение бэка.
+
+**Решение.** До выката серверного фильтра **клиентскую сортировку по `outstanding_total` НЕ делаем** — offset-пагинация детей отдаёт страницу, а не всех; сортировка на фронте по загруженной странице будет врать (высокий долг на следующей странице не попадёт в «топ»). Показываем колонку «Долг» (B28), но без сортировки/фильтрации. Когда бэкенд выкатит — отдельный B-батч: добавить фильтр + сортировку + (опц.) виджет «Должники» на дашборд, обновить HANDOFF §5 + DESIGN §6.3 под факт (first-document).
+
+**Связано:** HANDOFF §5 (`outstanding_total`), PLAN §B28, `PARTIAL_PAYMENT_ADMIN_HANDOFF.md` §4 вопрос 1.
+
+---
+
+### A36 — `GET /admin/payments` cursor/limit пагинация де-факто игнорируется бэкендом · resolved (2026-07-25, pending backend fix)
+
+**Контекст.** Живая проверка dev (2026-07-25): `GET /api/v1/admin/payments` игнорирует оба параметра пагинации — `limit` (запрос с `limit=3` возвращает все 9 записей) и `cursor` (и сырой UUID, и base64-JSON `{"id":"<uuid>"}` из примера OpenAPI-схемы возвращают ту же полную выборку). В OpenAPI параметры задекларированы (`cursor: "Pagination cursor from previous response."`), но ответ — плоский массив без поля `next_cursor` — взять курсор из ответа неоткуда. Cursor-пагинация admin/payments де-факто не работает. Фронт (список `/billing/payments` и новый блок «Платежи по счёту» B28) сейчас живёт на полной выборке; infinite-хук захарднен от зацикливания.
+
+**Решение.** Объёмы платежей на садик пока малы (десятки–сотни) — **не блокирует** B28 и B9. Фронт корректен при обоих исходах (работающая пагинация и полная выборка): Zod `z.array(Schema)`, infinite-хук не зацикливается. Когда бэкенд починит — фронт автоматически начнёт пейджить (код уже передаёт `limit`/`cursor`).
+
+**Нужно решение от backend:** починить `limit`/`cursor` enforcement на `GET /admin/payments`; определить источник `next_cursor` — поле ответа (envelope `{items, next_cursor}`) или заголовок. Текущий bare-array формат ответа не даёт клиенту курсор для следующей страницы.
+
+**Связано:** HANDOFF §13 (`GET /admin/payments`), §A16 (bare-array ответ), PLAN §B28 S2, §B9.
+
+---
+
+### A37 — Частичная оплата наличными: `manual-mark-paid` не принимает сумму · resolved (2026-07-26, backend deployed — N13 закрыт)
+
+**Контекст.** Запрос владельца (2026-07-26): регистрировать частичную оплату наличными. Проверка backend-кода (`invoice.service.ts#manualMarkPaid`): endpoint всегда закрывает счёт целиком (`paid`), синтезируя cash-платёж на текущий остаток; поля суммы в `ManualMarkPaidInvoiceDto` нет («partial cash payments are not supported» — комментарий в коде). Глобальный ValidationPipe — `whitelist: true` без `forbidNonWhitelisted`: неизвестный `amount` в теле будет **молча вырезан** → счёт закроется полностью, хотя админ вводил часть. Контракт-предложение передано бэку — BACKEND_NEEDINGS §N13 (аддитивный `amount?` с семантикой gateway-partial: флип в `partial`, отказ при `amount > amount_remaining`).
+
+**Решение.** Фронт реализует UI сразу (B29), с гейтом до деплоя backend:
+
+- поле «Сумма» в диалоге «Отметить оплату наличными»: prefill = `amount_remaining` при каждом открытии, валидация `0 < amount ≤ amount_remaining` (дробные до 2 знаков — остаток бывает дробным при %-скидке);
+- `amount` кладётся в тело **только** когда введено меньше остатка; сумма == остатку → legacy-тело без `amount` (идентично прежнему поведению, работает на текущем live);
+- post-response guard: запросили partial, а в ответе `amount_remaining === 0` → warning-тост «счёт закрыт полностью» вместо success (ловит и whitelist-стригание до деплоя, и гонку «второй платёж прошёл параллельно» после);
+- браузер-QA частичного сценария — **только после деплоя §N13** (на текущем dev частичная сумма закроет счёт целиком);
+- после деплоя: `pnpm gen:api`, снять пометку «pending backend» в HANDOFF §13; guard оставить (гонки).
+
+**Итог (2026-07-26).** Backend задеплоил §N13 на dev (коммит `3fc6611`) — контракт принят ровно как предложен, плюс уточнения: DTO `@Min(1)` (частичная сумма < 1 ₸ → 422; фронт добавил зеркальную клиентскую проверку), `amount > amount_remaining` → 409 `invoice_status_invalid` с `details.attemptedAction = amount_mismatch_partial` (фронт: тост + refetch — те же 409-коды покрывают и гонку). `null` эквивалентен отсутствию поля (фронт null не шлёт — omit). Гейт «amount только при сумме < остатка» и post-response guard **оставлены** (защита от гонок). QA частичного сценария разблокирован. `gen:api` перегенерён.
+
+**Связано:** BACKEND_NEEDINGS §N13, HANDOFF §13, DESIGN §6.10.1 (B29 render-спека), PLAN §B29.
+
+---
+
+### A38 — Коллизия имён схем в OpenAPI: `meal/copy-week` ссылался на чужую DTO → 422 · resolved (2026-07-26, backend deployed — `gen:api` перегенерён)
+
+**Контекст.** Ручное «Скопировать неделю меню» (`POST /admin/meal-plans/copy-week`) всегда падало с 422. Причина — не опечатка фронта, а артефакт генерации спеки: класс `CopyWeekDto` был объявлен **дважды** (meal — поле `source_week_start_date`; schedule — поле `fromMonday`). Nest-Swagger ключует `components.schemas` по имени класса, поэтому в документе оставалась одна схема, и meal-эндпоинт `$ref`-ился на schedule-вариант. Любой клиент, сгенерированный из `/docs-json` (наш `openapi.d.ts` — именно такой), слал `fromMonday`; глобальный `ValidationPipe({whitelist: true})` вырезал неизвестное поле, обязательное `source_week_start_date` приходило `undefined` → 422 `{status, errors}`. Отсюда же — ошибочная запись §A18 п.2 («DTO общий между §10 и §11»): «единая схема» была иллюзией коллизии, а не фактом контракта.
+
+**Решение (backend, 2026-07-26).**
+
+- meal-DTO переименована в `MealCopyWeekDto`, поле приведено к `fromMonday` (ISO `YYYY-MM-DD`, понедельник недели-источника) — намеренно одноимённо со schedule-овским, оба дёргаются из одного UI-паттерна. `source_week_start_date` больше не принимается; обратная совместимость не нужна (эндпоинт был нерабочим, ни один клиент его не вызывал успешно).
+- **Семантика `plans_skipped` изменилась:** идемпотентность была «есть ли ХОТЬ ОДИН план в целевой неделе по всему садику» (один заранее созданный день — включая черновик, пустой план или Сб/Вс — блокировал копирование всей недели, ответ `{plans_created: 0, plans_skipped: N}`). Теперь — per (дата, группа): занятые дни пропускаются, свободные копируются, `plans_skipped` = число реально конфликтующих дней. Это закрывает вторую причину «авто-копия не работает» (первая — ручной 422). Формулировки в UI (`copy_dialog.description`, `copy.success`) теперь соответствуют факту.
+- Заодно расшита вторая коллизия того же рода: `OtpRequestResponseDto` (parent-requests) → `TrustedPersonOtpRequestResponseDto`; после регенерации `OtpRequestResponseDto` станет настоящей формой ответа `/auth/otp/request` (`{sent, registered, resend_after_sec}` вместо чужих `{otp_ref, expires_in}`). **Нас не затрагивает:** `OtpRequestResponseSchema` в `api/auth.ts` написан руками и принимает обе формы (все поля optional), а потребителей полей ответа нет — `login.tsx` использует только состояние мутации.
+
+**Фронт (сделано 2026-07-26).** Вызов уже слал `{fromMonday}` (`api/meal-plans.ts#copyMealWeek`) — правок кода вызов не потребовал. Выполнено: деплой подтверждён на live (`$ref → MealCopyWeekDto`), `pnpm gen:api` (+ `prettier --write` на артефакт — генератор пишет двойные кавычки, репо-стиль одинарные, иначе diff на 25k строк), гейт `build + lint + test` зелёный. Диff типов ровно ожидаемый: `MealCopyWeekDto` / `CopyWeekDto` разъехались, `OtpRequestResponseDto` стал auth-формой, добавлен `TrustedPersonOtpRequestResponseDto`. `OtpRequestResponseSchema` в `api/auth.ts` **намеренно оставлен permissive** (все поля optional, обе формы) — потребителей полей нет, ужесточение даёт только риск parse-ошибки на логине. Осталось: браузер-QA копии недели (кнопка «Скопировать на след. неделю» в `/meal-plans`).
+
+**Проверка, что деплой доехал** (до этого `gen:api` запускать нельзя — воспроизведёт ту же ложную схему):
+
+```
+curl -s https://balam-api-dev.innodev.kz/docs-json \
+  | jq '.paths["/api/v1/admin/meal-plans/copy-week"].post.requestBody.content["application/json"].schema'
+# ожидаем {"$ref": "#/components/schemas/MealCopyWeekDto"}; пока CopyWeekDto — рано
+```
+
+**Урок для §A18-класса записей:** одноимённые DTO в разных модулях делают live-спеку недостоверной. При сверке «live = факт» имя схемы, встречающееся у двух эндпоинтов разных модулей, — сигнал проверить исходный DTO в backend-коде, а не принимать спеку на веру.
+
+**Связано:** §A18 п.2 и п.4 (исправлены этой записью), HANDOFF §11.
 
 ---
 

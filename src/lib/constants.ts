@@ -12,6 +12,9 @@ export const SEARCH_DEBOUNCE_MS = 300;
 
 // Mobile tab-bar badge: display max before falling back to "99+".
 export const MOBILE_BADGE_MAX = 99;
+// Child card mobile Billing section: rows shown per list (invoices/payments)
+// before deferring to the full billing screens (DESIGN §6.3 B30).
+export const MOBILE_BILLING_ROW_CAP = 5;
 // Time mobile-shell badge queries stay fresh before TanStack Query refetches.
 // Short enough to feel live, long enough to avoid hammering the API on every
 // tab switch / window focus while the user is in the shell.

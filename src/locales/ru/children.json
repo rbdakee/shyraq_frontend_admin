@@ -31,6 +31,7 @@
     "status": "Статус",
     "enrollment_date": "Дата зачисления",
     "age": "Возраст",
+    "outstanding": "Долг",
     "date_of_birth": "Дата рождения",
     "actions": "Действия"
   },
@@ -89,6 +90,8 @@
     "header": "Карточка ребёнка",
     "archived_banner": "Ребёнок находится в архиве",
     "not_found": "Карточка не найдена или нет доступа",
+    "outstanding_label": "Долг",
+    "no_outstanding": "нет долга",
 
     "tabs": {
       "profile": "Профиль",
@@ -205,7 +208,7 @@
     "payments": {
       "title": "Платежи",
       "header": "Платежи и счета",
-      "caption": "Превью · полная информация в разделе «Биллинг»",
+      "caption": "Все счета ребёнка · оплата наличными — из строки счёта",
       "empty": "Платежей нет",
       "view_all": "Все платежи",
       "empty_title": "Счетов пока нет",
@@ -213,8 +216,17 @@
       "col_invoice": "Счёт",
       "col_period": "Период",
       "col_amount": "Сумма",
+      "col_paid": "Оплачено",
+      "col_remaining": "Остаток",
       "col_status": "Статус",
-      "col_due": "Срок"
+      "col_due": "Срок",
+      "pay_cash": "Наличными",
+      "invoices_title": "Счета",
+      "payments_header": "Платежи",
+      "payments_caption": "Вся история платежей ребёнка",
+      "payments_empty": "Платежей пока нет",
+      "load_error": "Не удалось загрузить данные",
+      "mobile_progress": "Оплачено {{paid}} · Осталось {{remaining}}"
     },
 
     "tariff": {

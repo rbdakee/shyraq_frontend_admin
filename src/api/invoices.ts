@@ -52,6 +52,8 @@ export const InvoiceResponseDtoSchema = z.object({
   discount_pct: z.number().nullable(),
   discount_reason: z.string().nullable(),
   amount_after_discount: z.number(),
+  amount_paid: z.number(),
+  amount_remaining: z.number(),
   status: InvoiceStatusEnum,
   due_date: z.string(),
   description: z.string().nullable(),
@@ -98,6 +100,9 @@ export interface CreateInvoiceBody {
 }
 
 export interface ManualMarkPaidBody {
+  // Partial cash amount, ≥1 KZT (backend @Min(1)). Included only when strictly
+  // below amount_remaining — omitted means full settlement (invoice → paid).
+  amount?: number;
   paid_at?: string | null;
   payer_user_id?: string | null;
   note?: string | null;

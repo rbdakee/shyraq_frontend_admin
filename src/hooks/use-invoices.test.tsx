@@ -86,6 +86,8 @@ function makeInvoiceDto(overrides: Record<string, unknown> = {}) {
     discount_pct: null,
     discount_reason: null,
     amount_after_discount: 120000,
+    amount_paid: 0,
+    amount_remaining: 120000,
     status: 'pending',
     due_date: '2026-06-25',
     description: null,
@@ -158,6 +160,47 @@ describe('useMarkInvoicePaid', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.status).toBe('paid');
+  });
+
+  it('passes partial amount through to the request body', async () => {
+    let capturedBody: Record<string, unknown> | null = null;
+    setFetch(async (input, init) => {
+      const raw =
+        input instanceof Request ? await input.clone().text() : String(init?.body ?? '');
+      capturedBody = raw ? (JSON.parse(raw) as Record<string, unknown>) : null;
+      return jsonResponse(
+        makeInvoiceDto({ status: 'partial', amount_paid: 30000, amount_remaining: 90000 }),
+      );
+    });
+
+    const { result } = renderHook(() => useMarkInvoicePaid('inv-1'), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate({ amount: 30000, paid_at: null, note: null });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(capturedBody).toMatchObject({ amount: 30000 });
+  });
+
+  it('omits amount from the request body when not provided', async () => {
+    let capturedBody: Record<string, unknown> | null = null;
+    setFetch(async (input, init) => {
+      const raw =
+        input instanceof Request ? await input.clone().text() : String(init?.body ?? '');
+      capturedBody = raw ? (JSON.parse(raw) as Record<string, unknown>) : null;
+      return jsonResponse(makeInvoiceDto({ status: 'paid' }));
+    });
+
+    const { result } = renderHook(() => useMarkInvoicePaid('inv-1'), {
+      wrapper: createWrapper(),
+    });
+
+    result.current.mutate({ paid_at: null, note: 'Cash payment at office' });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(capturedBody).not.toBeNull();
+    expect(capturedBody).not.toHaveProperty('amount');
   });
 
   it('propagates AppError on 409 invoice_already_paid', async () => {

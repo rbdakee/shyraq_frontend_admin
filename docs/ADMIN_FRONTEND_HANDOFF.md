@@ -203,6 +203,8 @@
 
 **status-history item:** `{ id, previous_status, new_status, previous_archive_reason, archive_reason, changed_by_user_id, changed_at }`, сортировка `changed_at DESC`.
 
+**`ChildDto.outstanding_total`** (backend-коммит 18dfd2a, задеплоен 2026-07-24, B28): новое поле `outstanding_total: number | null` — суммарный долг ребёнка (сумма `amount_remaining` по всем **не-terminal** счетам, исключая `cancelled`/`refunded`; полностью оплаченные дают 0). Заполнен в списке `GET /children` (overlay считается батчем) **и** на одиночном `GET /children/:id` (в ответе `{child, guardians}`, дозаполнен бэкендом 2026-07-24). На create/update может быть `null`. Семантика: `null` = не посчитано (не показывать), `0` = посчитано, долга нет. Деньги могут быть дробными при %-скидке.
+
 **GuardianDto display-поля** (backend update 2026-06-10, закрывает N2): `GuardianDto` теперь содержит `user_full_name: string|null` и `user_phone: string|null` (E.164), резолвятся из `users` по `child_guardians.user_id`. Присутствуют во **всех** ответах с `GuardianDto` (list, child-detail `guardians[]`, invite, patch, approve/reject/revoke). ⚠️ Для приглашённого по телефону юзера без профиля backend кладёт `user_full_name = <телефон>` (а не `null`) → фронт детектит `user_full_name === user_phone` как «имя не задано» (показывает «—» + телефон в своей колонке). `relationship` backend по-прежнему не отдаёт (не входит в scope).
 
 **guardians approve/reject** (backend update 2026-06-10): админ может подтвердить **и** отклонить заявку опекуна прямо из админки, не дожидаясь primary-родителя. Доп. прав не нужно (текущая admin-сессия). Оба эндпоинта → `200 GuardianDto` с новым `status` — обновлять строку **на месте** (без полной перезагрузки). approve body опц. `{grant_approval_rights?:false}`; для обычной кнопки «Подтвердить» — `{}`. reject — без body. Ошибки: 404 `guardian_not_found`; 422 `invalid_guardian_status_transition` (строка уже **не** в `pending_approval` — кто-то обработал → тост «заявка уже обработана» + перезагрузка списка); 409 `max_approval_rights_exceeded` (только approve + `grant_approval_rights:true`); 401/403 (сессия/роль). Кнопки показываются **только** для `pending_approval`.
@@ -215,7 +217,7 @@
   - _Опекуны_ — список (роль primary/secondary/nanny, статус pending/approved/rejected/revoked, can_pickup, has_approval_rights). Действия: добавить опекуна (форма телефон/ФИО/роль), для `pending_approval` — **подтвердить/отклонить заявку** (inline-кнопки; reject — с confirm, терминально), изменить роль/can_pickup, отозвать. Кнопка «Отозвать все QR пользователя» (§23).
   - _Группа / История групп_ — текущая группа + хронология `child_group_history`. Кнопка «Перевести в группу» (модал: выбор группы + причина).
   - _Timeline_ — лента событий дня/истории (check-in/out, активности, заметки, фото).
-  - _Платежи_ — превью счётов/оплат ребёнка (ссылка в Биллинг с фильтром по child_id).
+  - _Платежи_ — все счета ребёнка (`GET /admin/invoices?child_id=`, с B28-полями оплачено/остаток) + все платежи (`GET /admin/payments?child_id=`) + оплата наличными из строки счёта (общий B29-диалог mark-paid, markable-статусы) + ссылка в Биллинг с фильтром по child_id (B30, DESIGN §6.3).
   - _Диагностика_ — превью последних записей.
   - _Статус-история_ — аудит (только админ видит), пагинация offset.
   - _Face ID_ — факт enrollment (`face_enrollment:{enrolled, enrolled_at}`) + переход в раздел Face (§24).
@@ -446,7 +448,7 @@
 | POST   | `/admin/meal-plans/:id/items`         | `CreateMealItemDto = {meal_type*, dish_name*(MultiLangTextDto), description?(MultiLangTextDto), allergens?[], photo_url?, calories?, position?}`.                                     |
 | PATCH  | `/admin/meal-plans/:id/items/:itemId` | `UpdateMealItemDto` — те же поля опц.                                                                                                                                                 |
 | DELETE | `/admin/meal-plans/:id/items/:itemId` | Удалить блюдо.                                                                                                                                                                        |
-| POST   | `/admin/meal-plans/copy-week`         | `CopyWeekDto = {fromMonday*}` (camelCase, общий с §10!) — копия ПН–ПТ с указанной недели на следующую. Идемпотентно. Response: `CopyWeekSummaryDto = {plans_created, plans_skipped}`. |
+| POST   | `/admin/meal-plans/copy-week`         | `MealCopyWeekDto = {fromMonday*}` (camelCase; отдельная схема от §10 `CopyWeekDto` — см. §A37) — копия ПН–ВС с указанной недели на следующую (`+7` дней каждому плану). Идемпотентно **per (дата, группа)**: занятые дни пропускаются, свободные копируются. Response: `CopyWeekSummaryDto = {plans_created, plans_skipped}`, где `plans_skipped` — число реально конфликтующих дней. |
 
 `MealPlanResponseDto` = `{id, date, group_id?, is_published, notes?(MultiLangTextDto), source('manual'\|'cron'\|'copied'), copied_from?, items: MealItemResponseDto[], created_at, updated_at}`.
 
@@ -455,6 +457,8 @@
 Ошибки: `meal_plan_not_found`(404), `meal_plan_already_exists`(409), `meal_item_not_found`(404), `invalid_meal_type`(400), `group_not_found`(404).
 
 **Страницы:** недельный/месячный вид меню (выбор группы или «весь садик»), редактор дня (5 приёмов пищи, для каждого — список блюд с ru/kk названиями, аллергенами, калориями, фото), кнопка «Скопировать неделю», флаг публикации. Авто-копирование на след. неделю делает cron — UI показывает источник через `source` enum (`manual` / `cron` / `copied`).
+
+**Авто-копия (cron `weekly-rollout`):** BullMQ repeatable job в worker-процессе backend, `0 23 * * 0` tz `Asia/Almaty` (вс 23:00), `attempts: 3` + exp. backoff. Один тик = для каждого активного садика копия расписания (из шаблонов) + копия меню недели, которая заканчивается, на следующую. Копии получают `source='cron'`, `copied_from=<id источника>`, `is_published` **наследуется** от плана-источника (черновик остаётся черновиком и родителям не виден). Ручная кнопка идёт тем же путём, но проставляет `source='copied'`. В Admin UI триггера cron нет (SuperAdmin scope, §10).
 
 ---
 
@@ -558,23 +562,30 @@ Cursor: `{items, cursor: string|null}` — поле называется **`curs
 > - `GET /admin/invoices/:id` → `InvoiceResponseDto` содержит **только `line_items: InvoiceLineItemResponseDto[]`** + плоские поля скидки (`discount_pct?, discount_reason?, amount_after_discount`). Массивов `payments`/`refunds`/`fiscal_receipts`/`discounts` в DTO **нет** (см. OPEN_QUESTIONS §C14 / BACKEND_NEEDINGS N6 — честная деградация секций карточки).
 > - `POST /admin/invoices` `CreateInvoiceOneOffDto`: required `child_id, invoice_type, amount_due, due_date, period_start, period_end` (⚠ `period_start/period_end` **обязательны**, не опц.); опц. `description?, discount_pct?, discount_reason?, line_items?`. `CreateLineItemDto = {description*, quantity*(≥1), unit_price*(≥0), tariff_plan_id?}`. `InvoiceLineItemResponseDto = {id, invoice_id, kindergarten_id, description, tariff_plan_id?, quantity, unit_price, line_total, created_at}`.
 > - `manual-mark-paid` тело `{paid_at?, payer_user_id?, note?}` (все опц.); `cancel` тело `{reason?}` (опц.). `invoice_type` enum: `monthly|prepayment_3m|prepayment_6m|prepayment_12m|prepayment_24m|additional_service|late_pickup_fee|other`.
+>
+> **Частичные оплаты (backend-коммит 18dfd2a, задеплоен 2026-07-24, B28).** `InvoiceResponseDto` получил **два новых поля** во ВСЕХ ответах со счётом (`GET/POST /admin/invoices`, `GET /admin/invoices/:id`, `manual-mark-paid`, `cancel`):
+>
+> - `amount_paid: number` — сумма завершённых (`completed`) платежей по счёту, ₸. **Всегда присутствует** (0 если не оплачено). Может быть дробным при %-скидке.
+> - `amount_remaining: number` — остаток к оплате = `max(0, amount_after_discount − amount_paid)`, клампнут в 0 на бэке. **Всегда присутствует** (0 у полностью оплаченных / отменённых / возвращённых). Отрицательных не бывает. **Не вычислять на фронте — брать готовое поле.**
+>
+> Бейдж «Осталось» показывается на `status:"partial"` **и** `status:"overdue"` (у overdue тоже бывает частичная оплата). Для `status:"paid"` → `amount_remaining === 0`, показывать «Оплачено полностью». Крайний случай: `amount_paid` чуть больше `amount_after_discount` (под-тенговое округление провайдера) → `amount_remaining` уже клампнут в 0 на бэке.
 
 | Метод | Путь                                   | Назначение                                                                                                                                                                         |
 | ----- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | GET   | `/admin/invoices`                      | `?status=&due_date_from=&due_date_to=&child_id=&invoice_type=&period_start=&period_end=&limit=`. Ответ — plain `InvoiceResponseDto[]`.                                             |
 | GET   | `/admin/invoices/:id`                  | `InvoiceResponseDto` + `line_items[]` + плоские поля скидки. (payments/refunds/fiscal/discounts в DTO нет — §C14.)                                                                 |
 | POST  | `/admin/invoices`                      | Разовое начисление: `{child_id*, invoice_type*, amount_due*, due_date*, period_start*, period_end*, description?, discount_pct?, discount_reason?, line_items?:[CreateLineItem]}`. |
-| POST  | `/admin/invoices/:id/manual-mark-paid` | Отметить оплату наличкой `{paid_at?, payer_user_id?, note?}` (`payments provider='cash' completed`). 409 `invoice_already_paid`.                                                   |
+| POST  | `/admin/invoices/:id/manual-mark-paid` | Отметить оплату наличкой `{amount?, paid_at?, payer_user_id?, note?}` (`payments provider='cash' completed`). `amount` (≥1, `@Min(1)` → 422; N13, задеплоен dev 2026-07-26 `3fc6611`): omitted/`null`/`== amount_remaining` → весь остаток, счёт → `paid`; `0 < amount < amount_remaining` → частичный cash-взнос, счёт → `partial` (в т.ч. из `overdue`), повторные взносы допустимы; `amount > amount_remaining` → 409 `invoice_status_invalid` (`details.attemptedAction=amount_mismatch_partial`). 409 `invoice_already_paid` (paid), 409 `invoice_status_invalid` (cancelled/refunded). |
 | POST  | `/admin/invoices/:id/cancel`           | Отменить `{reason?}` (только pending/partial). 409 `invoice_status_invalid`.                                                                                                       |
-| GET   | `/admin/payments`                      | `?provider=&status=&child_id=&from_date=&to_date=&cursor=&limit=`. Ответ — plain `PaymentResponseDto[]` (bare array).                                                              |
+| GET   | `/admin/payments`                      | `?provider=&status=&child_id=&from_date=&to_date=&invoice_id=&cursor=&limit=`. Ответ — plain `PaymentResponseDto[]` (bare array). Фильтр `invoice_id` (backend-коммит 18dfd2a, 2026-07-24): возвращает платежи только этого счёта, комбинируется с остальными фильтрами. ⚠️ Пагинация `limit`/`cursor` на бэке де-факто игнорируется — см. OPEN_QUESTIONS §A36. |
 | GET   | `/admin/payments/:id`                  | `PaymentResponseDto` (no `provider_payload` field — full DTO shown via JSON-viewer for support; see §A16).                                                                         |
 
 Ошибки: `invoice_not_found`(404), `child_not_found`(404), `invoice_already_paid`(409), `invoice_status_invalid`(409), 422 validation.
 
 **Страницы:**
 
-- **Счета** — таблица: ребёнок, тип, период, сумма (amount_due / после скидки), статус-бейдж, due_date. Фильтры. Кнопка «Создать начисление».
-- **Карточка счёта** — позиции (line items) + скидка (плоские поля DTO); секции связанных оплат/возвратов/фискальных чеков — **честная деградация** (контракт их не отдаёт, §C14/N6: scaffold секции сохранён, данные не выдумываются); действия: «Отметить оплату наличными», «Отменить счёт» (с подтверждением, обработкой 409).
+- **Счета** — таблица: ребёнок, тип, период, сумма (amount_due / после скидки), **оплачено (`amount_paid`)**, **остаток (`amount_remaining`)**, статус-бейдж, due_date. Фильтры. Кнопка «Создать начисление». *(B28: две новые колонки после «К оплате».)*
+- **Карточка счёта** — позиции (line items) + скидка (плоские поля DTO) + **блок суммы** (строки «Оплачено» и «Осталось» + progress-bar `amount_paid / amount_after_discount`); секция **«Связанные оплаты»** теперь заполняется реальными данными через `GET /admin/payments?invoice_id=<id>` (B28, закрывает §C14 частично); секции возвратов/фискальных чеков — **честная деградация** (§C14/N6); действия: «Отметить оплату наличными» (B29: поле «Сумма», prefill = остаток; сумма < остатка → счёт `partial`, см. §A37), «Отменить счёт» (с подтверждением, обработкой 409).
 - **Оплаты** — таблица: ребёнок, сумма, провайдер, статус, дата. Детали платежа (provider_payload — для саппорта).
 
 ---

@@ -3,16 +3,29 @@ const E164_RE = /^\+[1-9]\d{1,14}$/;
 
 // Intl formatter reuse: ru-RU uses non-breaking space (U+00A0) as thousands separator.
 // We normalize to regular space (U+0020) to match design spec `120 000 ₸` exactly.
-const kztFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
+const kztIntFormatter = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 0 });
+// WHY: %-discounts can produce fractional amounts (e.g. 13.5); show up to 2 decimals
+const kztFracFormatter = new Intl.NumberFormat('ru-RU', {
+  minimumFractionDigits: 1,
+  maximumFractionDigits: 2,
+});
+
+export function formatMoney(amount: number): string {
+  const fmt = Number.isInteger(amount) ? kztIntFormatter : kztFracFormatter;
+  const grouped = fmt.format(amount).replace(/\u00a0/g, ' ');
+  return grouped + ' ₸';
+}
 
 /**
- * Formats an integer KZT amount to Admin design spec: `120 000 ₸`.
- * Fractional tiyn are not used in Admin billing (all amounts are integer kopek-equivalent);
- * the formatter truncates any fractional part — callers must pass pre-rounded values.
+ * Parses user-entered money text into a number. Accepts comma or dot as the
+ * decimal separator (max 2 decimals — mirrors kztFracFormatter) and
+ * space/NBSP group separators, so text shaped like formatMoney output
+ * round-trips. Returns null for anything else (empty, negative, letters).
  */
-export function formatMoney(amount: number): string {
-  const grouped = kztFormatter.format(amount).replace(/\u00a0/g, ' ');
-  return grouped + ' ₸';
+export function parseMoneyInput(raw: string): number | null {
+  const normalized = raw.replace(/\s/g, '').replace(',', '.');
+  if (!/^\d+(\.\d{1,2})?$/.test(normalized)) return null;
+  return Number(normalized);
 }
 
 /**

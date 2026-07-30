@@ -38,6 +38,8 @@ export const ChildDtoSchema = z.object({
   allergy_notes: z.string().nullable(),
   created_at: z.string(),
   updated_at: z.string(),
+  // WHY: null = not computed yet, 0 = no debt; absent on some endpoints (create/update)
+  outstanding_total: z.number().nullable().optional(),
 });
 
 export type ChildDto = z.infer<typeof ChildDtoSchema>;

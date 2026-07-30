@@ -10,3 +10,6 @@ export const INVOICE_STATUS_BADGE: Record<InvoiceStatus, BadgeVariant> = {
   refunded: 'info',
   cancelled: 'neutral',
 };
+
+// Statuses that admit a cash payment via manual-mark-paid (HANDOFF §13).
+export const MARKABLE_STATUSES: InvoiceStatus[] = ['pending', 'partial', 'overdue'];
