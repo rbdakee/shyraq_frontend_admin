@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom/vitest';
 
 vi.mock('react-i18next', () => ({
@@ -88,5 +88,29 @@ describe('CameraPlayer', () => {
     );
 
     expect(container.innerHTML).not.toContain('SECRET_TOKEN');
+  });
+  it('clears the connecting overlay once playback starts after the stream arrives', () => {
+    // Regression: <video> mounts only after the stream request resolves, so a
+    // listener attached on mount alone never fires and the overlay covered a
+    // live picture indefinitely.
+    mockResolvePlayback.mockReturnValue({ kind: 'no-stream' });
+
+    const { container, rerender } = render(
+      <CameraPlayer streams={[]} videoCodec={null} isLoading />,
+    );
+    expect(screen.getByText('Connecting...')).toBeInTheDocument();
+
+    const url = 'https://example.com/stream.m3u8';
+    mockResolvePlayback.mockReturnValue({ kind: 'native-hls', url });
+    rerender(
+      <CameraPlayer streams={[{ transport: 'hls', url }]} videoCodec="h265" />,
+    );
+
+    const video = container.querySelector('video');
+    expect(video).not.toBeNull();
+    fireEvent.playing(video!);
+
+    expect(screen.queryByText('Connecting...')).not.toBeInTheDocument();
+    expect(screen.getByText('Live')).toBeInTheDocument();
   });
 });

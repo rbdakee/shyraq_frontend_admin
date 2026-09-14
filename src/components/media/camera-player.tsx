@@ -136,6 +136,9 @@ export default function CameraPlayer({
     };
   }, [nativeUrl]);
 
+  // WHY the url deps: while the stream request is in flight <video> is not
+  // mounted yet, so an empty dep list attaches this listener to nothing and the
+  // connecting overlay stays on top of an already-playing stream forever.
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
@@ -144,8 +147,13 @@ export default function CameraPlayer({
       setPlayerState('playing');
     }
     video.addEventListener('playing', onPlaying);
+    // Playback can already be running by the time the listener attaches — the
+    // `playing` event fires between mount and effect and would be missed.
+    if (!video.paused && video.readyState >= video.HAVE_FUTURE_DATA) {
+      setPlayerState('playing');
+    }
     return () => video.removeEventListener('playing', onPlaying);
-  }, []);
+  }, [hlsUrl, nativeUrl]);
 
   useEffect(() => {
     function onFsChange() {
