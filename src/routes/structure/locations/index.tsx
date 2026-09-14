@@ -9,10 +9,12 @@ import {
   PlusIcon,
   BuildingIcon,
   ChevronRightIcon,
-  InfoIcon,
   PencilIcon,
   Trash2Icon,
   CameraIcon,
+  PlayIcon,
+  RefreshCwIcon,
+  AlertTriangleIcon,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -60,12 +62,17 @@ import {
   useCreateCamera,
   useUpdateCamera,
   useArchiveCamera,
+  useRefreshCameraCodec,
 } from '@/hooks/use-cameras';
 import { useGroups } from '@/hooks/use-groups';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { toI18nKey, isAppError } from '@/lib/error-map';
 import { resolveJsonbI18n, type JsonbI18n } from '@/lib/jsonb-i18n';
+import { formatDateTime } from '@/lib/format';
+import { DEFAULT_TIMEZONE } from '@/lib/constants';
 import { useUiStore } from '@/stores/ui-store';
+import { CameraViewerDialog } from './camera-viewer-dialog';
+import { formatCodecLabel, isCodecStale } from './codec-utils';
 
 type Location = NonNullable<ReturnType<typeof useLocations>['data']>[number];
 type Camera = NonNullable<ReturnType<typeof useCameras>['data']>[number];
@@ -81,6 +88,8 @@ const CameraFormSchema = z.object({
   location_id: z.string().min(1),
   rtsp_url: z.string().optional(),
   hls_url: z.string().optional(),
+  stream_key: z.string().optional(),
+  stream_key_hd: z.string().optional(),
 });
 type CameraFormValues = z.infer<typeof CameraFormSchema>;
 
@@ -119,6 +128,7 @@ export default function StructureLocationsPage() {
   const [cameraDialogOpen, setCameraDialogOpen] = useState(false);
   const [editingCamera, setEditingCamera] = useState<Camera | null>(null);
   const [archivingCameraId, setArchivingCameraId] = useState<string | null>(null);
+  const [viewingCamera, setViewingCamera] = useState<Camera | null>(null);
 
   function switchTab(next: 'locations' | 'cameras') {
     setTab(next);
@@ -161,6 +171,9 @@ export default function StructureLocationsPage() {
           setEditingCamera(cam);
           setCameraDialogOpen(true);
         }}
+        onWatchCamera={setViewingCamera}
+        viewingCamera={viewingCamera}
+        onCloseViewer={() => setViewingCamera(null)}
         locationDialogOpen={locationDialogOpen}
         setLocationDialogOpen={setLocationDialogOpen}
         editingLocation={editingLocation}
@@ -245,6 +258,7 @@ export default function StructureLocationsPage() {
               setCameraDialogOpen(true);
             }}
             onArchive={setArchivingCameraId}
+            onWatch={setViewingCamera}
           />
         )}
       </div>
@@ -271,6 +285,21 @@ export default function StructureLocationsPage() {
         cameraId={archivingCameraId}
         onClose={() => setArchivingCameraId(null)}
       />
+
+      {viewingCamera && (
+        <CameraViewerDialog
+          open={!!viewingCamera}
+          onOpenChange={(v) => { if (!v) setViewingCamera(null); }}
+          cameraId={viewingCamera.id}
+          cameraName={viewingCamera.name}
+          locationName={
+            activeLocations.find((l) => l.id === viewingCamera.location_id)?.name ??
+            t('unassigned_location')
+          }
+          videoCodec={viewingCamera.video_codec}
+          codecCheckedAt={viewingCamera.codec_checked_at}
+        />
+      )}
     </div>
   );
 }
@@ -394,6 +423,7 @@ function CamerasTab({
   onRetry,
   onEdit,
   onArchive,
+  onWatch,
 }: {
   locations: Location[];
   cameras: Camera[];
@@ -402,6 +432,7 @@ function CamerasTab({
   onRetry: () => void;
   onEdit: (cam: Camera) => void;
   onArchive: (id: string) => void;
+  onWatch: (cam: Camera) => void;
 }) {
   const { t } = useTranslation('structure');
   const locale = useUiStore((s) => s.locale);
@@ -453,7 +484,7 @@ function CamerasTab({
               <div className="text-[15px] font-bold text-[color:var(--text-1)]">{loc.name}</div>
               {desc && <div className="mt-0.5 text-[13px] text-[color:var(--text-3)]">{desc}</div>}
             </div>
-            <CameraTable cameras={locCameras} onEdit={onEdit} onArchive={onArchive} />
+            <CameraTable cameras={locCameras} onEdit={onEdit} onArchive={onArchive} onWatch={onWatch} />
           </div>
         );
       })}
@@ -465,14 +496,9 @@ function CamerasTab({
               {t('unassigned_location')}
             </div>
           </div>
-          <CameraTable cameras={unassignedCameras} onEdit={onEdit} onArchive={onArchive} />
+          <CameraTable cameras={unassignedCameras} onEdit={onEdit} onArchive={onArchive} onWatch={onWatch} />
         </div>
       )}
-
-      <div className="flex items-start gap-2.5 rounded-[var(--r-lg)] border border-[color-mix(in_oklab,var(--info)_20%,transparent)] bg-[var(--info-soft)] p-3.5 text-[12.5px] text-[color:var(--info-fg)]">
-        <InfoIcon className="mt-0.5 size-4 shrink-0" />
-        <span>{t('camera_test_banner')}</span>
-      </div>
     </div>
   );
 }
@@ -481,12 +507,32 @@ function CameraTable({
   cameras,
   onEdit,
   onArchive,
+  onWatch,
 }: {
   cameras: Camera[];
   onEdit: (cam: Camera) => void;
   onArchive: (id: string) => void;
+  onWatch: (cam: Camera) => void;
 }) {
   const { t } = useTranslation('structure');
+  const tErrors = useTranslation('errors').t;
+  const refreshCodec = useRefreshCameraCodec();
+  const [refreshingId, setRefreshingId] = useState<string | null>(null);
+
+  function handleRefreshCodec(cam: Camera) {
+    setRefreshingId(cam.id);
+    refreshCodec.mutate(cam.id, {
+      onSuccess: (updated) => {
+        const label = formatCodecLabel(updated.video_codec) ?? t('camera_codec_none');
+        toast.success(t('camera_codec_refreshed', { codec: label }));
+        setRefreshingId(null);
+      },
+      onError: (error) => {
+        toast.error(tErrors(toI18nKey(error)));
+        setRefreshingId(null);
+      },
+    });
+  }
 
   return (
     <Table>
@@ -496,67 +542,134 @@ function CameraTable({
             {t('col_name')}
           </TableHead>
           <TableHead className="text-[12px] font-semibold text-[color:var(--text-3)]">
-            {t('col_stream_url')}
+            {t('col_codec')}
           </TableHead>
           <TableHead className="text-[12px] font-semibold text-[color:var(--text-3)]">
             {t('col_status')}
           </TableHead>
-          <TableHead className="w-[200px]" />
+          <TableHead className="w-[220px]" />
         </TableRow>
       </TableHeader>
       <TableBody>
-        {cameras.map((cam) => (
-          <TableRow key={cam.id} className="border-[var(--line)]">
-            <TableCell>
-              <div className="flex items-center gap-2">
-                <CameraIcon className="size-4 text-[color:var(--text-3)]" />
-                <span className="text-[14px] font-semibold text-[color:var(--text-1)]">
-                  {cam.name}
-                </span>
-              </div>
-            </TableCell>
-            <TableCell className="font-mono text-[13px] text-[color:var(--text-3)]">
-              {cam.rtsp_url || cam.hls_url || '—'}
-            </TableCell>
-            <TableCell>
-              {cam.is_active ? (
-                <Badge variant="success">{t('camera_active')}</Badge>
-              ) : (
-                <Badge variant="neutral">{t('camera_inactive')}</Badge>
-              )}
-            </TableCell>
-            <TableCell>
-              <div className="flex items-center justify-end gap-1.5">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <span>
-                        <Button size="sm" variant="outline" disabled className="text-[12px]">
-                          {t('camera_test')}
-                        </Button>
-                      </span>
-                    </TooltipTrigger>
-                    <TooltipContent>{t('camera_test_tooltip')}</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <button
-                  type="button"
-                  className="rounded-[var(--r-md)] p-1.5 text-[color:var(--text-3)] hover:bg-[var(--bg-sunken)] hover:text-[color:var(--text-1)]"
-                  onClick={() => onEdit(cam)}
-                >
-                  <PencilIcon className="size-4" />
-                </button>
-                <button
-                  type="button"
-                  className="rounded-[var(--r-md)] p-1.5 text-[color:var(--text-3)] hover:bg-[var(--danger-soft)] hover:text-[color:var(--danger)]"
-                  onClick={() => onArchive(cam.id)}
-                >
-                  <Trash2Icon className="size-4" />
-                </button>
-              </div>
-            </TableCell>
-          </TableRow>
-        ))}
+        {cameras.map((cam) => {
+          const canWatch = cam.is_streamable && cam.transports.length > 0;
+          const stale = isCodecStale(cam.codec_checked_at);
+          const codecLabel = formatCodecLabel(cam.video_codec);
+          const isRefreshing = refreshingId === cam.id;
+
+          return (
+            <TableRow key={cam.id} className="border-[var(--line)]">
+              <TableCell>
+                <div className="flex items-center gap-2">
+                  <CameraIcon className="size-4 text-[color:var(--text-3)]" />
+                  <span className="text-[14px] font-semibold text-[color:var(--text-1)]">
+                    {cam.name}
+                  </span>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center gap-1.5">
+                  <span className="font-mono text-[13px] text-[color:var(--text-2)]">
+                    {codecLabel ?? t('camera_codec_none')}
+                  </span>
+                  {stale && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertTriangleIcon className="size-3.5 text-[color:var(--warning)]" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <div>{t('camera_codec_stale')}</div>
+                          {cam.codec_checked_at && (
+                            <div className="text-[11px] opacity-70">
+                              {t('camera_codec_checked_at', {
+                                date: formatDateTime(cam.codec_checked_at, DEFAULT_TIMEZONE),
+                              })}
+                            </div>
+                          )}
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                </div>
+              </TableCell>
+              <TableCell>
+                {!cam.is_streamable ? (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <Badge variant="neutral">{t('camera_not_streamable')}</Badge>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent>{t('camera_not_streamable_tooltip')}</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : cam.is_active ? (
+                  <Badge variant="success">{t('camera_active')}</Badge>
+                ) : (
+                  <Badge variant="neutral">{t('camera_inactive')}</Badge>
+                )}
+              </TableCell>
+              <TableCell>
+                <div className="flex items-center justify-end gap-1.5">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={!canWatch}
+                            className="text-[12px]"
+                            onClick={() => onWatch(cam)}
+                            data-testid={`watch-camera-${cam.id}`}
+                          >
+                            <PlayIcon className="mr-1 size-3.5" />
+                            {t('camera_watch')}
+                          </Button>
+                        </span>
+                      </TooltipTrigger>
+                      {!canWatch && (
+                        <TooltipContent>{t('camera_not_streamable_tooltip')}</TooltipContent>
+                      )}
+                    </Tooltip>
+                  </TooltipProvider>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          type="button"
+                          className="rounded-[var(--r-md)] p-1.5 text-[color:var(--text-3)] hover:bg-[var(--bg-sunken)] hover:text-[color:var(--text-1)] disabled:opacity-40"
+                          onClick={() => handleRefreshCodec(cam)}
+                          disabled={isRefreshing}
+                          data-testid={`refresh-codec-${cam.id}`}
+                        >
+                          <RefreshCwIcon className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>{t('camera_refresh_codec')}</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  <button
+                    type="button"
+                    className="rounded-[var(--r-md)] p-1.5 text-[color:var(--text-3)] hover:bg-[var(--bg-sunken)] hover:text-[color:var(--text-1)]"
+                    onClick={() => onEdit(cam)}
+                  >
+                    <PencilIcon className="size-4" />
+                  </button>
+                  <button
+                    type="button"
+                    className="rounded-[var(--r-md)] p-1.5 text-[color:var(--text-3)] hover:bg-[var(--danger-soft)] hover:text-[color:var(--danger)]"
+                    onClick={() => onArchive(cam.id)}
+                  >
+                    <Trash2Icon className="size-4" />
+                  </button>
+                </div>
+              </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );
@@ -717,6 +830,8 @@ function CameraDialog({
       location_id: '',
       rtsp_url: '',
       hls_url: '',
+      stream_key: '',
+      stream_key_hd: '',
     },
     values: editCam
       ? {
@@ -724,59 +839,44 @@ function CameraDialog({
           location_id: editCam.location_id,
           rtsp_url: editCam.rtsp_url ?? '',
           hls_url: editCam.hls_url ?? '',
+          stream_key: editCam.stream_key ?? '',
+          stream_key_hd: editCam.stream_key_hd ?? '',
         }
       : undefined,
   });
 
   function handleClose() {
     onOpenChange(false);
-    form.reset({ name: '', location_id: '', rtsp_url: '', hls_url: '' });
+    form.reset({ name: '', location_id: '', rtsp_url: '', hls_url: '', stream_key: '', stream_key_hd: '' });
   }
 
   function handleSubmit(data: CameraFormValues) {
-    if (isEdit) {
-      updateMutation.mutate(
-        {
-          name: data.name,
-          location_id: data.location_id,
-          rtsp_url: data.rtsp_url || undefined,
-          hls_url: data.hls_url || undefined,
-        },
-        {
-          onSuccess: () => {
-            toast.success(t('camera_updated'));
-            handleClose();
-          },
-          onError: (error) => {
-            const mapped = mapValidationErrors(error, form.setError);
-            if (!mapped) {
-              toast.error(tErrors(toI18nKey(error)));
-            }
-          },
-        },
-      );
-    } else {
-      createMutation.mutate(
-        {
-          name: data.name,
-          location_id: data.location_id,
-          rtsp_url: data.rtsp_url || undefined,
-          hls_url: data.hls_url || undefined,
-        },
-        {
-          onSuccess: () => {
-            toast.success(t('camera_created'));
-            handleClose();
-          },
-          onError: (error) => {
-            const mapped = mapValidationErrors(error, form.setError);
-            if (!mapped) {
-              toast.error(tErrors(toI18nKey(error)));
-            }
-          },
-        },
-      );
-    }
+    const body = {
+      name: data.name,
+      location_id: data.location_id,
+      rtsp_url: data.rtsp_url || undefined,
+      hls_url: data.hls_url || undefined,
+      stream_key: data.stream_key || undefined,
+      stream_key_hd: data.stream_key_hd || undefined,
+    };
+
+    const mutation = isEdit ? updateMutation : createMutation;
+    mutation.mutate(body, {
+      onSuccess: () => {
+        toast.success(isEdit ? t('camera_updated') : t('camera_created'));
+        handleClose();
+      },
+      onError: (error) => {
+        if (isAppError(error) && error.code === 'camera_stream_key_taken') {
+          form.setError('stream_key', { message: tErrors('camera_stream_key_taken') });
+          return;
+        }
+        const mapped = mapValidationErrors(error, form.setError);
+        if (!mapped) {
+          toast.error(tErrors(toI18nKey(error)));
+        }
+      },
+    });
   }
 
   return (
@@ -864,6 +964,38 @@ function CameraDialog({
               <Input {...form.register('hls_url')} placeholder={t('camera_hls_url_placeholder')} />
             </div>
           </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                {t('camera_stream_key')}
+              </Label>
+              <Input
+                {...form.register('stream_key')}
+                aria-invalid={!!form.formState.errors.stream_key}
+              />
+              {form.formState.errors.stream_key && (
+                <p className="text-[12px] text-[color:var(--danger-fg)]">
+                  {form.formState.errors.stream_key.message}
+                </p>
+              )}
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label className="text-[12.5px] font-semibold text-[color:var(--text-2)]">
+                {t('camera_stream_key_hd')}
+              </Label>
+              <Input
+                {...form.register('stream_key_hd')}
+                aria-invalid={!!form.formState.errors.stream_key_hd}
+              />
+              {form.formState.errors.stream_key_hd && (
+                <p className="text-[12px] text-[color:var(--danger-fg)]">
+                  {form.formState.errors.stream_key_hd.message}
+                </p>
+              )}
+            </div>
+          </div>
+          <p className="text-[11px] text-[color:var(--text-3)]">{t('camera_stream_key_hint')}</p>
 
           <DialogFooter className="-mx-0 -mb-0 rounded-b-[var(--r-xl)] border-t border-[var(--line)] bg-transparent px-[22px] py-[14px]">
             <Button
@@ -977,6 +1109,9 @@ function MobileView({
   onAdd,
   onEditLocation,
   onEditCamera,
+  onWatchCamera,
+  viewingCamera,
+  onCloseViewer,
   locationDialogOpen,
   setLocationDialogOpen,
   editingLocation,
@@ -996,6 +1131,9 @@ function MobileView({
   onAdd: () => void;
   onEditLocation: (loc: Location) => void;
   onEditCamera: (cam: Camera) => void;
+  onWatchCamera: (cam: Camera) => void;
+  viewingCamera: Camera | null;
+  onCloseViewer: () => void;
   locationDialogOpen: boolean;
   setLocationDialogOpen: (v: boolean) => void;
   editingLocation: Location | null;
@@ -1141,76 +1279,12 @@ function MobileView({
         )}
 
         {!isLoading && !isError && tab === 'cameras' && (
-          <>
-            {cameras.length === 0 ? (
-              <EmptyState
-                icon={<CameraIcon className="size-9 text-[color:var(--text-4)]" />}
-                title={t('no_cameras')}
-                text={t('no_cameras_text')}
-              />
-            ) : (
-              <>
-                <div className="m-card flush" style={{ marginBottom: 12 }}>
-                  {cameras.map((c) => {
-                    const locName =
-                      locations.find((l) => l.id === c.location_id)?.name ??
-                      t('unassigned_location');
-                    return (
-                      <div key={c.id} className="m-list-row" onClick={() => onEditCamera(c)}>
-                        <div
-                          style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 10,
-                            background: 'var(--primary-soft)',
-                            color: 'var(--primary)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <CameraIcon style={{ width: 18, height: 18 }} />
-                        </div>
-                        <div>
-                          <div className="m-row-title">{c.name}</div>
-                          <div className="m-row-sub">{locName}</div>
-                          <div style={{ marginTop: 4 }}>
-                            {c.is_active ? (
-                              <Badge variant="success" className="text-[10px]">
-                                {t('camera_active')}
-                              </Badge>
-                            ) : (
-                              <Badge variant="neutral" className="text-[10px]">
-                                {t('camera_inactive')}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                        <ChevronRightIcon
-                          className="m-row-chev"
-                          style={{ width: 16, height: 16 }}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-                <div
-                  style={{
-                    padding: 14,
-                    borderRadius: 12,
-                    background: 'var(--info-soft)',
-                    color: 'var(--info-fg)',
-                    fontSize: 12.5,
-                    display: 'flex',
-                    gap: 10,
-                  }}
-                >
-                  <InfoIcon style={{ width: 16, height: 16, flexShrink: 0, marginTop: 1 }} />
-                  <div>{tCommon('mobile_structure_cameras_phase_c')}</div>
-                </div>
-              </>
-            )}
-          </>
+          <MobileCamerasList
+            cameras={cameras}
+            locations={locations}
+            onEditCamera={onEditCamera}
+            onWatchCamera={onWatchCamera}
+          />
         )}
       </div>
 
@@ -1226,6 +1300,147 @@ function MobileView({
         camera={editingCamera}
         locations={allLocations}
       />
+
+      {viewingCamera && (
+        <CameraViewerDialog
+          open={!!viewingCamera}
+          onOpenChange={(v) => { if (!v) onCloseViewer(); }}
+          cameraId={viewingCamera.id}
+          cameraName={viewingCamera.name}
+          locationName={
+            locations.find((l) => l.id === viewingCamera.location_id)?.name ??
+            t('unassigned_location')
+          }
+          videoCodec={viewingCamera.video_codec}
+          codecCheckedAt={viewingCamera.codec_checked_at}
+        />
+      )}
     </>
+  );
+}
+
+function MobileCamerasList({
+  cameras,
+  locations,
+  onEditCamera,
+  onWatchCamera,
+}: {
+  cameras: Camera[];
+  locations: Location[];
+  onEditCamera: (cam: Camera) => void;
+  onWatchCamera: (cam: Camera) => void;
+}) {
+  const { t } = useTranslation('structure');
+  const tErrors = useTranslation('errors').t;
+  const refreshCodec = useRefreshCameraCodec();
+  const [refreshingId, setRefreshingId] = useState<string | null>(null);
+
+  function handleRefreshCodec(cam: Camera) {
+    setRefreshingId(cam.id);
+    refreshCodec.mutate(cam.id, {
+      onSuccess: (updated) => {
+        const label = formatCodecLabel(updated.video_codec) ?? t('camera_codec_none');
+        toast.success(t('camera_codec_refreshed', { codec: label }));
+        setRefreshingId(null);
+      },
+      onError: (error) => {
+        toast.error(tErrors(toI18nKey(error)));
+        setRefreshingId(null);
+      },
+    });
+  }
+
+  if (cameras.length === 0) {
+    return (
+      <EmptyState
+        icon={<CameraIcon className="size-9 text-[color:var(--text-4)]" />}
+        title={t('no_cameras')}
+        text={t('no_cameras_text')}
+      />
+    );
+  }
+
+  return (
+    <div className="m-card flush" style={{ marginBottom: 12 }}>
+      {cameras.map((c) => {
+        const locName =
+          locations.find((l) => l.id === c.location_id)?.name ?? t('unassigned_location');
+        const canWatch = c.is_streamable && c.transports.length > 0;
+        const codecLabel = formatCodecLabel(c.video_codec);
+        const isRefreshing = refreshingId === c.id;
+
+        return (
+          <div key={c.id} className="m-list-row" onClick={() => onEditCamera(c)}>
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 10,
+                background: 'var(--primary-soft)',
+                color: 'var(--primary)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <CameraIcon style={{ width: 18, height: 18 }} />
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="m-row-title">{c.name}</div>
+              <div className="m-row-sub">{locName}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                {!c.is_streamable ? (
+                  <Badge variant="neutral" className="text-[10px]">
+                    {t('camera_not_streamable')}
+                  </Badge>
+                ) : c.is_active ? (
+                  <Badge variant="success" className="text-[10px]">
+                    {t('camera_active')}
+                  </Badge>
+                ) : (
+                  <Badge variant="neutral" className="text-[10px]">
+                    {t('camera_inactive')}
+                  </Badge>
+                )}
+                {codecLabel && (
+                  <span
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)' }}
+                  >
+                    {codecLabel}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div
+              style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {canWatch && (
+                <button
+                  type="button"
+                  className="m-iconbtn primary"
+                  onClick={() => onWatchCamera(c)}
+                  aria-label={t('camera_watch')}
+                >
+                  <PlayIcon style={{ width: 16, height: 16 }} />
+                </button>
+              )}
+              <button
+                type="button"
+                className="m-iconbtn ghost"
+                onClick={() => handleRefreshCodec(c)}
+                disabled={isRefreshing}
+                aria-label={t('camera_refresh_codec')}
+              >
+                <RefreshCwIcon
+                  style={{ width: 16, height: 16 }}
+                  className={isRefreshing ? 'animate-spin' : ''}
+                />
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }

@@ -1313,6 +1313,46 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/cameras/{id}/stream': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Playable URLs for this camera, for the admin panel viewer.
+     * @description Mints a short-lived stream token for the calling admin. Admins are not guardians, so they cannot use the parent route; the tenant-scoped lookup here is the authorisation. `streams` is empty (not an error) when the camera is archived or not bound to the media gateway.
+     */
+    get: operations['CameraController_stream_v1'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/cameras/{id}/refresh-codec': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Re-probe the camera and store the codec it currently emits.
+     * @description Asks the media gateway what is on the wire right now. The periodic probe does this on its own; this endpoint is for when an installer has just switched a camera and nobody wants to wait for the next tick. A camera with no stream key, or one the gateway cannot reach, comes back unchanged rather than erroring — the stale codec_checked_at is the signal.
+     */
+    post: operations['CameraController_refreshCodec_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/cameras/{id}/archive': {
     parameters: {
       query?: never;
@@ -1341,6 +1381,26 @@ export interface paths {
     put?: never;
     /** Restore an archived camera (idempotent). */
     post: operations['CameraController_restore_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/parent/children/{childId}/cctv': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Cameras the parent may watch for this child right now.
+     * @description Resolves child → current group → the location that group is in at this moment → cameras anchored there. The answer changes when a mentor moves the group, so re-request on the group location-changed event rather than caching.
+     */
+    get: operations['ParentCctvController_list_v1'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -1755,7 +1815,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Mark an invoice as paid via cash/off-platform settlement. Optional `amount` records a partial cash receipt (invoice → partial). Idempotent at the conditional-UPDATE level. */
+    /** Mark an invoice as paid via cash/off-platform settlement. Optional `amount` records a partial cash receipt (invoice → partial) — MONTHLY invoices only; a `prepayment_*` invoice is indivisible and takes the full residual or nothing. Idempotent at the conditional-UPDATE level. */
     post: operations['AdminInvoiceController_manualMarkPaid_v1'];
     delete?: never;
     options?: never;
@@ -2310,6 +2370,26 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/api/v1/admin/kaspi/connect/send-password': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Answer Kaspi's login+password screen — the SECOND onboarding path.
+     * @description Call this ONLY after send-phone returned 409 `kaspi_password_login_required`, reusing the SAME process_id. The passwordless path is unchanged: when Kaspi dispatches the SMS, send-phone returns `sms_sent: true` and this endpoint is not used. On success the flow rejoins the normal path at verify-otp.
+     */
+    post: operations['AdminKaspiConnectController_sendPassword_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/api/v1/admin/kaspi/connect/verify-otp': {
     parameters: {
       query?: never;
@@ -2436,7 +2516,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /** Kaspi-style payment calendar for the child. `months_ahead` ∈ [1, 24]. Returns one entry per month — real invoices where present, projected entries (status=projected) for unfilled months. Nanny → 403. */
+    /** Kaspi-style payment calendar for the child. `months_ahead` ∈ [1, 24]. Returns one entry per month — real invoices where present, projected entries (status=projected) for unfilled months. Months covered by a paid prepayment render as paid rows of the prepayment invoice (invoice_type=prepayment_Nm, amount = per-month share). Nanny → 403. */
     get: operations['ParentInvoiceController_paymentCalendar_v1'];
     put?: never;
     post?: never;
@@ -2455,7 +2535,7 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Initiate a payment against the invoice. `payment_mode=full` pays the remaining balance; `partial` requires `amount`. `idempotency_key` collapses retries. */
+    /** Initiate a payment against the invoice. `payment_mode=full` pays the remaining balance; `partial` requires `amount` and is accepted on MONTHLY invoices only — a `prepayment_*` invoice is indivisible (the bulk discount is granted for settling N months in one go). */
     post: operations['ParentPaymentController_initiatePay_v1'];
     delete?: never;
     options?: never;
@@ -2474,6 +2554,23 @@ export interface paths {
     put?: never;
     /** Generate a `prepayment_{N}m` invoice for the child of the original invoice (covering the next N months) and initiate payment for it. `months` ∈ {3, 6, 12, 24}. Discount is sourced from the active tariff plan via DiscountEnginePort. */
     post: operations['ParentPaymentController_initiatePrepayment_v1'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/api/v1/parent/invoices/{id}/prepayment-preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** Preview the prepayment quote for the child of the anchor invoice — same computation as POST :id/pay/prepayment but with ZERO writes (no invoice, no discount-slot reservation, no cancellation of stale prepayments). Returns the covered window (shifted past months already covered by a paid prepayment), per-month breakdown with holiday deductions, discount and whole-tenge total. Blocked cases return HTTP 200 with `blocked_reason` + details instead of the quote: `outstanding_debt` (+ `outstanding_amount`), `partial_prepayment_exists` (a stale prepayment holds money; + `blocked_invoice_id`, `blocked_paid_amount`), `window_overlaps_covered` (+ `covered_months`). */
+    get: operations['ParentPaymentController_prepaymentPreview_v1'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -5632,6 +5729,39 @@ export interface components {
       rtsp_url: string;
       /** @example null */
       hls_url: Record<string, never> | null;
+      /**
+       * @description Media-gateway stream key of the sub-stream. Null until the camera is bound to the gateway.
+       * @example cam02_sub
+       */
+      stream_key: Record<string, never> | null;
+      /**
+       * @description Full-resolution stream key, when one is configured.
+       * @example cam02_main
+       */
+      stream_key_hd: Record<string, never> | null;
+      /**
+       * @description Codec last observed on the wire. Filled in automatically by the codec probe — never sent by clients. Null means the camera has not been probed yet.
+       * @example h265
+       * @enum {string|null}
+       */
+      video_codec: 'h264' | 'h265' | 'unknown' | null;
+      /**
+       * @description When the codec was last confirmed. A timestamp far in the past means the gateway has not been able to reach the camera since.
+       * @example 2026-09-14T08:30:00.000Z
+       */
+      codec_checked_at: Record<string, never> | null;
+      /**
+       * @description Whether this camera can currently be watched at all (active, not archived, bound to a stream key).
+       * @example true
+       */
+      is_streamable: boolean;
+      /**
+       * @description Transports the camera can be watched over, most-preferred first. H.265 cameras offer HLS only; a camera switched to H.264 gains WebRTC here automatically, with no client change.
+       * @example [
+       *       "hls"
+       *     ]
+       */
+      transports: ('hls' | 'webrtc')[];
       /** @example true */
       is_active: boolean;
       /** @example null */
@@ -5659,6 +5789,16 @@ export interface components {
        * @example https://hls.shyraq.test/cam1/index.m3u8
        */
       hls_url?: string;
+      /**
+       * @description Media-gateway stream key of the low-res sub-stream — what parents watch. Must match the stream name in the gateway config, and is unique across all kindergartens (409 camera_stream_key_taken otherwise).
+       * @example cam02_sub
+       */
+      stream_key?: string;
+      /**
+       * @description Optional full-resolution stream key for single-camera view. Same uniqueness rule.
+       * @example cam02_main
+       */
+      stream_key_hd?: string;
     };
     UpdateCameraDto: {
       /**
@@ -5675,6 +5815,16 @@ export interface components {
        * @example https://hls.shyraq.test/cam1/index.m3u8
        */
       hls_url?: Record<string, never> | null;
+      /**
+       * @description Media-gateway stream key (sub-stream). Send null to unbind the camera from the gateway. Changing it resets the probed codec — the next probe re-establishes it.
+       * @example cam02_sub
+       */
+      stream_key?: Record<string, never> | null;
+      /**
+       * @description Full-resolution stream key. Send null to clear.
+       * @example cam02_main
+       */
+      stream_key_hd?: Record<string, never> | null;
     };
     LinkLocationDto: {
       /**
@@ -5682,6 +5832,64 @@ export interface components {
        * @example a1b2c3d4-1234-5678-abcd-1234567890ab
        */
       location_id: string;
+    };
+    CctvStreamDto: {
+      /**
+       * @description How to play this URL. Take the FIRST entry your player supports and do not branch on the codec yourself — when a camera is switched to H.264 a webrtc entry appears here on its own.
+       * @example hls
+       * @enum {string}
+       */
+      transport: 'hls' | 'webrtc';
+      /**
+       * @description Playable URL, already carrying the access token. Treat it as opaque and short-lived.
+       * @example https://balam-stream.innodev.kz/hls/c1d2e3f4-3456-7890-cdef-3456789012cd/index.m3u8?t=v1.c1d2e3f4...
+       */
+      url: string;
+    };
+    CameraStreamAccessDto: {
+      /** @example c1d2e3f4-3456-7890-cdef-3456789012cd */
+      camera_id: string;
+      /** @example Столовая (Ashana) */
+      name: string;
+      /**
+       * @description Informational. Pick a player from `streams`, not from this field.
+       * @example h265
+       * @enum {string|null}
+       */
+      video_codec: 'h264' | 'h265' | 'unknown' | null;
+      /** @description Empty when the camera is archived, has no stream key, or streaming is not configured in this environment. */
+      streams: components['schemas']['CctvStreamDto'][];
+      /**
+       * @description When these URLs stop working. Null when `streams` is empty.
+       * @example 2026-09-14T13:00:00.000Z
+       */
+      expires_at: Record<string, never> | null;
+    };
+    CctvCameraDto: {
+      /** @example c1d2e3f4-3456-7890-cdef-3456789012cd */
+      camera_id: string;
+      /** @example Ashana */
+      name: string;
+      /** @example a1b2c3d4-1234-5678-abcd-1234567890ab */
+      location_id: string;
+      /** @example Столовая */
+      location_name: Record<string, never> | null;
+      /**
+       * @description Informational — for showing the operator why a camera may not play on a given device. Playback decisions belong to `streams`.
+       * @example h265
+       * @enum {string|null}
+       */
+      video_codec: 'h264' | 'h265' | 'unknown' | null;
+      streams: components['schemas']['CctvStreamDto'][];
+    };
+    CctvAccessDto: {
+      /** @description Cameras covering the location the child`s group is in RIGHT NOW. Empty when the group has no location, the location has no camera, or no camera there is bound to the media gateway. */
+      cameras: components['schemas']['CctvCameraDto'][];
+      /**
+       * @description When the URLs above stop working. Null when the list is empty. Re-request this endpoint before it passes, and also whenever the group`s location-changed event arrives.
+       * @example 2026-09-14T13:00:00.000Z
+       */
+      expires_at: Record<string, never> | null;
     };
     ParentKindergartenDto: {
       /** @example 331faeff-2ab2-43a8-b504-7c34df8b547c */
@@ -7607,6 +7815,18 @@ export interface components {
        */
       sms_sent: boolean;
     };
+    KaspiSendPasswordDto: {
+      /**
+       * @description Process id returned by POST /admin/kaspi/connect/init.
+       * @example e1b2c3d4-0000-0000-0000-000000000000
+       */
+      process_id: string;
+      /**
+       * @description The merchant's Kaspi Pay password, required when Kaspi answers send-phone with `kaspi_password_login_required`. Used for exactly one upstream request and NEVER persisted, cached or logged — the same handling the SMS OTP gets.
+       * @example ••••••••
+       */
+      password: string;
+    };
     KaspiVerifyOtpDto: {
       /**
        * @description Process id returned by POST /admin/kaspi/connect/init.
@@ -7740,6 +7960,21 @@ export interface components {
        * @example 2
        */
       holidays_affected: number;
+      /**
+       * @description Type of the backing invoice. Months covered by a paid prepayment carry the prepayment type (frontend renders "paid by prepayment"). Null on projected rows.
+       * @example prepayment_3m
+       * @enum {string|null}
+       */
+      invoice_type:
+        | 'monthly'
+        | 'prepayment_3m'
+        | 'prepayment_6m'
+        | 'prepayment_12m'
+        | 'prepayment_24m'
+        | 'additional_service'
+        | 'late_pickup_fee'
+        | 'other'
+        | null;
     };
     PaymentCalendarResponseDto: {
       /** @example cccccccc-cccc-cccc-cccc-cccccccccccc */
@@ -7897,6 +8132,91 @@ export interface components {
        */
       deeplink?: Record<string, never> | null;
       preview: components['schemas']['PrepaymentPreviewDto'];
+    };
+    PrepaymentPreviewWindowDto: {
+      /**
+       * @description First day of the first covered month (ISO date).
+       * @example 2026-08-01
+       */
+      from: string;
+      /**
+       * @description Last day of the last covered month (ISO date).
+       * @example 2026-10-31
+       */
+      to: string;
+    };
+    PrepaymentPreviewMonthDto: {
+      /**
+       * @description First day of the covered month (ISO date).
+       * @example 2026-08-01
+       */
+      period_start: string;
+      /**
+       * @description Last day of the covered month (ISO date).
+       * @example 2026-08-31
+       */
+      period_end: string;
+      /**
+       * @description Pre-discount month price in KZT after the holiday deduction: price × (days − non-billable holidays) / days.
+       * @example 60000
+       */
+      base_amount: number;
+      /**
+       * @description Non-billable holiday days deducted in this month.
+       * @example 0
+       */
+      holiday_days: number;
+      /**
+       * @description Whole-tenge slice of the discounted total attributed to this month (shares sum to `total` exactly). Becomes the month line item on pay.
+       * @example 54000
+       */
+      amount_share: number;
+    };
+    PrepaymentPreviewResponseDto: {
+      /**
+       * @description Non-null when the prepayment would be rejected. `outstanding_debt` = the child has a pending/overdue/partial non-prepayment invoice. `partial_prepayment_exists` = a stale prepayment already holds parent money (never auto-cancelled; see blocked_invoice_id / blocked_paid_amount). `window_overlaps_covered` = non-contiguous paid coverage inside the shifted window would double-bill a month (see covered_months).
+       * @example null
+       * @enum {string|null}
+       */
+      blocked_reason:
+        | 'outstanding_debt'
+        | 'partial_prepayment_exists'
+        | 'window_overlaps_covered'
+        | null;
+      /**
+       * @description Total unpaid remainder (KZT) over the blocking invoices. Null unless blocked_reason=outstanding_debt.
+       * @example null
+       */
+      outstanding_amount: Record<string, never> | null;
+      /**
+       * @description Id of the money-holding stale prepayment invoice. Null unless blocked_reason=partial_prepayment_exists.
+       * @example null
+       */
+      blocked_invoice_id: Record<string, never> | null;
+      /**
+       * @description Completed-paid KZT already inside the stale prepayment. Null unless blocked_reason=partial_prepayment_exists.
+       * @example null
+       */
+      blocked_paid_amount: Record<string, never> | null;
+      /**
+       * @description YYYY-MM keys inside the requested window still covered by a paid prepayment. Null unless blocked_reason=window_overlaps_covered.
+       * @example null
+       */
+      covered_months: string[] | null;
+      /** @description Covered window — starts at the 1st of the next month (Almaty), shifted past months already covered by a paid prepayment. Null when blocked. */
+      window: components['schemas']['PrepaymentPreviewWindowDto'] | null;
+      /** @description Per-month breakdown. Empty when blocked. */
+      months: components['schemas']['PrepaymentPreviewMonthDto'][];
+      /**
+       * @description Percentage discount the engine would apply (prepay_{N}m_pct or a winning custom pct discount). Null when blocked or when the winning discount is an absolute amount.
+       * @example 10
+       */
+      discount_pct: Record<string, never> | null;
+      /**
+       * @description Final amount in whole KZT (discounted, whole-tenge quantized) — exactly what the pay endpoint would charge. Null when blocked.
+       * @example 162000
+       */
+      total: Record<string, never> | null;
     };
     PaymentProfileResponseDto: {
       /** @example +77011234567 */
@@ -13598,6 +13918,52 @@ export interface operations {
       };
     };
   };
+  CameraController_stream_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CameraStreamAccessDto'];
+        };
+      };
+    };
+  };
+  CameraController_refreshCodec_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CameraDto'];
+        };
+      };
+    };
+  };
   CameraController_archive_v1: {
     parameters: {
       query?: never;
@@ -13641,6 +14007,57 @@ export interface operations {
         content: {
           'application/json': components['schemas']['CameraDto'];
         };
+      };
+    };
+  };
+  ParentCctvController_list_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        childId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CctvAccessDto'];
+        };
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description `child_access_denied` — not an approved guardian. `cctv_access_denied` — guardian without the view_cctv permission (nanny by default). */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description `child_not_found` in this tenant. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description `cctv_not_configured` — the streaming host or signing key is not set up in this environment. */
+      503: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };
@@ -15221,7 +15638,7 @@ export interface operations {
           'application/json': components['schemas']['InvoiceResponseDto'];
         };
       };
-      /** @description Validation error. */
+      /** @description Validation error / prepayment_partial_not_allowed (`amount` below the residual on a `prepayment_*` invoice). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -17397,6 +17814,59 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description kaspi_password_login_required — Kaspi answered with the login+password screen instead of the OTP step, so NO SMS was sent. Do not retry this step: continue on the SAME process_id via POST connect/send-password, then resume at verify-otp. */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  AdminKaspiConnectController_sendPassword_v1: {
+    parameters: {
+      query?: never;
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['KaspiSendPasswordDto'];
+      };
+    };
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['KaspiSendPhoneResponseDto'];
+        };
+      };
+      /** @description kaspi_unknown_process — process_id missing or expired. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked, or kaspi_password_invalid (401) — wrong password or a Kaspi-side lockout. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Caller is not admin. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
     };
   };
   AdminKaspiConnectController_verifyOtp_v1: {
@@ -17438,6 +17908,13 @@ export interface operations {
       };
       /** @description Caller is not admin. */
       403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description kaspi_device_verification_required — the OTP was accepted, but Kaspi then demands a live-face Kaspi ID selfie for the new device, which the backend cannot provide (no camera). OR kaspi_no_business_profile — the device registered but the account carries no merchant profile. OR kaspi_device_not_authorized — the device registered, but the first call made with its brand-new token was refused (StatusCode=-101001); the account never authorized this device. NOT kaspi_session_taken_over, which onboarding can no longer return — a token seconds old cannot have been displaced by another login. */
+      409: {
         headers: {
           [name: string]: unknown;
         };
@@ -17782,7 +18259,7 @@ export interface operations {
           'application/json': components['schemas']['InitiatePaymentResponseDto'];
         };
       };
-      /** @description Validation error / amount mismatch / payment_provider_unavailable. */
+      /** @description Validation error / amount mismatch / payment_provider_unavailable / prepayment_partial_not_allowed (`payment_mode=partial` on a `prepayment_*` invoice). */
       400: {
         headers: {
           [name: string]: unknown;
@@ -17844,7 +18321,7 @@ export interface operations {
           'application/json': components['schemas']['InitiatePrepaymentResponseDto'];
         };
       };
-      /** @description prepayment_horizon_not_configured / months_out_of_range / payment_provider_unavailable / validation error. */
+      /** @description prepayment_blocked_outstanding_debt (child has unpaid non-prepayment invoices) / prepayment_blocked_partial_prepayment (a stale prepayment already holds money — never auto-cancelled) / prepayment_blocked_window_overlap (non-contiguous paid coverage inside the shifted window) / prepayment_horizon_not_configured / months_out_of_range / payment_provider_unavailable / validation error. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -17874,6 +18351,74 @@ export interface operations {
       };
       /** @description payment_idempotency_conflict. */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  ParentPaymentController_prepaymentPreview_v1: {
+    parameters: {
+      query: {
+        /** @description Number of months to preview. Must match an available prepay_*m_pct in the active tariff discount_rules (same rule as the pay endpoint). */
+        months: 3 | 6 | 12 | 24;
+      };
+      header?: {
+        'x-custom-lang'?: unknown;
+      };
+      path: {
+        id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PrepaymentPreviewResponseDto'];
+        };
+      };
+      /** @description prepayment_horizon_not_configured / malformed request. */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Bearer missing/invalid/revoked. */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description not_a_guardian / nanny_cannot_pay / secondary_pay_not_allowed. */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description invoice_not_found / tariff_not_found. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Validation error (months not one of 3/6/12/24). */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Rate limited. */
+      429: {
         headers: {
           [name: string]: unknown;
         };

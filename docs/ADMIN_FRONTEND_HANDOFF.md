@@ -368,23 +368,90 @@
 
 Ошибки: `location_not_found`(404), `location_in_use`(409 — обрабатывать defensive на archive).
 
-### 9.2 Камеры (CCTV-конфиг) — `/cameras/*`
+### 9.2 Камеры (CCTV) — `/cameras/*`
 
-| Метод    | Путь                         | Назначение                                                                      |
-| -------- | ---------------------------- | ------------------------------------------------------------------------------- |
-| GET      | `/cameras`                   | `CameraDto[]` (bare array). Фильтр `?location_id=`.                             |
-| POST     | `/cameras`                   | `CreateCameraDto {location_id*, name*, rtsp_url?, hls_url?}`.                   |
-| PATCH    | `/cameras/:id`               | `UpdateCameraDto {location_id?, name?, rtsp_url?, hls_url?}`.                   |
-| POST     | `/cameras/:id/archive`       | Архивировать.                                                                   |
-| POST     | `/cameras/:id/restore`       | Снять архив.                                                                    |
-| POST     | `/cameras/:id/link-location` | `LinkLocationDto {location_id*}` — перепривязка к локации.                      |
-| ~~POST~~ | ~~`/cameras/:id/test`~~      | **Отложено (Phase C)** — не реализовано, в Swagger нет. UI — disabled-заглушка. |
+Backend CCTV задеплоен на dev 2026-09-14. 15 камер первого садика отдают живое видео по HLS. Все маршруты под обычным Admin Bearer-токеном, snake_case.
 
-`CameraDto` (snake_case) = `{id, kindergarten_id, location_id, name, rtsp_url, hls_url(nullable), is_active, archived_at(nullable), created_at, updated_at}`.
+#### Маршруты
 
-Ошибки: `camera_not_found`(404), `location_not_found`(404).
+| Метод | Путь                         | Назначение                                                                                                                             |
+| ----- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| GET   | `/cameras`                   | `CameraDto[]` (bare array). Фильтры: `?location_id=`, `?archived=true\|false`.                                                        |
+| POST  | `/cameras`                   | `CreateCameraDto {location_id*, name*, rtsp_url?, hls_url?, stream_key?, stream_key_hd?}`.                                             |
+| GET   | `/cameras/:id`               | `CameraDto`.                                                                                                                           |
+| PATCH | `/cameras/:id`               | `UpdateCameraDto {location_id?, name?, rtsp_url?, hls_url?, stream_key?, stream_key_hd?}`. Смена `stream_key` сбрасывает `video_codec`. |
+| POST  | `/cameras/:id/archive`       | Архивировать. `DELETE` нет.                                                                                                            |
+| POST  | `/cameras/:id/restore`       | Снять архив.                                                                                                                           |
+| POST  | `/cameras/:id/link-location` | `LinkLocationDto {location_id*}` — перепривязка к локации.                                                                             |
+| GET   | `/cameras/:id/stream`        | `CameraStreamAccessDto` — короткоживущие ссылки на видеопоток (см. ниже).                                                              |
+| POST  | `/cameras/:id/refresh-codec` | Спросить шлюз, какой кодек сейчас на проводе. Полезно после настройки камеры.                                                          |
 
-**Страницы:** CRUD-таблицы Локаций и Камер (одна страница «Структура садика» с двумя вкладками `/structure/locations` + `/structure/cameras`). Камеры группируются по локациям (имя локации резолвится из `useLocations` — закрывает §C8). Кнопку «Тест камеры» — заглушка «доступно позже» (Phase C, disabled+tooltip).
+#### CameraDto
+
+`CameraDto` (snake_case, все поля required в OpenAPI):
+
+| Поле              | Тип                | Nullable | Описание                                                                                                                 |
+| ----------------- | ------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `id`              | `string (uuid)`    | нет      |                                                                                                                          |
+| `kindergarten_id` | `string (uuid)`    | нет      |                                                                                                                          |
+| `location_id`     | `string (uuid)`    | нет      |                                                                                                                          |
+| `name`            | `string`           | нет      |                                                                                                                          |
+| `rtsp_url`        | `string`           | нет      | Технический; в UI обычного админа прятать.                                                                               |
+| `hls_url`         | `string`           | да       | Технический; в UI обычного админа прятать.                                                                               |
+| `stream_key`      | `string`           | да       | Идентификатор SD-потока на медиа-шлюзе. Уникален **глобально** (не в рамках садика). Технический.                        |
+| `stream_key_hd`   | `string`           | да       | Идентификатор HD-потока. Аналогично `stream_key`.                                                                        |
+| `video_codec`     | `string`           | да       | `"h265"` / `"h264"` / `null`. Только диагностика (колонка, текст ошибки). `null` = камеру ещё не опрашивали.             |
+| `codec_checked_at`| `string (ISO8601)` | да       | Давняя дата = шлюз не достучался до камеры. Индикатор проблемы в списке.                                                 |
+| `is_streamable`   | `boolean`          | нет      | `false` → карточка без плеера, подпись «не подключена». Причина: нет `stream_key`, камера в архиве, или CCTV не настроен. |
+| `transports`      | `string[]`         | нет      | Что бэкенд реально может отдать, в порядке предпочтения (`["hls"]`, `["webrtc","hls"]`). Ветвиться по нему, не по `video_codec`. Пустой массив = нет потока. |
+| `is_active`       | `boolean`          | нет      |                                                                                                                          |
+| `archived_at`     | `string (ISO8601)` | да       |                                                                                                                          |
+| `created_at`      | `string (ISO8601)` | нет      |                                                                                                                          |
+| `updated_at`      | `string (ISO8601)` | нет      |                                                                                                                          |
+
+#### CameraStreamAccessDto (`GET /cameras/:id/stream`)
+
+| Поле          | Тип                  | Nullable | Описание                                                                                      |
+| ------------- | -------------------- | -------- | --------------------------------------------------------------------------------------------- |
+| `camera_id`   | `string (uuid)`      | нет      |                                                                                               |
+| `name`        | `string`             | нет      | Имя камеры.                                                                                   |
+| `video_codec` | `string`             | да       | Текущий кодек. Для диагностики.                                                               |
+| `streams`     | `CctvStreamDto[]`    | нет      | Массив вариантов потока. Пустой = «показывать нечего» (не ошибка).                            |
+| `expires_at`  | `string (ISO8601)`   | да       | TTL ссылки (~1 час). Перезапрашивать по `expires_at`, а не по ошибке плеера.                   |
+
+`CctvStreamDto` = `{ transport: string, url: string }`.
+
+**Правила работы с потоком:**
+
+- Ссылка живёт ~1 час (`expires_at`). Для множественного просмотра запрашивать по мере открытия, **не все разом** при загрузке страницы.
+- Перезапрашивать по `expires_at`, а не по ошибке плеера: когда токен протухнет, сегменты начнут отдавать 403.
+- `streams: []` — не ошибка, а «показывать нечего»: камера архивная, без `stream_key`, либо CCTV не настроен.
+- Токен в URL — это и есть доступ. Ссылку **нельзя** логировать, класть в аналитику или показывать в «поделиться».
+- **Сессия медиа-шлюза:** мастер-плейлист открывает сессию, которая умирает за секунды без запросов. При сворачивании вкладки старые ссылки отдают `404 cctv_session_not_found`. Обработка: при возврате на экран запрашивать `/stream` заново.
+
+#### Ошибки
+
+| Код                          | HTTP | Описание                                                                 |
+| ---------------------------- | ---- | ------------------------------------------------------------------------ |
+| `camera_not_found`           | 404  | Камера не найдена.                                                       |
+| `location_not_found`         | 404  | Локация не найдена.                                                      |
+| `camera_archived`            | 409  | Камера в архиве — операция невозможна.                                   |
+| `camera_stream_key_taken`    | 409  | `stream_key` уникален **глобально** (не в рамках садика), уже занят.     |
+| `cctv_not_configured`        | 502  | CCTV-шлюз не настроен для этого окружения.                               |
+| `cctv_gateway_unavailable`   | 502  | Шлюз не отвечает.                                                        |
+| `cctv_playlist_unreadable`   | 502  | Шлюз вернул нечитаемый плейлист.                                         |
+| `cctv_session_not_found`     | 404  | Сессия шлюза протухла (вкладку свернули). Запросить `/stream` заново.     |
+| `cctv_token_invalid`         | 403  | Токен потока невалиден или просрочен.                                     |
+| `cctv_access_denied`         | 403  | Нет доступа к камере.                                                    |
+| `cctv_stream_secret_missing` | 500  | На бэкенде не настроен секрет подписи потоковых URL.                      |
+
+#### Чего пока нет
+
+- **WebRTC** — только HLS. Когда камеры переведут на H.264, в `transports` появится `"webrtc"` первым элементом, плеер подхватит автоматически.
+- **Архив и перемотка** — только live.
+- **Звук** — вырезается на шлюзе (камеры отдают G.711A, в fMP4 он не кладётся).
+
+**Страницы:** CRUD-таблицы Локаций и Камер (одна страница «Структура садика» с двумя вкладками `/structure/locations` + `/structure/cameras`). Камеры группируются по локациям (имя локации резолвится из `useLocations` — закрывает §C8). Просмотр живого видео — модалка на одну камеру внутри вкладки камер (решение владельца 2026-09-14, см. OPEN_QUESTIONS §A40).
 
 ---
 

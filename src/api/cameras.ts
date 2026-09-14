@@ -8,6 +8,12 @@ export const CameraDtoSchema = z.object({
   name: z.string(),
   rtsp_url: z.string().nullable(),
   hls_url: z.string().nullable(),
+  stream_key: z.string().nullable(),
+  stream_key_hd: z.string().nullable(),
+  video_codec: z.string().nullable(),
+  codec_checked_at: z.string().nullable(),
+  is_streamable: z.boolean(),
+  transports: z.array(z.string()),
   is_active: z.boolean(),
   archived_at: z.string().nullable(),
   created_at: z.string(),
@@ -25,6 +31,8 @@ export interface CreateCameraBody {
   name: string;
   rtsp_url?: string;
   hls_url?: string;
+  stream_key?: string;
+  stream_key_hd?: string;
 }
 
 export interface UpdateCameraBody {
@@ -32,6 +40,8 @@ export interface UpdateCameraBody {
   name?: string;
   rtsp_url?: string;
   hls_url?: string;
+  stream_key?: string;
+  stream_key_hd?: string;
 }
 
 export interface LinkCameraLocationBody {
@@ -76,5 +86,30 @@ export async function linkCameraLocation(
   body: LinkCameraLocationBody,
 ): Promise<Camera> {
   const data: unknown = await apiClient.post(`cameras/${id}/link-location`, { json: body }).json();
+  return CameraDtoSchema.parse(data);
+}
+
+const CctvStreamSchema = z.object({
+  transport: z.string(),
+  url: z.string(),
+});
+
+export const CameraStreamAccessSchema = z.object({
+  camera_id: z.string(),
+  name: z.string(),
+  video_codec: z.string().nullable(),
+  streams: z.array(CctvStreamSchema),
+  expires_at: z.string().nullable(),
+});
+
+export type CameraStreamAccess = z.infer<typeof CameraStreamAccessSchema>;
+
+export async function getCameraStream(id: string): Promise<CameraStreamAccess> {
+  const data: unknown = await apiClient.get(`cameras/${id}/stream`).json();
+  return CameraStreamAccessSchema.parse(data);
+}
+
+export async function refreshCameraCodec(id: string): Promise<Camera> {
+  const data: unknown = await apiClient.post(`cameras/${id}/refresh-codec`).json();
   return CameraDtoSchema.parse(data);
 }

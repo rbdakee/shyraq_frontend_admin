@@ -75,6 +75,16 @@ export const KNOWN_ERROR_CODES = [
   'location_not_found',
   'location_in_use',
   'camera_not_found',
+  'camera_archived',
+  'camera_stream_key_taken',
+  // cctv §9.2
+  'cctv_not_configured',
+  'cctv_gateway_unavailable',
+  'cctv_playlist_unreadable',
+  'cctv_session_not_found',
+  'cctv_token_invalid',
+  'cctv_access_denied',
+  'cctv_stream_secret_missing',
   // schedule §10
   'schedule_template_not_found',
   'slot_not_found',

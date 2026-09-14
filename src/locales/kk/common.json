@@ -112,25 +112,20 @@
   "mobile_notif_all": "Барлығы",
   "mobile_notif_unread": "Оқылмағандар",
   "mobile_notif_empty": "Хабарламалар жоқ",
-
   "mobile_structure_title": "Құрылым",
   "mobile_structure_sub": "Орындар мен камералар",
   "mobile_structure_locations": "Орындар",
   "mobile_structure_cameras": "Камералар",
   "mobile_structure_groups_unit": "топ",
   "mobile_structure_cameras_unit": "камера",
-  "mobile_structure_cameras_phase_c": "Камералардан ағын көру Phase C-де пайда болады, CCTV edge-қызметі іске қосылғанда.",
-
   "mobile_schedule_title": "Кесте",
   "mobile_schedule_sub": "Дүйсенбі",
-
   "mobile_meals_title": "Мәзір",
   "mobile_meals_sub": "Дүйсенбі, 19 мамыр",
   "mobile_meals_cal_label": "Күніне калория",
   "mobile_meals_cal_unit": "ккал",
   "mobile_meals_published": "Жарияланды",
   "mobile_meals_allergens": "Аллергендер",
-
   "mobile_content_title": "Контент",
   "mobile_content_sub": "Ата-аналар лентасы",
   "mobile_content_tab_feed": "Лента",
@@ -139,7 +134,6 @@
   "mobile_content_pinned": "Бекітілген",
   "mobile_content_status_scheduled": "Жоспарланған",
   "mobile_content_photo_placeholder": "топ фотосы",
-
   "mobile_diag_title": "Диагностика",
   "mobile_diag_sub": "Мамандарға арналған үлгілер",
   "mobile_diag_spec_psychologist": "Психолог",
@@ -149,7 +143,6 @@
   "mobile_diag_inactive": "Белсенді емес",
   "mobile_diag_version": "Нұсқа",
   "mobile_diag_entries": "жазба",
-
   "mobile_face_title": "Face ID",
   "mobile_face_sub": "Биометрия",
   "mobile_face_phase_c_label": "Phase C — әзірлеу үстінде",
@@ -165,7 +158,6 @@
   "mobile_face_status_rejected": "Бас тарту",
   "mobile_face_profiles_placeholder": "Профильдер Phase C-де қолжетімді болады",
   "mobile_face_cameras_placeholder": "Камералар Phase C-де қолжетімді болады",
-
   "mobile_dlq_title": "Сбойлық тапсырмалар",
   "mobile_dlq_sub": "{{count}} сыни · қолмен өңдеу",
   "mobile_dlq_banner_title": "{{count}} тапсырма назар аударуды талап етеді.",
@@ -176,7 +168,6 @@
   "mobile_dlq_attempts": "Әрекеттер",
   "mobile_dlq_log": "Журнал",
   "mobile_dlq_retry": "Қайталау",
-
   "mobile_settings_title": "Баптаулар",
   "mobile_settings_section_kg": "Балабақша",
   "mobile_settings_general": "Жалпы",
