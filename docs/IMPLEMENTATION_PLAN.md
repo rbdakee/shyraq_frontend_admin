@@ -1117,6 +1117,11 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
   - `src/routes/structure/locations/index.tsx` — колонки «Кодек» / «Статус» (новые правила), кнопки «Смотреть» / «Проверить кодек» (вместо disabled Phase C заглушки), модалка просмотра, форма камеры с `stream_key` / `stream_key_hd`, удаление Phase C баннера и dead code.
   - Mobile-parity: sheet-модалка на <1024px.
   - Удаление dead Phase C i18n-ключей (`camera_test*`, `col_stream_url`, `mobile_structure_cameras_phase_c`).
+- **S4 — Chrome/Android после перехода камер на H.264 (2026-09-15).**
+  - `src/lib/media-capabilities.ts` — `nativeHls` хранит силу ответа `canPlayType` (`'' | 'maybe' | 'probably'`); `resolvePlayback` выбирает hls.js первым, нативный HLS — только на `probably` (Safari) или когда hls.js не поддержан (iPhone). Убран pre-block по `video_codec`; вместо него `isCodecFailure()` для диагностики ошибки.
+  - `src/components/media/camera-player.tsx` — состояние `codec-error` выставляется по фактической ошибке (`bufferAddCodecError` / `bufferIncompatibleCodecsError` / `error` на `<video>`), а не до старта; ошибка на декодируемом кодеке по-прежнему считается протухшей сессией (`onSessionLost`).
+  - Тесты: `media-capabilities.test.ts` (Android Chrome → hls.js, Safari → native, H.265 не блокируется), `camera-player.test.tsx` (сообщение о кодеке только после сбоя).
+  - **Acceptance:** в Chrome (desktop) и Chrome на Android поток камеры играет; в Safari поведение не изменилось; строка камеры с устаревшим `video_codec: h265` не мешает играть H.264.
 
 **Acceptance:**
 

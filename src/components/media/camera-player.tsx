@@ -6,6 +6,7 @@ import { HLS_MAX_BUFFER_LENGTH, HLS_MAX_MAX_BUFFER_LENGTH } from '@/lib/constant
 import {
   resolvePlayback,
   detectCapabilities,
+  isCodecFailure,
   type MediaCapabilities,
 } from '@/lib/media-capabilities';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -20,7 +21,11 @@ export interface CameraPlayerProps {
   className?: string;
 }
 
-type PlayerState = 'connecting' | 'playing' | 'error';
+// `codec-error` is reached only by a real decode failure, never by inspecting
+// `video_codec` up front: that column is a probe result up to 30 minutes stale,
+// and a camera already switched to H.264 must not be hidden behind a warning
+// that tells the admin to go and open Safari.
+type PlayerState = 'connecting' | 'playing' | 'error' | 'codec-error';
 
 export default function CameraPlayer({
   streams,
@@ -52,6 +57,7 @@ export default function CameraPlayer({
 
   const hlsUrl = playback?.kind === 'hls-js' ? playback.url : null;
   const nativeUrl = playback?.kind === 'native-hls' ? playback.url : null;
+  const codecFailure = isCodecFailure(videoCodec, caps);
 
   useEffect(() => {
     if (!hlsUrl) return;
@@ -79,6 +85,19 @@ export default function CameraPlayer({
       hls.on(Hls.Events.ERROR, (_, data) => {
         if (!data.fatal) return;
 
+        // A codec the browser cannot decode. Checked before the type switch
+        // because `manifestIncompatibleCodecsError` fires off the CODECS
+        // attribute, before a single byte is appended, and recovery retries
+        // would only loop on it.
+        if (
+          data.details === 'manifestIncompatibleCodecsError' ||
+          data.details === 'bufferIncompatibleCodecsError' ||
+          data.details === 'bufferAddCodecError'
+        ) {
+          setPlayerState('codec-error');
+          return;
+        }
+
         if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
           const httpCode = data.response?.code;
           if (httpCode === 403 || httpCode === 404) {
@@ -92,6 +111,10 @@ export default function CameraPlayer({
           }
           setPlayerState('error');
         } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          if (codecFailure) {
+            setPlayerState('codec-error');
+            return;
+          }
           if (!retryState.media) {
             retryState.media = true;
             hls.recoverMediaError();
@@ -115,7 +138,7 @@ export default function CameraPlayer({
         hlsRef.current = null;
       }
     };
-  }, [hlsUrl]);
+  }, [hlsUrl, codecFailure]);
 
   useEffect(() => {
     if (!nativeUrl) return;
@@ -126,6 +149,10 @@ export default function CameraPlayer({
     setPlayerState('connecting');
 
     function handleError() {
+      if (codecFailure) {
+        setPlayerState('codec-error');
+        return;
+      }
       onSessionLostRef.current?.();
     }
     video.addEventListener('error', handleError);
@@ -134,7 +161,7 @@ export default function CameraPlayer({
       video.removeAttribute('src');
       video.load();
     };
-  }, [nativeUrl]);
+  }, [nativeUrl, codecFailure]);
 
   // WHY the url deps: while the stream request is in flight <video> is not
   // mounted yet, so an empty dep list attaches this listener to nothing and the
@@ -210,7 +237,7 @@ export default function CameraPlayer({
         </Overlay>
       )}
 
-      {playback?.kind === 'unsupported-codec' && (
+      {showVideo && playerState === 'codec-error' && (
         <Overlay>
           <MonitorX className="mb-2 h-10 w-10 text-neutral-400" />
           <p className="text-sm font-medium text-neutral-200">

@@ -27,16 +27,30 @@ vi.mock('react-i18next', () => ({
 vi.mock('@/lib/media-capabilities', () => ({
   detectCapabilities: vi.fn(() => ({
     hlsJsSupported: false,
-    nativeHls: false,
+    nativeHls: '' as const,
     hevcSupported: false,
   })),
   resolvePlayback: vi.fn(() => ({ kind: 'no-stream' as const })),
+  isCodecFailure: vi.fn(() => false),
 }));
 
 import CameraPlayer from './camera-player';
 import * as mediaCapabilities from '@/lib/media-capabilities';
 
 const mockResolvePlayback = vi.mocked(mediaCapabilities.resolvePlayback);
+const mockIsCodecFailure = vi.mocked(mediaCapabilities.isCodecFailure);
+
+function renderNative(url = 'https://example.com/stream.m3u8', onSessionLost?: () => void) {
+  mockResolvePlayback.mockReturnValue({ kind: 'native-hls', url });
+  const utils = render(
+    <CameraPlayer
+      streams={[{ transport: 'hls', url }]}
+      videoCodec="h265"
+      onSessionLost={onSessionLost}
+    />,
+  );
+  return { ...utils, video: utils.container.querySelector('video')! };
+}
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -47,18 +61,34 @@ afterEach(() => {
 });
 
 describe('CameraPlayer', () => {
-  it('shows unsupported-codec message with Safari suggestion', () => {
-    mockResolvePlayback.mockReturnValue({ kind: 'unsupported-codec' });
+  it('shows the codec message only after playback actually fails', () => {
+    mockIsCodecFailure.mockReturnValue(true);
+    const { video } = renderNative();
 
-    render(
-      <CameraPlayer
-        streams={[{ transport: 'hls', url: 'https://example.com/stream.m3u8' }]}
-        videoCodec="h265"
-      />,
-    );
+    // A stale `h265` row must not pre-empt playback: the camera may already be
+    // emitting H.264 and the probe simply has not caught up yet.
+    expect(video).not.toBeNull();
+    expect(
+      screen.queryByText('Browser does not play H.265'),
+    ).not.toBeInTheDocument();
+
+    fireEvent.error(video);
 
     expect(screen.getByText('Browser does not play H.265')).toBeInTheDocument();
     expect(screen.getByText('Open in Safari')).toBeInTheDocument();
+  });
+
+  it('treats a playback error on a decodable codec as a lost session', () => {
+    mockIsCodecFailure.mockReturnValue(false);
+    const onSessionLost = vi.fn();
+    const { video } = renderNative('https://example.com/stream.m3u8', onSessionLost);
+
+    fireEvent.error(video);
+
+    expect(onSessionLost).toHaveBeenCalledOnce();
+    expect(
+      screen.queryByText('Browser does not play H.265'),
+    ).not.toBeInTheDocument();
   });
 
   it('shows no-stream message when streams array is empty', () => {
