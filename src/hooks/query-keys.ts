@@ -171,6 +171,7 @@ export const qk = {
     all: ['cameras'] as const,
     list: (filters: CameraListFilters = {}) => ['cameras', 'list', filters] as const,
     detail: (id: string) => ['cameras', 'detail', id] as const,
+    stream: (id: string) => ['cameras', 'stream', id] as const,
   },
   holidays: {
     all: ['holidays'] as const,

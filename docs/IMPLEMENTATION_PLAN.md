@@ -1090,6 +1090,58 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 
 ---
 
+## B32 — CCTV: живой просмотр камер · post-MVP (backend cctv-update 2026-09-14)
+
+**Goal:** админ видит живой HLS-поток с камеры прямо во вкладке «Камеры», без отдельного экрана. Плеер честно деградирует на H.265 в Chromium. Таблица камер показывает кодек, статус подключения, и действия «Смотреть» / «Проверить кодек». Форма камеры расширена полями `stream_key` / `stream_key_hd`.
+
+**Inputs:** backend CCTV_FRONTEND_GUIDE.md (2026-09-14); HANDOFF §9.2 (обновлён); DESIGN §6.6 (обновлён); OPEN_QUESTIONS §A40 (решение владельца — модалка, нет сетки, H.265 принят), §C1 (камеры сняты с parked).
+
+**Слайсы:**
+
+- **S1 — контракт + доки + i18n.**
+  - `docs/ADMIN_FRONTEND_HANDOFF.md` §9.2 — переписан: 7 маршрутов, полный `CameraDto` (6 новых полей), `CameraStreamAccessDto`, ошибки, правила TTL, «чего пока нет».
+  - `docs/ADMIN_DESIGN_SPEC.md` §6.6 — переписана часть камер: колонки, действия, модалка, состояния, форма.
+  - `docs/OPEN_QUESTIONS.md` — §C1 (камеры сняты с parked), §A40 (модалка без handoff-дизайна — решение владельца).
+  - `src/api/cameras.ts` — `CameraDtoSchema` +6 полей; `CreateCameraBody` / `UpdateCameraBody` + `stream_key` / `stream_key_hd`.
+  - `src/api/cameras.test.ts` — unit-тест на `CameraDtoSchema` (полный + nullable-поля).
+  - `src/lib/error-map.ts` — 9 CCTV-кодов.
+  - `src/locales/{ru,kk}/errors.json` — тексты 9 кодов.
+  - `src/locales/{ru,kk}/structure.json` — ~25 новых i18n-ключей для S3.
+  - `pnpm gen:api` + prettier — `openapi.d.ts` обновлён.
+- **S2 — hls.js-плеер: capability-гейт, выбор транспорта, жизненный цикл токена.**
+  - `hls.js` dependency.
+  - `src/components/cctv/camera-player.tsx` — компонент плеера: `Hls.isSupported()`, `MediaSource.isTypeSupported('video/mp4; codecs="hvc1.1.6.L153.B0"')`, выбор первого поддерживаемого транспорта из `streams`, Safari-fallback (нативный HLS), таймер перезапроса по `expires_at`, обработка `cctv_session_not_found` при возврате на вкладку.
+  - `src/api/cameras.ts` — `getCameraStream(id)`, `refreshCameraCodec(id)` + Zod-схемы.
+  - `src/hooks/use-cameras.ts` — `useCameraStream`, `useRefreshCameraCodec`.
+- **S3 — UI: колонки, кнопки, модалка, форма stream_key, mobile.**
+  - `src/routes/structure/locations/index.tsx` — колонки «Кодек» / «Статус» (новые правила), кнопки «Смотреть» / «Проверить кодек» (вместо disabled Phase C заглушки), модалка просмотра, форма камеры с `stream_key` / `stream_key_hd`, удаление Phase C баннера и dead code.
+  - Mobile-parity: sheet-модалка на <1024px.
+  - Удаление dead Phase C i18n-ключей (`camera_test*`, `col_stream_url`, `mobile_structure_cameras_phase_c`).
+- **S4 — Chrome/Android после перехода камер на H.264 (2026-09-15).**
+  - `src/lib/media-capabilities.ts` — `nativeHls` хранит силу ответа `canPlayType` (`'' | 'maybe' | 'probably'`); `resolvePlayback` выбирает hls.js первым, нативный HLS — только на `probably` (Safari) или когда hls.js не поддержан (iPhone). Убран pre-block по `video_codec`; вместо него `isCodecFailure()` для диагностики ошибки.
+  - `src/components/media/camera-player.tsx` — состояние `codec-error` выставляется по фактической ошибке (`bufferAddCodecError` / `bufferIncompatibleCodecsError` / `error` на `<video>`), а не до старта; ошибка на декодируемом кодеке по-прежнему считается протухшей сессией (`onSessionLost`).
+  - Тесты: `media-capabilities.test.ts` (Android Chrome → hls.js, Safari → native, H.265 не блокируется), `camera-player.test.tsx` (сообщение о кодеке только после сбоя).
+  - **Acceptance:** в Chrome (desktop) и Chrome на Android поток камеры играет; в Safari поведение не изменилось; строка камеры с устаревшим `video_codec: h265` не мешает играть H.264.
+
+**Acceptance:**
+
+- [ ] `pnpm gen:api` + prettier выполнен; `openapi.d.ts` содержит `/cameras/{id}/stream`, `/cameras/{id}/refresh-codec`, `CameraStreamAccessDto`.
+- [ ] `CameraDtoSchema` парсит реальный JSON камеры из CCTV-гайда §2 (unit-тест зелёный). Отдельный кейс: `video_codec: null`, `codec_checked_at: null`, `is_streamable: false`, `transports: []`.
+- [ ] 9 CCTV error-кодов в `KNOWN_ERROR_CODES` + RU/KK ключи в `errors.json`.
+- [ ] i18n-ключи для колонок, кнопок, модалки, формы — в `structure.json` RU+KK, без хардкода.
+- [ ] Таблица камер: колонки Название · Кодек · Статус · действия. Кодек-бейдж. Статус по `is_streamable`. Warning-индикатор при stale `codec_checked_at` (>24ч).
+- [ ] Кнопка «Смотреть» активна при `is_streamable && transports.length > 0`, иначе disabled + тултип.
+- [ ] Кнопка «Проверить кодек» вызывает `refresh-codec`, обновляет кеш, тостирует результат.
+- [ ] Модалка: HLS через hls.js (или нативный в Safari); контейнер 16:9; оверлей «В эфире»; fullscreen-кнопка; подвал с кодеком/временем/«Без звука».
+- [ ] Capability-гейт: `MediaSource.isTypeSupported` → если H.265 не поддержан → честное сообщение, не чёрный квадрат.
+- [ ] `streams: []` → «Поток недоступен» + причина. Ошибка сети → «Не удалось получить видео» + «Повторить».
+- [ ] Перезапрос `/stream` по `expires_at`, и при возврате на вкладку (обработка `cctv_session_not_found`).
+- [ ] Форма камеры: поля Stream key (SD/HD) опциональные, hint про сброс кодека.
+- [ ] Phase C заглушки (disabled «Тест камеры», баннер CCTV, `mobile_structure_cameras_phase_c`) удалены.
+- [ ] Гейт: `pnpm build` + `pnpm lint --max-warnings=0` + `pnpm test` exit 0.
+
+---
+
 ## Tracker
 
 | Батч | Тема                                        | Приоритет | Статус |
@@ -1125,6 +1177,7 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 | B28  | Частичные оплаты: Оплачено/Остаток + долги  | post-MVP  | [ ]    |
 | B29  | Частичная оплата наличными (поле «Сумма»)   | post-MVP  | [ ]    |
 | B30  | Карточка ребёнка: счета/платежи + наличные  | post-MVP  | [ ]    |
+| B32  | CCTV: живой просмотр камер                  | post-MVP  | [ ]    |
 
 ---
 
@@ -1150,6 +1203,7 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 | ~~wire useFace hooks when B15 (Face ID desktop) is built~~ — N/A: no backend face endpoints, built as Phase-C stub (§C1)                 | ~~`src/routes/face/index.tsx:1`~~                     | B15   | done   |
 | ~~wire useLifecycleDlq hook when B15 (DLQ desktop) is built~~                                                                            | ~~`src/routes/operations/lifecycle-dlq/index.tsx:1`~~ | B15   | done   |
 | ~~wire useSettings/useKindergarten hooks when B15 (Settings desktop) is built~~                                                          | ~~`src/routes/settings/index.tsx:1`~~                 | B15   | done   |
+| ~~Remove dead Phase C camera i18n keys (`camera_test*`, `col_stream_url`, `mobile_structure_cameras_phase_c`) and their usage in routes~~ | ~~`src/routes/structure/locations/index.tsx`, `src/locales/*/structure.json`, `src/locales/*/common.json`~~ | B32-S3 | done |
 
 ---
 

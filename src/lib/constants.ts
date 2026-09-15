@@ -25,3 +25,23 @@ export const MOBILE_BADGE_STALE_MS = 60_000;
 // so displayed signed URLs never expire on a screen left open & idle past the
 // hour. See OPEN_QUESTIONS §A26 / IMPLEMENTATION_PLAN §B26.
 export const MEDIA_PRESIGNED_REFETCH_MS = 50 * 60 * 1000;
+
+// CCTV player — stream token refresh margin and minimum refetch interval.
+// WHY 60 s margin: gateway tokens live ~1 h; refreshing 60 s early prevents
+// segments returning 403 while the new /stream request is in flight.
+export const STREAM_TOKEN_MARGIN_MS = 60_000;
+// WHY 5 s floor: if expires_at is in the past or clock-skewed, a sub-second
+// refetchInterval would create a busy-loop hammering the backend.
+export const STREAM_MIN_REFETCH_MS = 5_000;
+
+// HEVC capability probe string — passed to MediaSource.isTypeSupported().
+export const HEVC_CODEC_PROBE = 'video/mp4; codecs="hvc1.1.6.L153.B0"';
+
+// Codec freshness: if codec_checked_at is older than this, the camera row
+// shows a warning indicator — the gateway may not be reaching the device.
+export const CODEC_STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000;
+
+// hls.js live-stream buffer limits (seconds). Small values are fine for
+// real-time camera feeds — there is no archive/seekback.
+export const HLS_MAX_BUFFER_LENGTH = 30;
+export const HLS_MAX_MAX_BUFFER_LENGTH = 60;

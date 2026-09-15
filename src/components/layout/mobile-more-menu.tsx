@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
+  BuildingIcon,
   ChevronRightIcon,
   FunnelIcon,
   LayersIcon,
@@ -68,6 +69,11 @@ export default function MobileMoreMenu() {
           icon: IdCardIcon,
           label: t('nav.staff'),
           route: '/staff',
+        },
+        {
+          icon: BuildingIcon,
+          label: t('nav.structure'),
+          route: '/structure/locations',
         },
       ],
     },
