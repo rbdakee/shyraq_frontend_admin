@@ -1142,6 +1142,41 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 
 ---
 
+## B33 — CCTV: политика показа родителям · post-MVP (backend C4, 2026-09-21)
+
+**Goal:** админ сам решает, что видит родитель и когда, вместо зашитого в бэкенд «камеры комнаты, где группа сейчас». Рабочие дни и часы садика + отдельный режим на рабочие часы и на нерабочее время: по расписанию, фиксированный список камер, либо не показывать. Ближайший повод — камеры групп заработают примерно через 10 дней, а до тех пор всем родителям показываем уличные камеры входа.
+
+**Inputs:** backend `docs/endpoints.md` §2.5.1 + §4.8 (обновлены), BP §11.3; HANDOFF §9.3 (новый); DESIGN §6.6 (дополнен); OPEN_QUESTIONS §A41 (нет макета — решение владельца).
+
+**Слайсы:**
+
+- **S1 — контракт + доки + i18n.**
+  - `docs/ADMIN_FRONTEND_HANDOFF.md` §9.3 — `GET`/`PUT /cctv/display-policy`, `CctvDisplayPolicyDto`, `CctvDisplaySlotDto`, таблица режимов, дефолт, ошибки.
+  - `docs/ADMIN_DESIGN_SPEC.md` §6.6 — render-спека вкладки (три карточки, чипы дней, radio-режимы, пикер камер).
+  - `docs/OPEN_QUESTIONS.md` §A41 — отклонение от handoff-дизайна.
+  - `src/locales/{ru,kk}/structure.json` — 24 ключа вкладки; подписи дней переиспользованы из `schedule:slots.days.*`.
+- **S2 — api + hooks.**
+  - `src/api/cctv-display-policy.ts` — Zod-схемы, `getCctvDisplayPolicy`, `updateCctvDisplayPolicy`.
+  - `src/hooks/use-cctv-display-policy.ts` — `useCctvDisplayPolicy`, `useUpdateCctvDisplayPolicy` (PUT кладёт ответ в кэш, без лишнего refetch) + ре-экспорт типов, чтобы `routes/` не импортировал `api/` напрямую.
+  - `src/hooks/query-keys.ts` — `qk.cctvDisplayPolicy`.
+  - `src/hooks/use-cameras.ts` / `use-locations.ts` — ре-экспорт `Camera` / `Location`.
+- **S3 — UI: третья вкладка.**
+  - `src/routes/structure/locations/display-policy-tab.tsx` — RHF+Zod форма: чипы дней, окно, две карточки слотов, пикер камер.
+  - `src/routes/structure/locations/index.tsx` — третья вкладка (desktop + mobile), кнопка «+» на ней скрыта.
+  - `src/router.tsx` — роут `structure/cctv-policy`.
+  - `src/routes/structure/locations/display-policy-tab.test.tsx` — 5 кейсов (пикер скрыт при «Не показывать», пустой фикс-список не сохраняется, отправка выбранных камер, инвертированное окно, Save неактивен без изменений).
+
+**Acceptance:**
+
+- [x] `GET /cctv/display-policy` отображается в форме; садик без сохранённой политики видит дефолты и вкладка не падает.
+- [x] «Выбранные камеры» с пустым списком не сохраняется — inline-ошибка, `PUT` не уходит.
+- [x] `closes_at` ≤ `opens_at` — inline-ошибка под полем, `PUT` не уходит.
+- [x] Камера без `stream_key` доступна для выбора и помечена «Не подключена» (сценарий «камеры ещё не подключены»).
+- [x] Гейт: `pnpm typecheck` + `pnpm lint --max-warnings=0` + `pnpm test` exit 0.
+- [ ] Ручной QA владельца на localhost: переключение рабочие/нерабочие часы, сохранение, повторное открытие вкладки.
+
+---
+
 ## Tracker
 
 | Батч | Тема                                        | Приоритет | Статус |
@@ -1178,6 +1213,7 @@ Mobile-адаптация 33 экранов Admin Web. Все mobile-батчи 
 | B29  | Частичная оплата наличными (поле «Сумма»)   | post-MVP  | [ ]    |
 | B30  | Карточка ребёнка: счета/платежи + наличные  | post-MVP  | [ ]    |
 | B32  | CCTV: живой просмотр камер                  | post-MVP  | [ ]    |
+| B33  | CCTV: политика показа родителям             | post-MVP  | [ ]    |
 
 ---
 

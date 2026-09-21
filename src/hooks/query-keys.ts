@@ -173,6 +173,10 @@ export const qk = {
     detail: (id: string) => ['cameras', 'detail', id] as const,
     stream: (id: string) => ['cameras', 'stream', id] as const,
   },
+  cctvDisplayPolicy: {
+    all: ['cctv-display-policy'] as const,
+    detail: () => ['cctv-display-policy', 'detail'] as const,
+  },
   holidays: {
     all: ['holidays'] as const,
     list: (filters: HolidayListFilters = {}) => ['holidays', 'list', filters] as const,

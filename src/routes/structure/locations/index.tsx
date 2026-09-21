@@ -72,6 +72,7 @@ import { formatDateTime } from '@/lib/format';
 import { DEFAULT_TIMEZONE } from '@/lib/constants';
 import { useUiStore } from '@/stores/ui-store';
 import { CameraViewerDialog } from './camera-viewer-dialog';
+import { DisplayPolicyTab } from './display-policy-tab';
 import { formatCodecLabel, isCodecStale } from './codec-utils';
 
 type Location = NonNullable<ReturnType<typeof useLocations>['data']>[number];
@@ -100,15 +101,25 @@ function resolveDescription(desc: unknown, locale: 'ru' | 'kk'): string {
   return '';
 }
 
+type StructureTab = 'locations' | 'cameras' | 'policy';
+
+const TAB_PATHS: Record<StructureTab, string> = {
+  locations: '/structure/locations',
+  cameras: '/structure/cameras',
+  policy: '/structure/cctv-policy',
+};
+
 export default function StructureLocationsPage() {
   const { t } = useTranslation('structure');
   const { isMobile } = useBreakpoint();
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [tab, setTab] = useState<'locations' | 'cameras'>(
-    location.pathname.includes('/structure/cameras') ? 'cameras' : 'locations',
-  );
+  const [tab, setTab] = useState<StructureTab>(() => {
+    if (location.pathname.includes('/structure/cameras')) return 'cameras';
+    if (location.pathname.includes('/structure/cctv-policy')) return 'policy';
+    return 'locations';
+  });
 
   const locationsQuery = useLocations();
   const camerasQuery = useCameras();
@@ -130,9 +141,9 @@ export default function StructureLocationsPage() {
   const [archivingCameraId, setArchivingCameraId] = useState<string | null>(null);
   const [viewingCamera, setViewingCamera] = useState<Camera | null>(null);
 
-  function switchTab(next: 'locations' | 'cameras') {
+  function switchTab(next: StructureTab) {
     setTab(next);
-    const target = next === 'cameras' ? '/structure/cameras' : '/structure/locations';
+    const target = TAB_PATHS[next];
     if (location.pathname !== target) {
       navigate(target, { replace: true });
     }
@@ -194,10 +205,12 @@ export default function StructureLocationsPage() {
           </h1>
           <div className="mt-0.5 text-[13px] text-[color:var(--text-3)]">{t('page_sub')}</div>
         </div>
-        <Button onClick={handleAddClick}>
-          <PlusIcon className="mr-1.5 size-4" />
-          {tab === 'locations' ? t('add_location') : t('add_camera')}
-        </Button>
+        {tab !== 'policy' && (
+          <Button onClick={handleAddClick}>
+            <PlusIcon className="mr-1.5 size-4" />
+            {tab === 'locations' ? t('add_location') : t('add_camera')}
+          </Button>
+        )}
       </div>
 
       <div className="mt-5 flex gap-1 rounded-[var(--r-lg)] bg-[var(--bg-sunken)] p-1">
@@ -229,10 +242,27 @@ export default function StructureLocationsPage() {
             {activeCameras.length}
           </span>
         </button>
+        <button
+          type="button"
+          className={`flex-1 rounded-[var(--r-md)] px-4 py-1.5 text-[13px] font-semibold transition-colors ${
+            tab === 'policy'
+              ? 'bg-[var(--bg-elev)] text-[color:var(--text-1)] shadow-sm'
+              : 'text-[color:var(--text-3)] hover:text-[color:var(--text-2)]'
+          }`}
+          onClick={() => switchTab('policy')}
+        >
+          {t('tab_policy')}
+        </button>
       </div>
 
       <div className="mt-4">
-        {tab === 'locations' ? (
+        {tab === 'policy' ? (
+          <DisplayPolicyTab
+            cameras={activeCameras}
+            locations={activeLocations}
+            camerasLoading={camerasQuery.isLoading || locationsQuery.isLoading}
+          />
+        ) : tab === 'locations' ? (
           <LocationsTab
             locations={activeLocations}
             cameras={activeCameras}
@@ -1120,8 +1150,8 @@ function MobileView({
   editingCamera,
   allLocations,
 }: {
-  tab: 'locations' | 'cameras';
-  switchTab: (t: 'locations' | 'cameras') => void;
+  tab: StructureTab;
+  switchTab: (t: StructureTab) => void;
   locations: Location[];
   cameras: Camera[];
   groups: { id: string; current_location_id: string | null }[];
@@ -1153,14 +1183,16 @@ function MobileView({
         sub={tCommon('mobile_structure_sub')}
         back
         action={
-          <button
-            type="button"
-            className="m-iconbtn primary"
-            aria-label={tCommon('actions.create')}
-            onClick={onAdd}
-          >
-            <PlusIcon />
-          </button>
+          tab === 'policy' ? undefined : (
+            <button
+              type="button"
+              className="m-iconbtn primary"
+              aria-label={tCommon('actions.create')}
+              onClick={onAdd}
+            >
+              <PlusIcon />
+            </button>
+          )
         }
       />
 
@@ -1202,11 +1234,26 @@ function MobileView({
               {cameras.length}
             </span>
           </button>
+          <button
+            type="button"
+            className={tab === 'policy' ? 'on' : ''}
+            onClick={() => switchTab('policy')}
+          >
+            {t('tab_policy')}
+          </button>
         </div>
 
-        {isError && <ErrorState onRetry={onRetry} />}
+        {tab === 'policy' && (
+          <DisplayPolicyTab
+            cameras={cameras}
+            locations={allLocations}
+            camerasLoading={isLoading}
+          />
+        )}
 
-        {isLoading && !isError && (
+        {tab !== 'policy' && isError && <ErrorState onRetry={onRetry} />}
+
+        {tab !== 'policy' && isLoading && !isError && (
           <div className="m-card flush" style={{ marginBottom: 12 }}>
             {Array.from({ length: 3 }, (_, i) => (
               <div key={i} className="m-list-row">
