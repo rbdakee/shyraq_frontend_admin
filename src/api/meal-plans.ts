@@ -111,7 +111,7 @@ export async function updateMealPlan(id: string, body: UpdateMealPlanBody): Prom
 }
 
 export async function deleteMealPlan(id: string): Promise<void> {
-  await apiClient.delete(`admin/meal-plans/${id}`).json();
+  await apiClient.delete(`admin/meal-plans/${id}`);
 }
 
 export async function createMealItem(planId: string, body: CreateMealItemBody): Promise<MealPlan> {
@@ -133,7 +133,7 @@ export async function updateMealItem(
 }
 
 export async function deleteMealItem(planId: string, itemId: string): Promise<void> {
-  await apiClient.delete(`admin/meal-plans/${planId}/items/${itemId}`).json();
+  await apiClient.delete(`admin/meal-plans/${planId}/items/${itemId}`);
 }
 
 export async function copyMealWeek(body: CopyWeekBody): Promise<MealPlanCopyWeekSummary> {

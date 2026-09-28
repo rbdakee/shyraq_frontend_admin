@@ -371,6 +371,13 @@ function DayEditor({
   const [addingForType, setAddingForType] = useState<MealType | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<MealItem | undefined>();
   const [confirmDeletePlan, setConfirmDeletePlan] = useState(false);
+  // Notes are edited as a local draft and saved on blur/close. Binding the field
+  // straight to server `plan.notes` reverted every keystroke (value only updates
+  // after PATCH + refetch) and fired a PATCH per character.
+  const [notesDraft, setNotesDraft] = useState({
+    ru: plan?.notes?.ru ?? '',
+    kk: plan?.notes?.kk ?? '',
+  });
 
   function handleCreatePlan() {
     // Publish on create so the day is immediately visible in the Parent app —
@@ -399,8 +406,10 @@ function DayEditor({
     });
   }
 
-  function handleNotesChange(notes: { ru: string; kk: string }) {
+  function saveNotes() {
     if (!plan) return;
+    const notes = notesDraft;
+    if (notes.ru === (plan.notes?.ru ?? '') && notes.kk === (plan.notes?.kk ?? '')) return;
     void updatePlan
       .mutateAsync({ notes: { ru: notes.ru, kk: notes.kk || undefined } as MultiLangText })
       .catch((err: unknown) => {
@@ -451,12 +460,9 @@ function DayEditor({
         <label className="mb-1.5 block text-[12.5px] font-semibold text-[color:var(--text-2)]">
           {t('day_dialog.notes')}
         </label>
-        <PairedI18nField
-          value={{ ru: plan.notes?.ru ?? '', kk: plan.notes?.kk ?? '' }}
-          onChange={handleNotesChange}
-          as="textarea"
-          rows={2}
-        />
+        <div onBlur={saveNotes}>
+          <PairedI18nField value={notesDraft} onChange={setNotesDraft} as="textarea" rows={2} />
+        </div>
       </div>
 
       {MEAL_TYPES.map((mt) => {
@@ -602,16 +608,21 @@ function DayEditor({
 
   const title = t('day_dialog.title', { date: dateStr });
 
+  function handleOpenChange(v: boolean) {
+    if (!v) saveNotes();
+    onOpenChange(v);
+  }
+
   if (isMobile) {
     return (
-      <FullScreenSheet open={open} onOpenChange={onOpenChange} title={title} description={title}>
+      <FullScreenSheet open={open} onOpenChange={handleOpenChange} title={title} description={title}>
         {content}
       </FullScreenSheet>
     );
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent
         className="sm:max-w-[640px] max-h-[85vh] overflow-y-auto rounded-[var(--r-xl)] border-[var(--line)] bg-[var(--bg-elev)] p-0 shadow-[var(--shadow-3)]"
         showCloseButton
@@ -638,7 +649,7 @@ function DayEditor({
           ) : (
             <span />
           )}
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>
             {t('day_dialog.close')}
           </Button>
         </DialogFooter>

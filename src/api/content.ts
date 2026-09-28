@@ -195,7 +195,7 @@ export async function updateContent(
 }
 
 export async function deleteContent(id: string): Promise<void> {
-  await apiClient.delete(`admin/content/${id}`).json();
+  await apiClient.delete(`admin/content/${id}`);
 }
 
 export async function publishContent(id: string): Promise<ContentPost> {
