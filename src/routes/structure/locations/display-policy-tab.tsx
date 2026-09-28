@@ -99,18 +99,30 @@ export function DisplayPolicyTab({
   });
 
   const policy = policyQuery.data;
+  // Only cameras the picker can show. A pinned camera archived after the policy
+  // was saved would otherwise stay hidden in `camera_ids`, and every later PUT
+  // would bounce with 422 camera_archived with no checkbox left to untick.
+  const usableKey = cameras
+    .map((c) => c.id)
+    .sort()
+    .join(',');
   // WHY an effect: the server owns these values and the form has to adopt them
   // once they land, including after a refetch that changes them under us.
   useEffect(() => {
     if (!policy) return;
+    const usable = new Set(usableKey.split(','));
+    const keepUsable = (slot: PolicyFormValues['work_hours']) => ({
+      ...slot,
+      camera_ids: slot.camera_ids.filter((id) => usable.has(id)),
+    });
     reset({
       work_days: policy.work_days,
       opens_at: policy.opens_at,
       closes_at: policy.closes_at,
-      work_hours: policy.work_hours,
-      off_hours: policy.off_hours,
+      work_hours: keepUsable(policy.work_hours),
+      off_hours: keepUsable(policy.off_hours),
     });
-  }, [policy, reset]);
+  }, [policy, usableKey, reset]);
 
   function onSubmit(values: PolicyFormValues) {
     saveMut.mutate(values, {

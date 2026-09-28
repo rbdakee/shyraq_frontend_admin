@@ -153,6 +153,24 @@ describe('DisplayPolicyTab', () => {
     expect(saveMut.mutate).not.toHaveBeenCalled();
   });
 
+  it('drops a pinned camera that was archived since, so the policy still saves', async () => {
+    policyData.current = {
+      ...policyData.current,
+      work_hours: { mode: 'cameras', camera_ids: ['cam-outdoor', 'cam-archived'] },
+    };
+    renderTab();
+
+    const opensAt = screen.getByLabelText('policy_opens_at');
+    await userEvent.clear(opensAt);
+    await userEvent.type(opensAt, '08:00');
+    await userEvent.click(screen.getByRole('button', { name: 'policy_save' }));
+
+    await waitFor(() => expect(saveMut.mutate).toHaveBeenCalledTimes(1));
+    expect(saveMut.mutate.mock.calls[0][0]).toMatchObject({
+      work_hours: { mode: 'cameras', camera_ids: ['cam-outdoor'] },
+    });
+  });
+
   it('keeps the save button idle until something changes', () => {
     renderTab();
 
