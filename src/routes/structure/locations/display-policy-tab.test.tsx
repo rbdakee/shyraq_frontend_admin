@@ -3,6 +3,7 @@ import { render, screen, cleanup, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import '@testing-library/jest-dom/vitest';
+import type { CctvDisplayPolicy } from '@/api/cctv-display-policy';
 
 vi.hoisted(() => {
   vi.stubEnv('VITE_API_BASE_URL', 'http://localhost/api/v1');
@@ -17,14 +18,14 @@ vi.mock('react-i18next', () => ({
 }));
 
 const saveMut = { mutate: vi.fn(), isPending: false };
-const policyData = {
+const policyData: { current: CctvDisplayPolicy } = {
   current: {
     work_days: [1, 2, 3, 4, 5],
     opens_at: '07:00',
     closes_at: '19:00',
     timezone: 'Asia/Almaty',
-    work_hours: { mode: 'schedule' as const, camera_ids: [] as string[] },
-    off_hours: { mode: 'schedule' as const, camera_ids: [] as string[] },
+    work_hours: { mode: 'schedule', camera_ids: [] },
+    off_hours: { mode: 'schedule', camera_ids: [] },
     updated_at: '2026-09-21T06:00:00.000Z',
   },
 };
