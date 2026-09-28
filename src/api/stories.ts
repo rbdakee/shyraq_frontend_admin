@@ -56,5 +56,5 @@ export async function createStory(body: CreateStoryBody): Promise<GroupStory> {
 }
 
 export async function deleteStory(id: string): Promise<void> {
-  await apiClient.delete(`staff/stories/${id}`).json();
+  await apiClient.delete(`staff/stories/${id}`);
 }

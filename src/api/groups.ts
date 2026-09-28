@@ -95,7 +95,7 @@ export async function assignGroupMentor(
 }
 
 export async function unassignGroupMentor(groupId: string): Promise<void> {
-  await apiClient.delete(`groups/${groupId}/mentor`).json();
+  await apiClient.delete(`groups/${groupId}/mentor`);
 }
 
 export async function getGroupActiveMentor(groupId: string): Promise<GroupMentor> {

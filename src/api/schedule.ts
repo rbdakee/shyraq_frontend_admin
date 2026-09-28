@@ -206,7 +206,7 @@ export async function updateSlot(
 }
 
 export async function deleteSlot(templateId: string, slotId: string): Promise<void> {
-  await apiClient.delete(`admin/schedule/templates/${templateId}/slots/${slotId}`).json();
+  await apiClient.delete(`admin/schedule/templates/${templateId}/slots/${slotId}`);
 }
 
 export async function listWeekSnapshots(
@@ -269,5 +269,5 @@ export async function updateActivityEvent(
 }
 
 export async function deleteActivityEvent(id: string): Promise<void> {
-  await apiClient.delete(`admin/schedule/activity-events/${id}`).json();
+  await apiClient.delete(`admin/schedule/activity-events/${id}`);
 }
