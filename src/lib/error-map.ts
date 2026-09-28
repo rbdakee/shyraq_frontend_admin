@@ -76,6 +76,13 @@ export const KNOWN_ERROR_CODES = [
   'location_in_use',
   'camera_not_found',
   'camera_archived',
+  // §9.3 — политика показа родителям. `not_found` — общий wire-код любого
+  // NotFoundError бэкенда (в теле именно он, не `camera_not_found`).
+  'not_found',
+  'cctv_policy_window_invalid',
+  'cctv_policy_time_invalid',
+  'cctv_policy_work_day_invalid',
+  'cctv_policy_mode_invalid',
   'camera_stream_key_taken',
   // cctv §9.2
   'cctv_not_configured',

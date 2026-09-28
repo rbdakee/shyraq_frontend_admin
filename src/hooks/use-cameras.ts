@@ -20,6 +20,8 @@ import { AppError } from '@/api/errors';
 import { STREAM_TOKEN_MARGIN_MS, STREAM_MIN_REFETCH_MS } from '@/lib/constants';
 import { qk } from './query-keys';
 
+export type { Camera } from '@/api/cameras';
+
 const FIVE_MINUTES = 5 * 60 * 1000;
 
 export function useCameras(opts: CameraListFilters = {}) {

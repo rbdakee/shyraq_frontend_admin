@@ -122,5 +122,10 @@
   "specialist_type_code_taken": "Такой код специальности уже есть",
   "specialist_type_name_required": "Укажите название специальности",
   "specialist_type_system_immutable": "Системную специальность нельзя удалить — выключите её",
-  "specialist_type_in_use": "Специальность используется — выключите вместо удаления"
+  "specialist_type_in_use": "Специальность используется — выключите вместо удаления",
+  "not_found": "Объект не найден — возможно, его удалили в другой вкладке",
+  "cctv_policy_window_invalid": "Конец рабочего дня должен быть позже начала",
+  "cctv_policy_time_invalid": "Неверный формат времени",
+  "cctv_policy_work_day_invalid": "Неверный день недели",
+  "cctv_policy_mode_invalid": "Неизвестный режим показа"
 }

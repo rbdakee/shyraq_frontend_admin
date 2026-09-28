@@ -143,6 +143,13 @@ export const router = createBrowserRouter([
             },
           },
           {
+            path: 'structure/cctv-policy',
+            lazy: async () => {
+              const { default: Component } = await import('@/routes/structure/locations/index');
+              return { Component };
+            },
+          },
+          {
             path: 'schedule/templates',
             lazy: async () => {
               const { default: Component } = await import('@/routes/schedule/templates/index');

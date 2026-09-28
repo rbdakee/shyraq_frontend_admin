@@ -122,5 +122,10 @@
   "specialist_type_code_taken": "Мұндай мамандық коды бар",
   "specialist_type_name_required": "Мамандық атауын көрсетіңіз",
   "specialist_type_system_immutable": "Жүйелік мамандықты жоюға болмайды — оны өшіріңіз",
-  "specialist_type_in_use": "Мамандық қолданылуда — жоюдың орнына өшіріңіз"
+  "specialist_type_in_use": "Мамандық қолданылуда — жоюдың орнына өшіріңіз",
+  "not_found": "Нысан табылмады — оны басқа бетте жойған болуы мүмкін",
+  "cctv_policy_window_invalid": "Жұмыс күнінің аяқталуы басталуынан кеш болуы керек",
+  "cctv_policy_time_invalid": "Уақыт форматы дұрыс емес",
+  "cctv_policy_work_day_invalid": "Апта күні дұрыс емес",
+  "cctv_policy_mode_invalid": "Көрсету режимі белгісіз"
 }

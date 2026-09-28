@@ -10,6 +10,8 @@ import {
 import type { LocationListFilters, CreateLocationBody, UpdateLocationBody } from '@/api/locations';
 import { qk } from './query-keys';
 
+export type { Location } from '@/api/locations';
+
 const FIVE_MINUTES = 5 * 60 * 1000;
 
 export function useLocations(opts: LocationListFilters = {}) {
