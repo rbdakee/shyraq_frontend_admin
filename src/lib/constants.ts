@@ -45,3 +45,10 @@ export const CODEC_STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000;
 // real-time camera feeds — there is no archive/seekback.
 export const HLS_MAX_BUFFER_LENGTH = 30;
 export const HLS_MAX_MAX_BUFFER_LENGTH = 60;
+
+// ky's default 10s timeout aborts multipart uploads (content media up to 100 MB) on slow
+// links while the server keeps processing — the user then sees an error for a saved post.
+export const UPLOAD_TIMEOUT_MS = 120_000;
+
+// Schedule template slot times snap to this many minutes (00/05/…/55).
+export const SLOT_MINUTE_STEP = 5;

@@ -59,6 +59,7 @@
   "pay_status_pending": "Қосылу аяқталмаған",
   "pay_status_expired": "Сессия мерзімі өтті",
   "pay_status_revoked": "Ажыратылған",
+  "pay_status_disconnected": "Қосылмаған",
   "pay_connected_phone": "Кассир телефоны",
   "pay_org_name": "Ұйым",
   "pay_last_checked": "Соңғы тексеру",

@@ -3,7 +3,21 @@ import { useTranslation } from 'react-i18next';
 import { useForm, useWatch, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { startOfWeek, addDays, addWeeks, subWeeks, format, isToday, parseISO } from 'date-fns';
+import {
+  startOfWeek,
+  startOfMonth,
+  endOfMonth,
+  addDays,
+  addWeeks,
+  subWeeks,
+  addMonths,
+  subMonths,
+  format,
+  isToday,
+  isSameMonth,
+  isWeekend,
+  parseISO,
+} from 'date-fns';
 import { ru, kk } from 'date-fns/locale';
 import {
   RefreshCwIcon,
@@ -74,6 +88,17 @@ function getWeekMonday(d: Date): Date {
 
 function getWeekDays(monday: Date): Date[] {
   return Array.from({ length: 5 }, (_, i) => addDays(monday, i));
+}
+
+// Weekdays (Mon–Fri) of every week that touches the month — the grid stays
+// rectangular, edge days from neighbouring months are rendered dimmed.
+function getMonthWeekdays(month: Date): Date[] {
+  const days: Date[] = [];
+  const lastFriday = addDays(getWeekMonday(endOfMonth(month)), 4);
+  for (let d = getWeekMonday(startOfMonth(month)); d <= lastFriday; d = addDays(d, 1)) {
+    if (!isWeekend(d)) days.push(d);
+  }
+  return days;
 }
 
 function formatDayMonth(d: Date, locale: string): string {
@@ -615,7 +640,12 @@ function DayEditor({
 
   if (isMobile) {
     return (
-      <FullScreenSheet open={open} onOpenChange={handleOpenChange} title={title} description={title}>
+      <FullScreenSheet
+        open={open}
+        onOpenChange={handleOpenChange}
+        title={title}
+        description={title}
+      >
         {content}
       </FullScreenSheet>
     );
@@ -959,6 +989,98 @@ function DesktopWeekGrid({
   );
 }
 
+// ── Desktop month grid ──
+
+const MONTH_CELL_DISHES = 3;
+
+function DesktopMonthGrid({
+  days,
+  month,
+  plans,
+  locale,
+  t,
+  onEditDay,
+}: {
+  days: Date[];
+  month: Date;
+  plans: MealPlan[];
+  locale: 'ru' | 'kk';
+  t: (k: string, o?: Record<string, unknown>) => string;
+  onEditDay: (d: Date) => void;
+}) {
+  const shortDays = locale === 'kk' ? SHORT_DAYS_KK : SHORT_DAYS_RU;
+  const plansByDate = new Map(plans.map((p) => [p.date, p]));
+
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+      {shortDays.map((d) => (
+        <div
+          key={d}
+          className="px-1 text-[11px] font-bold uppercase tracking-[0.06em] text-[color:var(--text-3)]"
+        >
+          {d}
+        </div>
+      ))}
+      {days.map((day) => {
+        const plan = plansByDate.get(toISODate(day));
+        const inMonth = isSameMonth(day, month);
+        const today = isToday(day);
+        const items = [...(plan?.items ?? [])].sort(
+          (a, b) =>
+            MEAL_TYPES.indexOf(a.meal_type) - MEAL_TYPES.indexOf(b.meal_type) ||
+            a.position - b.position,
+        );
+        const hidden = items.length - MONTH_CELL_DISHES;
+        return (
+          <button
+            key={toISODate(day)}
+            type="button"
+            onClick={() => onEditDay(day)}
+            className={cn(
+              'flex min-h-[112px] cursor-pointer flex-col gap-1.5 rounded-[var(--r-lg)] border border-[var(--line)] p-2.5 text-left transition-colors hover:border-[var(--primary)]',
+              today ? 'bg-[var(--primary-soft)]' : 'bg-[var(--bg-elev)]',
+              !inMonth && 'opacity-45',
+            )}
+          >
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[13px] font-bold text-[color:var(--text-1)]">
+                {format(day, 'd')}
+              </span>
+              {plan && (
+                <Badge variant={plan.is_published ? 'success' : 'neutral'} dot>
+                  {t(`is_published.${String(plan.is_published)}`)}
+                </Badge>
+              )}
+            </div>
+            {items.length === 0 ? (
+              <div className="text-[12px] text-[color:var(--text-4)]">
+                {t('empty.meal_type_placeholder')}
+              </div>
+            ) : (
+              <ul className="m-0 flex list-none flex-col gap-0.5 p-0">
+                {items.slice(0, MONTH_CELL_DISHES).map((it) => (
+                  <li
+                    key={it.id}
+                    className="truncate text-[12px] leading-[1.4] text-[color:var(--text-2)]"
+                  >
+                    {'• '}
+                    {resolveJsonbI18n(it.dish_name, locale)}
+                  </li>
+                ))}
+                {hidden > 0 && (
+                  <li className="text-[11px] text-[color:var(--text-3)]">
+                    {t('more_dishes', { count: hidden })}
+                  </li>
+                )}
+              </ul>
+            )}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── Mobile day view ──
 
 function MobileDayView({
@@ -1176,7 +1298,9 @@ export default function MealPlansPage() {
   const locale = i18n.language as 'ru' | 'kk';
   const { isMobile } = useBreakpoint();
 
+  const [view, setView] = useState<'week' | 'month'>('week');
   const [weekStart, setWeekStart] = useState(() => getWeekMonday(new Date()));
+  const [month, setMonth] = useState(() => startOfMonth(new Date()));
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [selectedDayIndex, setSelectedDayIndex] = useState(() => {
     const today = new Date();
@@ -1190,6 +1314,11 @@ export default function MealPlansPage() {
 
   const weekFriday = addDays(weekStart, 4);
   const weekDays = getWeekDays(weekStart);
+  // Month view exists on desktop only — the mobile shell is a day picker over a week.
+  const isMonthView = view === 'month' && !isMobile;
+  const monthDays = getMonthWeekdays(month);
+  const rangeFrom = isMonthView ? monthDays[0]! : weekStart;
+  const rangeTo = isMonthView ? monthDays[monthDays.length - 1]! : weekFriday;
 
   const { data: groups } = useGroups({ archived: false });
 
@@ -1199,8 +1328,8 @@ export default function MealPlansPage() {
     isError,
     refetch,
   } = useMealPlans({
-    date_from: toISODate(weekStart),
-    date_to: toISODate(weekFriday),
+    date_from: toISODate(rangeFrom),
+    date_to: toISODate(rangeTo),
     group_id: selectedGroupId ?? undefined,
   });
 
@@ -1340,10 +1469,12 @@ export default function MealPlansPage() {
             {t('title')}
           </h1>
           <div className="mt-0.5 text-[13px] text-[color:var(--text-3)]">
-            {t('week_range', {
-              from: formatDayMonth(weekStart, locale),
-              to: formatDayMonth(weekFriday, locale),
-            })}
+            {isMonthView
+              ? format(month, 'LLLL yyyy', { locale: locale === 'kk' ? kk : ru })
+              : t('week_range', {
+                  from: formatDayMonth(weekStart, locale),
+                  to: formatDayMonth(weekFriday, locale),
+                })}
             {' · '}
             {scopeLabel}
           </div>
@@ -1380,31 +1511,46 @@ export default function MealPlansPage() {
         </Select>
 
         <div className="inline-flex rounded-[var(--r-sm)] border border-[var(--border)] bg-[var(--bg-sunken)] p-0.5 text-[11px] font-bold">
-          <button
-            type="button"
-            className={cn(
-              'rounded-[3px] border-none bg-transparent px-2 py-[3px] text-[color:var(--text-3)] cursor-pointer',
-              'bg-[var(--bg-elev)] text-[color:var(--text-1)] shadow-[var(--shadow-1)]',
-            )}
-          >
-            {t('view.week')}
-          </button>
-          <button
-            type="button"
-            className="rounded-[3px] border-none bg-transparent px-2 py-[3px] text-[color:var(--text-3)] cursor-pointer opacity-50"
-            disabled
-            title={tCommon('shell.section_in_development')}
-          >
-            {t('view.month')}
-          </button>
+          {(['week', 'month'] as const).map((v) => (
+            <button
+              key={v}
+              type="button"
+              aria-pressed={view === v}
+              onClick={() => {
+                // Keep the period in sync so switching views lands on the same dates.
+                if (v === 'month') setMonth(startOfMonth(weekStart));
+                else if (view === 'month') setWeekStart(getWeekMonday(month));
+                setView(v);
+              }}
+              className={cn(
+                'rounded-[3px] border-none bg-transparent px-2 py-[3px] text-[color:var(--text-3)] cursor-pointer',
+                view === v &&
+                  'bg-[var(--bg-elev)] text-[color:var(--text-1)] shadow-[var(--shadow-1)]',
+              )}
+            >
+              {t(`view.${v}`)}
+            </button>
+          ))}
         </div>
 
         <div className="ml-auto flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setWeekStart(subWeeks(weekStart, 1))}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              isMonthView ? setMonth(subMonths(month, 1)) : setWeekStart(subWeeks(weekStart, 1))
+            }
+          >
             <ChevronLeftIcon className="size-4" />
             {t('nav.prev')}
           </Button>
-          <Button variant="outline" size="sm" onClick={() => setWeekStart(addWeeks(weekStart, 1))}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() =>
+              isMonthView ? setMonth(addMonths(month, 1)) : setWeekStart(addWeeks(weekStart, 1))
+            }
+          >
             {t('nav.next')}
             <ChevronRightIcon className="size-4" />
           </Button>
@@ -1412,7 +1558,16 @@ export default function MealPlansPage() {
       </div>
 
       {/* Week grid or empty state */}
-      {!plans || plans.length === 0 ? (
+      {isMonthView ? (
+        <DesktopMonthGrid
+          days={monthDays}
+          month={month}
+          plans={plans ?? []}
+          locale={locale}
+          t={t}
+          onEditDay={(d) => setEditingDay(d)}
+        />
+      ) : !plans || plans.length === 0 ? (
         <EmptyState title={t('empty.week')} />
       ) : (
         <DesktopWeekGrid

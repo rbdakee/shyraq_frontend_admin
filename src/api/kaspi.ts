@@ -4,7 +4,7 @@ import { apiClient } from './client';
 // Kaspi cashier-account onboarding via SMS (HANDOFF §25a). One cashier account
 // per kindergarten. The cashier phone is a bare 11-digit MSISDN `7XXXXXXXXXX`
 // (NOT E.164 — no `+`/spaces), validated separately from regular phone fields.
-export const KaspiStatusEnum = z.enum(['pending', 'active', 'expired', 'revoked']);
+export const KaspiStatusEnum = z.enum(['disconnected', 'pending', 'active', 'expired', 'revoked']);
 export type KaspiStatus = z.infer<typeof KaspiStatusEnum>;
 
 export const KaspiStatusDtoSchema = z.object({

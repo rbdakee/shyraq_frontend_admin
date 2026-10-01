@@ -98,9 +98,11 @@ export async function unassignGroupMentor(groupId: string): Promise<void> {
   await apiClient.delete(`groups/${groupId}/mentor`);
 }
 
-export async function getGroupActiveMentor(groupId: string): Promise<GroupMentor> {
-  const data: unknown = await apiClient.get(`groups/${groupId}/mentor`).json();
-  return GroupMentorDtoSchema.parse(data);
+// WHY .text(): a group without a mentor answers 200 with an empty body (handler returns
+// null), and ky 2 `.json()` throws on an empty body.
+export async function getGroupActiveMentor(groupId: string): Promise<GroupMentor | null> {
+  const text = await apiClient.get(`groups/${groupId}/mentor`).text();
+  return text ? GroupMentorDtoSchema.parse(JSON.parse(text)) : null;
 }
 
 export async function listGroupMentorHistory(groupId: string): Promise<GroupMentor[]> {

@@ -27,6 +27,7 @@ import {
 import { getInitials } from '@/lib/format';
 import { getEventCategory } from '@/lib/notification-helpers';
 import { mapValidationErrors } from '@/components/forms/map-validation-errors';
+import { toI18nKey } from '@/lib/error-map';
 import MobileTopBar from '@/components/layout/mobile-top-bar';
 import type { NotificationPreference } from '@/hooks/use-notifications';
 
@@ -135,7 +136,7 @@ function ProfileTab({ user }: { user: ReturnType<typeof useSessionStore.getState
         onError: (err) => {
           const mapped = mapValidationErrors(err, setError);
           if (!mapped) {
-            toast.error(t('errors:unknown_error'));
+            toast.error(t(toI18nKey(err)));
           }
         },
       },

@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { apiClient } from './client';
+import { UPLOAD_TIMEOUT_MS } from '@/lib/constants';
 
 // Current admin's kindergarten. WHY a dedicated endpoint: GET /users/me is a
 // flat user (no roles/kindergartens) on the live backend — the current
@@ -85,7 +86,9 @@ export type KindergartenLogoResponse = z.infer<typeof KindergartenLogoResponseSc
 export async function uploadKindergartenLogo(file: File): Promise<KindergartenLogoResponse> {
   const fd = new FormData();
   fd.append('file', file);
-  const raw: unknown = await apiClient.post('admin/kindergartens/me/logo', { body: fd }).json();
+  const raw: unknown = await apiClient
+    .post('admin/kindergartens/me/logo', { body: fd, timeout: UPLOAD_TIMEOUT_MS })
+    .json();
   return KindergartenLogoResponseSchema.parse(raw);
 }
 

@@ -10,7 +10,6 @@ import {
   listWeekSnapshots,
   copyWeek,
   listActivityEvents,
-  getActivityEvent,
   createActivityEvent,
   updateActivityEvent,
   deleteActivityEvent,
@@ -81,14 +80,6 @@ export function useActivityEvents(filters: ActivityEventListFilters = {}) {
     queryKey: qk.schedule.activityEvents(filters),
     queryFn: () => listActivityEvents(filters),
     staleTime: FIVE_MINUTES,
-  });
-}
-
-export function useActivityEvent(id: string) {
-  return useQuery({
-    queryKey: qk.schedule.activityEventDetail(id),
-    queryFn: () => getActivityEvent(id),
-    enabled: !!id,
   });
 }
 

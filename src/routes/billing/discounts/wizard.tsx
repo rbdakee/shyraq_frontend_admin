@@ -349,9 +349,9 @@ function discountToDefaults(d: CustomDiscountResponseDto): WizardForm {
 
   return {
     name_ru: name?.ru ?? '',
-    name_kk: name?.kz ?? '',
+    name_kk: name?.kk ?? name?.kz ?? '',
     description_ru: desc?.ru ?? '',
-    description_kk: desc?.kz ?? '',
+    description_kk: desc?.kk ?? desc?.kz ?? '',
     discount_type: d.discount_type,
     amount: d.amount,
     conditions_op: parsed.op,
@@ -368,7 +368,7 @@ function discountToDefaults(d: CustomDiscountResponseDto): WizardForm {
     stackable: d.stackable,
     notify_on_activation: d.notify_on_activation,
     push_ru: notifTitle?.ru ?? '',
-    push_kk: notifTitle?.kz ?? '',
+    push_kk: notifTitle?.kk ?? notifTitle?.kz ?? '',
   };
 }
 

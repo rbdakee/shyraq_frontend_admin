@@ -1,4 +1,5 @@
 import { AppError } from '@/api/errors';
+import i18n from '@/lib/i18n';
 
 export function isAppError(error: unknown): error is AppError {
   return error instanceof AppError;
@@ -9,8 +10,22 @@ export function getErrorCode(error: unknown): string {
   return 'unknown_error';
 }
 
+// WHY the fallback chain: the backend emits more codes than we translate, plus raw HTTP
+// reason phrases ("Forbidden") from guards. A missing key would make i18next render the raw
+// code in the toast, so degrade to a status-level message instead.
 export function toI18nKey(error: unknown): string {
-  if (error instanceof AppError) return `errors:${error.code}`;
+  if (!(error instanceof AppError)) {
+    return error instanceof Error && error.name === 'TimeoutError'
+      ? 'errors:request_timeout'
+      : 'errors:unknown_error';
+  }
+  const key = `errors:${error.code}`;
+  if (i18n.exists(key)) return key;
+  if (error.status === 403) return 'errors:forbidden';
+  if (error.status === 404) return 'errors:not_found';
+  if (error.status === 413) return 'errors:payload_too_large';
+  if (error.status === 422 || error.status === 400) return 'errors:validation_error';
+  if (error.status >= 500) return 'errors:server_error';
   return 'errors:unknown_error';
 }
 

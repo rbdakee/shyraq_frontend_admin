@@ -94,3 +94,24 @@ describe('KNOWN_ERROR_CODES', () => {
     expect(KNOWN_ERROR_CODES).toContain('template_has_entries');
   });
 });
+
+describe('toI18nKey fallbacks', () => {
+  it('keeps a translated backend code', () => {
+    expect(toI18nKey(new AppError('optimistic_lock_conflict', 409))).toBe(
+      'errors:optimistic_lock_conflict',
+    );
+  });
+
+  it('degrades an untranslated code by HTTP status instead of leaking it', () => {
+    expect(toI18nKey(new AppError('Forbidden', 403))).toBe('errors:forbidden');
+    expect(toI18nKey(new AppError('no_such_code_xyz', 404))).toBe('errors:not_found');
+    expect(toI18nKey(new AppError('no_such_code_xyz', 500))).toBe('errors:server_error');
+    expect(toI18nKey(new AppError('no_such_code_xyz', 409))).toBe('errors:unknown_error');
+  });
+
+  it('maps a ky timeout to request_timeout', () => {
+    const err = new Error('timed out');
+    err.name = 'TimeoutError';
+    expect(toI18nKey(err)).toBe('errors:request_timeout');
+  });
+});

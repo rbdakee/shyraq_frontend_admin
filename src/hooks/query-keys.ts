@@ -130,7 +130,6 @@ export const qk = {
       ['schedule', 'week-snapshots', filters] as const,
     activityEvents: (filters: ActivityEventListFilters = {}) =>
       ['schedule', 'activity-events', 'list', filters] as const,
-    activityEventDetail: (id: string) => ['schedule', 'activity-events', 'detail', id] as const,
   },
   mealPlans: {
     all: ['meal-plans'] as const,
