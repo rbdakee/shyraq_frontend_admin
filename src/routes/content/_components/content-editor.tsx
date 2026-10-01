@@ -380,7 +380,8 @@ export function ContentEditor({ mode, post }: ContentEditorProps) {
               control={control}
               name="content_type"
               render={({ field }) => (
-                <Select value={field.value} onValueChange={field.onChange} disabled={isPublished}>
+                // content_type is immutable once the post exists (backend UpdateContentDto omits it).
+                <Select value={field.value} onValueChange={field.onChange} disabled={!!post}>
                   <SelectTrigger className="w-full">
                     <SelectValue />
                   </SelectTrigger>

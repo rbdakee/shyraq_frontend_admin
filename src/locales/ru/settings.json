@@ -59,6 +59,7 @@
   "pay_status_pending": "Подключение не завершено",
   "pay_status_expired": "Сессия истекла",
   "pay_status_revoked": "Отключено",
+  "pay_status_disconnected": "Не подключено",
   "pay_connected_phone": "Телефон кассира",
   "pay_org_name": "Организация",
   "pay_last_checked": "Последняя проверка",

@@ -47,13 +47,25 @@ export function parseApiError(data: unknown, status: number): AppError {
     );
   }
 
-  // Shape (a): domain envelope {error:string, message?:string, details?:unknown}
+  // Shape (d): HttpException thrown with an object body {code:'logo_required'} — no `error` key.
+  if (typeof d.code === 'string' && SNAKE_CODE.test(d.code)) {
+    return new AppError(d.code, status, d.details);
+  }
+
+  // Shape (a): domain envelope {error:string, message?:string, details?:unknown}.
+  // Nest built-ins (`new ForbiddenException('insufficient_role')`) put the real code in
+  // `message` and the HTTP reason phrase ("Forbidden") in `error` — prefer the code.
   if (typeof d.error === 'string') {
+    if (!SNAKE_CODE.test(d.error) && typeof d.message === 'string' && SNAKE_CODE.test(d.message)) {
+      return new AppError(d.message, status, d.details);
+    }
     return new AppError(d.error, status, d.details);
   }
 
   return new AppError('unknown_error', status);
 }
+
+const SNAKE_CODE = /^[a-z][a-z0-9_]*$/;
 
 // Flatten the nested {field: msg | {sub: msg}} error map into "path: message" strings.
 // Nested fields (e.g. i18n {ru,kk}) become dot-paths like "notification_title.ru".

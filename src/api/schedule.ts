@@ -214,9 +214,8 @@ export async function listWeekSnapshots(
 ): Promise<ScheduleWeekSnapshot[]> {
   const searchParams: Record<string, string> = {};
   if (filters.groupId !== undefined) searchParams.groupId = filters.groupId;
-  if (filters.weekStartDateFrom !== undefined)
-    searchParams.weekStartDateFrom = filters.weekStartDateFrom;
-  if (filters.weekStartDateTo !== undefined) searchParams.weekStartDateTo = filters.weekStartDateTo;
+  if (filters.weekStartDateFrom !== undefined) searchParams.from = filters.weekStartDateFrom;
+  if (filters.weekStartDateTo !== undefined) searchParams.to = filters.weekStartDateTo;
 
   const data: unknown = await apiClient
     .get('admin/schedule/week-snapshots', { searchParams })
@@ -236,19 +235,14 @@ export async function listActivityEvents(
 ): Promise<ActivityEvent[]> {
   const searchParams: Record<string, string> = {};
   if (filters.groupId !== undefined) searchParams.groupId = filters.groupId;
-  if (filters.dateFrom !== undefined) searchParams.dateFrom = filters.dateFrom;
-  if (filters.dateTo !== undefined) searchParams.dateTo = filters.dateTo;
+  if (filters.dateFrom !== undefined) searchParams.from = filters.dateFrom;
+  if (filters.dateTo !== undefined) searchParams.to = filters.dateTo;
   if (filters.status !== undefined) searchParams.status = filters.status;
 
   const data: unknown = await apiClient
     .get('admin/schedule/activity-events', { searchParams })
     .json();
   return z.array(ActivityEventResponseDtoSchema).parse(data);
-}
-
-export async function getActivityEvent(id: string): Promise<ActivityEvent> {
-  const data: unknown = await apiClient.get(`admin/schedule/activity-events/${id}`).json();
-  return ActivityEventResponseDtoSchema.parse(data);
 }
 
 export async function createActivityEvent(body: CreateActivityEventBody): Promise<ActivityEvent> {

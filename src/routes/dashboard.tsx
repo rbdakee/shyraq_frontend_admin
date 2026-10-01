@@ -233,7 +233,7 @@ export default function DashboardPage() {
       ]
     : [];
 
-  const providers = paymentsQuery.data?.providers ?? [];
+  const providers = paymentsQuery.data?.by_provider ?? [];
   const maxProviderAmount = Math.max(...providers.map((p) => p.amount), 1);
 
   if (isMobile) {

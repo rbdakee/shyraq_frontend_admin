@@ -40,7 +40,7 @@ const PaymentsOverviewSchema = z.object({
   pending: PaymentStatusSchema,
   overdue: PaymentStatusSchema,
   refunded: PaymentStatusSchema,
-  providers: z.array(ProviderBreakdownSchema).optional(),
+  by_provider: z.array(ProviderBreakdownSchema),
 });
 
 export type PaymentsOverview = z.infer<typeof PaymentsOverviewSchema>;

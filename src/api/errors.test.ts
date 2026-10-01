@@ -66,3 +66,25 @@ describe('parseApiError', () => {
     });
   });
 });
+
+describe('parseApiError — Nest HttpException bodies', () => {
+  it('takes the snake_case code from message over the HTTP reason phrase', () => {
+    const err = parseApiError(
+      { statusCode: 403, error: 'Forbidden', message: 'insufficient_role' },
+      403,
+    );
+    expect(err.code).toBe('insufficient_role');
+  });
+
+  it('keeps the reason phrase when message is prose', () => {
+    const err = parseApiError(
+      { statusCode: 403, error: 'Forbidden', message: 'Forbidden resource' },
+      403,
+    );
+    expect(err.code).toBe('Forbidden');
+  });
+
+  it('reads an object body {code}', () => {
+    expect(parseApiError({ code: 'logo_required' }, 400).code).toBe('logo_required');
+  });
+});

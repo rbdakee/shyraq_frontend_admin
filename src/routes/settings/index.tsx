@@ -1394,6 +1394,7 @@ function SubscriptionTab({
 // ========== PAYMENTS TAB (Kaspi Pay onboarding) ==========
 
 const KASPI_STATUS_BADGE: Record<KaspiStatus, 'success' | 'warning' | 'neutral'> = {
+  disconnected: 'neutral',
   active: 'success',
   pending: 'warning',
   expired: 'warning',

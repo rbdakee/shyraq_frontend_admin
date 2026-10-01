@@ -60,7 +60,8 @@ export interface DiscountFormPart {
 }
 
 // Collapses the flat discount form fields into the nested `discount_rules`
-// object the backend expects — omitting zero/empty entries, `null` if none set.
+// object the backend expects — omitting zero/empty entries, `{}` if none set
+// (the column is `jsonb NOT NULL`, so `null` on PATCH is a 500).
 export function buildTariffDiscountRules(d: DiscountFormPart) {
   const hasDiscount =
     d.sibling_discount_pct > 0 ||
@@ -70,7 +71,7 @@ export function buildTariffDiscountRules(d: DiscountFormPart) {
     d.prepay_24m_pct > 0 ||
     !!d.benefit_category;
 
-  if (!hasDiscount) return null;
+  if (!hasDiscount) return {};
 
   return {
     ...(d.sibling_discount_pct > 0 ? { sibling_discount_pct: d.sibling_discount_pct } : {}),
@@ -85,7 +86,7 @@ export function buildTariffDiscountRules(d: DiscountFormPart) {
 // WHY `kz` for the kk value: tariff descriptions are stored under the legacy
 // `kz` JSONB key (see api/tariff-plans JsonbI18nSchema) — kept for read/write parity.
 export function buildTariffDescription(ru: string, kk: string) {
-  if (!ru && !kk) return null;
+  if (!ru && !kk) return {};
   return {
     ...(ru ? { ru } : {}),
     ...(kk ? { kz: kk } : {}),

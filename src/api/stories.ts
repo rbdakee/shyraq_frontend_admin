@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { apiClient } from './client';
+import { UPLOAD_TIMEOUT_MS } from '@/lib/constants';
 
 export const StoryMediaTypeEnum = z.enum(['image', 'video']);
 export type StoryMediaType = z.infer<typeof StoryMediaTypeEnum>;
@@ -51,7 +52,9 @@ export async function createStory(body: CreateStoryBody): Promise<GroupStory> {
   fd.append('file', body.file);
   if (body.caption) fd.append('caption', body.caption);
 
-  const data: unknown = await apiClient.post('staff/stories', { body: fd }).json();
+  const data: unknown = await apiClient
+    .post('staff/stories', { body: fd, timeout: UPLOAD_TIMEOUT_MS })
+    .json();
   return GroupStoryResponseDtoSchema.parse(data);
 }
 

@@ -182,7 +182,7 @@ describe('usePaymentsOverview', () => {
       pending: { count: 0, amount: 0 },
       overdue: { count: 0, amount: 0 },
       refunded: { count: 0, amount: 0 },
-      providers: [],
+      by_provider: [],
     };
     setFetch(() => Promise.resolve(jsonResponse(payload)));
 

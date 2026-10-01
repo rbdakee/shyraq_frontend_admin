@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { apiClient } from './client';
+import { UPLOAD_TIMEOUT_MS } from '@/lib/constants';
 
 export const ContentTypeEnum = z.enum(['news', 'menu', 'schedule_pub', 'qundylyq', 'birthday']);
 export type ContentType = z.infer<typeof ContentTypeEnum>;
@@ -176,7 +177,9 @@ export async function getContent(id: string): Promise<ContentPost> {
 
 export async function createContent(body: CreateContentBody, files?: File[]): Promise<ContentPost> {
   const hasFiles = files && files.length > 0;
-  const opts = hasFiles ? { body: buildContentFormData(body, files) } : { json: body };
+  const opts = hasFiles
+    ? { body: buildContentFormData(body, files), timeout: UPLOAD_TIMEOUT_MS }
+    : { json: body };
   const data: unknown = await apiClient.post('admin/content', opts).json();
   return ContentPostResponseDtoSchema.parse(data);
 }
@@ -189,7 +192,9 @@ export async function updateContent(
   // WHY multipart when files: PATCH with `files` = full-replace media_urls (OPEN_QUESTIONS A20);
   // PATCH without `files` = text/target only, media untouched.
   const hasFiles = files && files.length > 0;
-  const opts = hasFiles ? { body: buildContentFormData(body, files) } : { json: body };
+  const opts = hasFiles
+    ? { body: buildContentFormData(body, files), timeout: UPLOAD_TIMEOUT_MS }
+    : { json: body };
   const data: unknown = await apiClient.patch(`admin/content/${id}`, opts).json();
   return ContentPostResponseDtoSchema.parse(data);
 }

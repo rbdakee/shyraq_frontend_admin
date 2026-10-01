@@ -11,7 +11,7 @@ export const TargetTypeEnum = z.enum(['all', 'groups', 'children', 'tariff_types
 export type TargetType = z.infer<typeof TargetTypeEnum>;
 
 const JsonbI18nSchema = z
-  .object({ ru: z.string().optional(), kz: z.string().optional() })
+  .object({ ru: z.string().optional(), kk: z.string().optional(), kz: z.string().optional() })
   .passthrough()
   .nullable();
 
