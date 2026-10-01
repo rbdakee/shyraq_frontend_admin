@@ -1,8 +1,18 @@
 import { lazy, Suspense } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/ui/sheet';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useCameraStream } from '@/hooks/use-cameras';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
@@ -50,7 +60,9 @@ export function CameraViewerDialog({
 
   const footer = (
     <div className="flex items-center gap-3 text-[12px] text-[color:var(--text-3)]">
-      {codecLabel && <span>{t('viewer_codec_label', { codec: codecLabel })}</span>}
+      {codecLabel && (
+        <span>{t('viewer_codec_label', { codec: codecLabel })}</span>
+      )}
       {checkedAtLabel && <span>{checkedAtLabel}</span>}
       <span>{t('viewer_no_audio')}</span>
     </div>
