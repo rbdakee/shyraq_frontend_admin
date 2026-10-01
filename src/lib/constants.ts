@@ -45,3 +45,6 @@ export const CODEC_STALE_THRESHOLD_MS = 24 * 60 * 60 * 1000;
 // real-time camera feeds — there is no archive/seekback.
 export const HLS_MAX_BUFFER_LENGTH = 30;
 export const HLS_MAX_MAX_BUFFER_LENGTH = 60;
+
+// Schedule template slot times snap to this many minutes (00/05/…/55).
+export const SLOT_MINUTE_STEP = 5;

@@ -47,6 +47,7 @@ import { useLocations } from '@/hooks/use-locations';
 import { useBreakpoint } from '@/hooks/use-breakpoint';
 import { useBreadcrumbLabel } from '@/hooks/use-breadcrumb-label';
 import { isAppError, toI18nKey } from '@/lib/error-map';
+import { SLOT_MINUTE_STEP } from '@/lib/constants';
 
 const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 type DayKey = (typeof DAY_KEYS)[number];
@@ -78,14 +79,14 @@ const CATEGORY_TONE: Record<SlotCategory, 'primary' | 'info' | 'warning' | 'neut
   sleep: 'neutral',
 };
 
-// Minutes are restricted to quarter-hours (00/15/30/45); hours stay free. Keeps slot
-// times aligned to the week grid's quarter divisions. Error message is an i18n key.
-const QUARTER_TIME_RE = /^([01]\d|2[0-3]):(00|15|30|45)$/;
+// Minutes are restricted to SLOT_MINUTE_STEP multiples (00/05/…/55); hours stay free.
+// Error message is an i18n key.
+const STEP_TIME_RE = /^([01]\d|2[0-3]):[0-5][05]$/;
 
 const SlotFormSchema = z.object({
   dayOfWeek: z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']),
-  startTime: z.string().regex(QUARTER_TIME_RE, 'slots.create_dialog.time_step_error'),
-  endTime: z.string().regex(QUARTER_TIME_RE, 'slots.create_dialog.time_step_error'),
+  startTime: z.string().regex(STEP_TIME_RE, 'slots.create_dialog.time_step_error'),
+  endTime: z.string().regex(STEP_TIME_RE, 'slots.create_dialog.time_step_error'),
   activityName: z.string().min(1),
   category: z.enum(CATEGORY_KEYS),
   locationId: z.string().optional(),
@@ -141,14 +142,14 @@ function timeToMinutes(time: string): number {
   return Number(h) * 60 + Number(m);
 }
 
-// Snaps a "HH:MM" value's minutes to the nearest quarter (00/15/30/45), carrying into
-// the hour at :60. Hours stay untouched. Used on blur so hand-typed minutes can't stick.
-function snapToQuarter(value: string): string {
+// Snaps a "HH:MM" value's minutes to the nearest SLOT_MINUTE_STEP, carrying into the
+// hour at :60. Hours stay untouched. Used on blur so hand-typed minutes can't stick.
+function snapToStep(value: string): string {
   const [h, m] = value.split(':');
   if (h === undefined || m === undefined) return value;
   const minutes = Number(m);
   if (Number.isNaN(minutes)) return value;
-  const snapped = Math.round(minutes / 15) * 15;
+  const snapped = Math.round(minutes / SLOT_MINUTE_STEP) * SLOT_MINUTE_STEP;
   if (snapped === 60) return `${String((Number(h) + 1) % 24).padStart(2, '0')}:00`;
   return `${h.padStart(2, '0')}:${String(snapped).padStart(2, '0')}`;
 }
@@ -622,10 +623,10 @@ function SlotFormFields({
             render={({ field }) => (
               <Input
                 type="time"
-                step={900}
+                step={SLOT_MINUTE_STEP * 60}
                 value={field.value}
                 onChange={field.onChange}
-                onBlur={() => field.onChange(snapToQuarter(field.value))}
+                onBlur={() => field.onChange(snapToStep(field.value))}
                 aria-invalid={!!errors.startTime}
               />
             )}
@@ -647,10 +648,10 @@ function SlotFormFields({
             render={({ field }) => (
               <Input
                 type="time"
-                step={900}
+                step={SLOT_MINUTE_STEP * 60}
                 value={field.value}
                 onChange={field.onChange}
-                onBlur={() => field.onChange(snapToQuarter(field.value))}
+                onBlur={() => field.onChange(snapToStep(field.value))}
                 aria-invalid={!!errors.endTime}
               />
             )}
