@@ -124,10 +124,9 @@
   "specialist_type_system_immutable": "Системную специальность нельзя удалить — выключите её",
   "specialist_type_in_use": "Специальность используется — выключите вместо удаления",
   "not_found": "Объект не найден — возможно, его удалили в другой вкладке",
-  "cctv_policy_window_invalid": "Конец рабочего дня должен быть позже начала",
+  "cctv_policy_window_invalid": "Время начала и конца правила не должно совпадать",
   "cctv_policy_time_invalid": "Неверный формат времени",
   "cctv_policy_work_day_invalid": "Неверный день недели",
-  "cctv_policy_mode_invalid": "Неизвестный режим показа",
   "attendance_correction_admin_only": "Исправлять посещаемость может только администратор",
   "attendance_edit_window_expired": "Срок редактирования отметки посещаемости истёк",
   "daily_status_not_found": "Статус дня не найден",
@@ -290,5 +289,6 @@
   "request_timeout": "Сервер не ответил вовремя — попробуйте ещё раз",
   "foreign_key_violation": "Запись связана с другими данными — действие невозможно",
   "validation_failed": "Проверьте корректность полей",
-  "payload_too_large": "Слишком большой объём данных"
+  "payload_too_large": "Слишком большой объём данных",
+  "cctv_policy_rule_camera_not_common": "Правило скрывает камеру, которой нет среди общих"
 }

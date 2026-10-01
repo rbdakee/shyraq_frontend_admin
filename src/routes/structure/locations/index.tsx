@@ -319,7 +319,9 @@ export default function StructureLocationsPage() {
       {viewingCamera && (
         <CameraViewerDialog
           open={!!viewingCamera}
-          onOpenChange={(v) => { if (!v) setViewingCamera(null); }}
+          onOpenChange={(v) => {
+            if (!v) setViewingCamera(null);
+          }}
           cameraId={viewingCamera.id}
           cameraName={viewingCamera.name}
           locationName={
@@ -514,7 +516,12 @@ function CamerasTab({
               <div className="text-[15px] font-bold text-[color:var(--text-1)]">{loc.name}</div>
               {desc && <div className="mt-0.5 text-[13px] text-[color:var(--text-3)]">{desc}</div>}
             </div>
-            <CameraTable cameras={locCameras} onEdit={onEdit} onArchive={onArchive} onWatch={onWatch} />
+            <CameraTable
+              cameras={locCameras}
+              onEdit={onEdit}
+              onArchive={onArchive}
+              onWatch={onWatch}
+            />
           </div>
         );
       })}
@@ -526,7 +533,12 @@ function CamerasTab({
               {t('unassigned_location')}
             </div>
           </div>
-          <CameraTable cameras={unassignedCameras} onEdit={onEdit} onArchive={onArchive} onWatch={onWatch} />
+          <CameraTable
+            cameras={unassignedCameras}
+            onEdit={onEdit}
+            onArchive={onArchive}
+            onWatch={onWatch}
+          />
         </div>
       )}
     </div>
@@ -675,7 +687,9 @@ function CameraTable({
                           disabled={isRefreshing}
                           data-testid={`refresh-codec-${cam.id}`}
                         >
-                          <RefreshCwIcon className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                          <RefreshCwIcon
+                            className={`size-4 ${isRefreshing ? 'animate-spin' : ''}`}
+                          />
                         </button>
                       </TooltipTrigger>
                       <TooltipContent>{t('camera_refresh_codec')}</TooltipContent>
@@ -877,7 +891,14 @@ function CameraDialog({
 
   function handleClose() {
     onOpenChange(false);
-    form.reset({ name: '', location_id: '', rtsp_url: '', hls_url: '', stream_key: '', stream_key_hd: '' });
+    form.reset({
+      name: '',
+      location_id: '',
+      rtsp_url: '',
+      hls_url: '',
+      stream_key: '',
+      stream_key_hd: '',
+    });
   }
 
   function handleSubmit(data: CameraFormValues) {
@@ -1244,11 +1265,7 @@ function MobileView({
         </div>
 
         {tab === 'policy' && (
-          <DisplayPolicyTab
-            cameras={cameras}
-            locations={allLocations}
-            camerasLoading={isLoading}
-          />
+          <DisplayPolicyTab cameras={cameras} locations={allLocations} camerasLoading={isLoading} />
         )}
 
         {tab !== 'policy' && isError && <ErrorState onRetry={onRetry} />}
@@ -1351,7 +1368,9 @@ function MobileView({
       {viewingCamera && (
         <CameraViewerDialog
           open={!!viewingCamera}
-          onOpenChange={(v) => { if (!v) onCloseViewer(); }}
+          onOpenChange={(v) => {
+            if (!v) onCloseViewer();
+          }}
           cameraId={viewingCamera.id}
           cameraName={viewingCamera.name}
           locationName={

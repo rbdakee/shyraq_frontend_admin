@@ -124,10 +124,9 @@
   "specialist_type_system_immutable": "Жүйелік мамандықты жоюға болмайды — оны өшіріңіз",
   "specialist_type_in_use": "Мамандық қолданылуда — жоюдың орнына өшіріңіз",
   "not_found": "Нысан табылмады — оны басқа бетте жойған болуы мүмкін",
-  "cctv_policy_window_invalid": "Жұмыс күнінің аяқталуы басталуынан кеш болуы керек",
+  "cctv_policy_window_invalid": "Ереженің басталу және аяқталу уақыты сәйкес келмеуі керек",
   "cctv_policy_time_invalid": "Уақыт форматы дұрыс емес",
   "cctv_policy_work_day_invalid": "Апта күні дұрыс емес",
-  "cctv_policy_mode_invalid": "Көрсету режимі белгісіз",
   "attendance_correction_admin_only": "Қатысуды тек әкімші түзете алады",
   "attendance_edit_window_expired": "Қатысу белгісін өңдеу мерзімі өтті",
   "daily_status_not_found": "Күн мәртебесі табылмады",
@@ -290,5 +289,6 @@
   "request_timeout": "Сервер уақытында жауап бермеді — қайталап көріңіз",
   "foreign_key_violation": "Жазба басқа деректермен байланысты — әрекет мүмкін емес",
   "validation_failed": "Өрістердің дұрыстығын тексеріңіз",
-  "payload_too_large": "Деректер көлемі тым үлкен"
+  "payload_too_large": "Деректер көлемі тым үлкен",
+  "cctv_policy_rule_camera_not_common": "Ереже ортақ камералар арасында жоқ камераны жасырады"
 }

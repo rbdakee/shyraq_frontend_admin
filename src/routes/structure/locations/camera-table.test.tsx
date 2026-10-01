@@ -167,9 +167,7 @@ describe('Camera table', () => {
   });
 
   it('enables Watch button when is_streamable and transports available', () => {
-    camerasData.current = [
-      makeCamera({ is_streamable: true, transports: ['hls'] }),
-    ];
+    camerasData.current = [makeCamera({ is_streamable: true, transports: ['hls'] })];
 
     render(<StructureLocationsPage />, { wrapper: Wrapper });
 
@@ -195,9 +193,7 @@ describe('Camera table', () => {
 
   it('shows stale indicator when codec_checked_at is old', () => {
     const oldDate = new Date(Date.now() - 25 * 60 * 60 * 1000).toISOString();
-    camerasData.current = [
-      makeCamera({ video_codec: 'h264', codec_checked_at: oldDate }),
-    ];
+    camerasData.current = [makeCamera({ video_codec: 'h264', codec_checked_at: oldDate })];
 
     render(<StructureLocationsPage />, { wrapper: Wrapper });
 
@@ -213,9 +209,7 @@ describe('Camera table', () => {
 
   it('does not show stale indicator when codec_checked_at is fresh', () => {
     const freshDate = new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString();
-    camerasData.current = [
-      makeCamera({ video_codec: 'h264', codec_checked_at: freshDate }),
-    ];
+    camerasData.current = [makeCamera({ video_codec: 'h264', codec_checked_at: freshDate })];
 
     render(<StructureLocationsPage />, { wrapper: Wrapper });
 

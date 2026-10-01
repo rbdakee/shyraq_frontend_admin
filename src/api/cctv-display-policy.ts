@@ -1,36 +1,32 @@
 import { z } from 'zod';
 import { apiClient } from './client';
 
-export const CCTV_DISPLAY_MODES = ['schedule', 'cameras', 'off'] as const;
-
-export const CctvDisplayModeSchema = z.enum(CCTV_DISPLAY_MODES);
-export type CctvDisplayMode = z.infer<typeof CctvDisplayModeSchema>;
-
-export const CctvDisplaySlotSchema = z.object({
-  mode: CctvDisplayModeSchema,
+export const CctvHideRuleSchema = z.object({
+  name: z.string(),
+  enabled: z.boolean(),
+  /** ISO weekdays the window starts on: 1=Mon … 7=Sun. */
+  days: z.array(z.number()),
+  /** Kindergarten-local `HH:MM`; `to < from` — the window runs past midnight. */
+  from: z.string(),
+  to: z.string(),
+  all_cameras: z.boolean(),
   camera_ids: z.array(z.string()),
 });
 
-export type CctvDisplaySlot = z.infer<typeof CctvDisplaySlotSchema>;
+export type CctvHideRule = z.infer<typeof CctvHideRuleSchema>;
 
 export const CctvDisplayPolicySchema = z.object({
-  work_days: z.array(z.number()),
-  opens_at: z.string(),
-  closes_at: z.string(),
+  common_camera_ids: z.array(z.string()),
+  hide_rules: z.array(CctvHideRuleSchema),
   timezone: z.string(),
-  work_hours: CctvDisplaySlotSchema,
-  off_hours: CctvDisplaySlotSchema,
   updated_at: z.string(),
 });
 
 export type CctvDisplayPolicy = z.infer<typeof CctvDisplayPolicySchema>;
 
 export interface UpdateCctvDisplayPolicyBody {
-  work_days: number[];
-  opens_at: string;
-  closes_at: string;
-  work_hours: CctvDisplaySlot;
-  off_hours: CctvDisplaySlot;
+  common_camera_ids: string[];
+  hide_rules: CctvHideRule[];
 }
 
 export async function getCctvDisplayPolicy(): Promise<CctvDisplayPolicy> {
