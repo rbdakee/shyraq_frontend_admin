@@ -6,11 +6,9 @@ import {
 } from '@/api/cctv-display-policy';
 import { qk } from './query-keys';
 
-export { CCTV_DISPLAY_MODES } from '@/api/cctv-display-policy';
 export type {
-  CctvDisplayMode,
   CctvDisplayPolicy,
-  CctvDisplaySlot,
+  CctvHideRule,
   UpdateCctvDisplayPolicyBody,
 } from '@/api/cctv-display-policy';
 

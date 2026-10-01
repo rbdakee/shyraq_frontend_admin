@@ -20,12 +20,9 @@ vi.mock('react-i18next', () => ({
 const saveMut = { mutate: vi.fn(), isPending: false };
 const policyData: { current: CctvDisplayPolicy } = {
   current: {
-    work_days: [1, 2, 3, 4, 5],
-    opens_at: '07:00',
-    closes_at: '19:00',
+    common_camera_ids: [],
+    hide_rules: [],
     timezone: 'Asia/Almaty',
-    work_hours: { mode: 'schedule', camera_ids: [] },
-    off_hours: { mode: 'schedule', camera_ids: [] },
     updated_at: '2026-09-21T06:00:00.000Z',
   },
 };
@@ -38,7 +35,6 @@ vi.mock('@/hooks/use-cctv-display-policy', () => ({
     refetch: vi.fn(),
   }),
   useUpdateCctvDisplayPolicy: () => saveMut,
-  CCTV_DISPLAY_MODES: ['schedule', 'cameras', 'off'] as const,
 }));
 
 // Radix RadioGroup measures its indicator through ResizeObserver, which jsdom
@@ -54,13 +50,31 @@ import { DisplayPolicyTab } from './display-policy-tab';
 
 const CAMERAS = [
   {
-    id: 'cam-outdoor',
+    id: 'cam-clubs',
     kindergarten_id: 'kg-1',
     location_id: 'loc-1',
-    name: 'Dala kiris',
+    name: 'Үйірмелер',
     rtsp_url: null,
     hls_url: null,
     stream_key: 'cam20_sub',
+    stream_key_hd: null,
+    video_codec: 'h264',
+    codec_checked_at: null,
+    is_streamable: true,
+    transports: ['hls'],
+    is_active: true,
+    archived_at: null,
+    created_at: '2026-09-01T00:00:00Z',
+    updated_at: '2026-09-01T00:00:00Z',
+  },
+  {
+    id: 'cam-canteen',
+    kindergarten_id: 'kg-1',
+    location_id: 'loc-1',
+    name: 'Асхана',
+    rtsp_url: null,
+    hls_url: null,
+    stream_key: 'cam05_sub',
     stream_key_hd: null,
     video_codec: 'h264',
     codec_checked_at: null,
@@ -85,12 +99,23 @@ const LOCATIONS = [
   },
 ];
 
+const RULE = {
+  name: 'Обед',
+  enabled: true,
+  days: [1, 2, 3, 4, 5, 6, 7],
+  from: '12:30',
+  to: '15:00',
+  all_cameras: false,
+  camera_ids: ['cam-canteen', 'cam-clubs'],
+};
+
 function renderTab() {
   render(<DisplayPolicyTab cameras={CAMERAS} locations={LOCATIONS} />);
-  return {
-    workHours: within(screen.getByTestId('policy-slot-work_hours')),
-    offHours: within(screen.getByTestId('policy-slot-off_hours')),
-  };
+  return { common: within(screen.getByTestId('policy-common')) };
+}
+
+async function save() {
+  await userEvent.click(screen.getByRole('button', { name: 'policy_save' }));
 }
 
 beforeEach(() => {
@@ -99,77 +124,107 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup();
-  policyData.current = {
-    ...policyData.current,
-    work_hours: { mode: 'schedule', camera_ids: [] },
-    off_hours: { mode: 'schedule', camera_ids: [] },
-  };
+  policyData.current = { ...policyData.current, common_camera_ids: [], hide_rules: [] };
 });
 
 describe('DisplayPolicyTab', () => {
-  it('hides the camera picker while the slot shows nothing', async () => {
-    const { offHours } = renderTab();
-    expect(offHours.getAllByRole('checkbox')).toHaveLength(1);
+  it('sends the common cameras in the order they were ticked', async () => {
+    const { common } = renderTab();
 
-    await userEvent.click(offHours.getByRole('radio', { name: /policy_mode_off/ }));
+    await userEvent.click(common.getByRole('checkbox', { name: /Үйірмелер/ }));
+    await userEvent.click(common.getByRole('checkbox', { name: /Асхана/ }));
+    await save();
 
-    expect(offHours.queryAllByRole('checkbox')).toHaveLength(0);
+    await waitFor(() => expect(saveMut.mutate).toHaveBeenCalledTimes(1));
+    expect(saveMut.mutate.mock.calls[0][0]).toEqual({
+      common_camera_ids: ['cam-clubs', 'cam-canteen'],
+      hide_rules: [],
+    });
   });
 
-  it('refuses a fixed list with no camera in it', async () => {
-    const { offHours } = renderTab();
+  it('adds a rule that hides the picked common cameras', async () => {
+    policyData.current = { ...policyData.current, common_camera_ids: ['cam-canteen'] };
+    renderTab();
 
-    await userEvent.click(offHours.getByRole('radio', { name: /policy_mode_cameras/ }));
-    await userEvent.click(screen.getByRole('button', { name: 'policy_save' }));
+    await userEvent.click(screen.getByRole('button', { name: /policy_rule_add/ }));
+    const rule = within(screen.getByTestId('policy-rule-0'));
+    await userEvent.click(rule.getByRole('checkbox', { name: /Асхана/ }));
+    await save();
+
+    await waitFor(() => expect(saveMut.mutate).toHaveBeenCalledTimes(1));
+    expect(saveMut.mutate.mock.calls[0][0].hide_rules).toEqual([
+      { ...RULE, name: '', camera_ids: ['cam-canteen'] },
+    ]);
+  });
+
+  it('refuses a rule that hides nothing', async () => {
+    policyData.current = { ...policyData.current, common_camera_ids: ['cam-canteen'] };
+    renderTab();
+
+    await userEvent.click(screen.getByRole('button', { name: /policy_rule_add/ }));
+    await save();
 
     expect(await screen.findByText('cctv_policy_pick_camera')).toBeInTheDocument();
     expect(saveMut.mutate).not.toHaveBeenCalled();
   });
 
-  it('sends the picked cameras for the off-hours slot', async () => {
-    const { offHours } = renderTab();
-
-    await userEvent.click(offHours.getByRole('radio', { name: /policy_mode_cameras/ }));
-    await userEvent.click(offHours.getByRole('checkbox'));
-    await userEvent.click(screen.getByRole('button', { name: 'policy_save' }));
-
-    await waitFor(() => expect(saveMut.mutate).toHaveBeenCalledTimes(1));
-    expect(saveMut.mutate.mock.calls[0][0]).toMatchObject({
-      work_days: [1, 2, 3, 4, 5],
-      opens_at: '07:00',
-      closes_at: '19:00',
-      off_hours: { mode: 'cameras', camera_ids: ['cam-outdoor'] },
-    });
-  });
-
-  it('refuses a window that closes before it opens', async () => {
-    renderTab();
-
-    const closesAt = screen.getByLabelText('policy_closes_at');
-    await userEvent.clear(closesAt);
-    await userEvent.type(closesAt, '06:00');
-    await userEvent.click(screen.getByRole('button', { name: 'policy_save' }));
-
-    expect(await screen.findByText('cctv_policy_window_inverted')).toBeInTheDocument();
-    expect(saveMut.mutate).not.toHaveBeenCalled();
-  });
-
-  it('drops a pinned camera that was archived since, so the policy still saves', async () => {
+  it('refuses a window that starts and ends at the same time', async () => {
     policyData.current = {
       ...policyData.current,
-      work_hours: { mode: 'cameras', camera_ids: ['cam-outdoor', 'cam-archived'] },
+      common_camera_ids: ['cam-canteen', 'cam-clubs'],
+      hide_rules: [RULE],
     };
     renderTab();
 
-    const opensAt = screen.getByLabelText('policy_opens_at');
-    await userEvent.clear(opensAt);
-    await userEvent.type(opensAt, '08:00');
-    await userEvent.click(screen.getByRole('button', { name: 'policy_save' }));
+    const to = screen.getByLabelText('policy_rule_to');
+    await userEvent.clear(to);
+    await userEvent.type(to, '12:30');
+    await save();
+
+    expect(await screen.findByText('cctv_policy_window_empty')).toBeInTheDocument();
+    expect(saveMut.mutate).not.toHaveBeenCalled();
+  });
+
+  it('marks a window that runs past midnight', () => {
+    policyData.current = {
+      ...policyData.current,
+      hide_rules: [{ ...RULE, from: '19:00', to: '08:00', all_cameras: true, camera_ids: [] }],
+    };
+    renderTab();
+
+    expect(screen.getByText('policy_rule_overnight')).toBeInTheDocument();
+  });
+
+  it('drops a camera from rules once it is no longer common', async () => {
+    policyData.current = {
+      ...policyData.current,
+      common_camera_ids: ['cam-canteen', 'cam-clubs'],
+      hide_rules: [RULE],
+    };
+    const { common } = renderTab();
+
+    await userEvent.click(common.getByRole('checkbox', { name: /Үйірмелер/ }));
+    await save();
 
     await waitFor(() => expect(saveMut.mutate).toHaveBeenCalledTimes(1));
-    expect(saveMut.mutate.mock.calls[0][0]).toMatchObject({
-      work_hours: { mode: 'cameras', camera_ids: ['cam-outdoor'] },
+    expect(saveMut.mutate.mock.calls[0][0]).toEqual({
+      common_camera_ids: ['cam-canteen'],
+      hide_rules: [{ ...RULE, camera_ids: ['cam-canteen'] }],
     });
+  });
+
+  it('drops a common camera that was archived since, so the policy still saves', async () => {
+    policyData.current = {
+      ...policyData.current,
+      common_camera_ids: ['cam-canteen', 'cam-archived'],
+    };
+    const { common } = renderTab();
+
+    await userEvent.click(common.getByRole('checkbox', { name: /Үйірмелер/ }));
+    await save();
+
+    await waitFor(() => expect(saveMut.mutate).toHaveBeenCalledTimes(1));
+    expect(saveMut.mutate.mock.calls[0][0].common_camera_ids).toEqual(['cam-canteen', 'cam-clubs']);
   });
 
   it('keeps the save button idle until something changes', () => {

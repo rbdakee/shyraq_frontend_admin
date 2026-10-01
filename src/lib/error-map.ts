@@ -97,7 +97,7 @@ export const KNOWN_ERROR_CODES = [
   'cctv_policy_window_invalid',
   'cctv_policy_time_invalid',
   'cctv_policy_work_day_invalid',
-  'cctv_policy_mode_invalid',
+  'cctv_policy_rule_camera_not_common',
   'camera_stream_key_taken',
   // cctv §9.2
   'cctv_not_configured',
